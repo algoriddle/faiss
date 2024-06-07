@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='UTF-8' standalone='no'?>
-<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.8.17">
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.1" xml:lang="en-US">
   <compounddef id="DeviceVector_8cuh" kind="file" language="C++">
     <compoundname>DeviceVector.cuh</compoundname>
     <briefdescription>
@@ -28,6 +28,16 @@
 <codeline></codeline>
 <codeline><highlight class="normal">namespace<sp/>faiss<sp/>{</highlight></codeline>
 <codeline><highlight class="normal">namespace<sp/>gpu<sp/>{</highlight></codeline>
+<codeline></codeline>
+<codeline><highlight class="normal">//<sp/>For<sp/>growing<sp/>GPU<sp/>allocations:</highlight></codeline>
+<codeline><highlight class="normal">//<sp/>Below<sp/>this<sp/>size,<sp/>we<sp/>always<sp/>round<sp/>the<sp/>allocation<sp/>size<sp/>up<sp/>to<sp/>the<sp/>next<sp/>highest</highlight></codeline>
+<codeline><highlight class="normal">//<sp/>power<sp/>of<sp/>2</highlight></codeline>
+<codeline><highlight class="normal">constexpr<sp/>size_t<sp/>kDeviceVector_2x_Limit<sp/>=<sp/>4<sp/>*<sp/>1024<sp/>*<sp/>1024;</highlight></codeline>
+<codeline></codeline>
+<codeline><highlight class="normal">//<sp/>Otherwise,<sp/>below<sp/>this<sp/>size,<sp/>we<sp/>always<sp/>round<sp/>the<sp/>allocation<sp/>size<sp/>up<sp/>by<sp/>a</highlight></codeline>
+<codeline><highlight class="normal">//<sp/>factor<sp/>of<sp/>1.25.<sp/>Otherwise,<sp/>all<sp/>reallocations<sp/>are<sp/>exact<sp/>to<sp/>the<sp/>newly<sp/>requested</highlight></codeline>
+<codeline><highlight class="normal">//<sp/>size.</highlight></codeline>
+<codeline><highlight class="normal">constexpr<sp/>size_t<sp/>kDeviceVector_1_25x_Limit<sp/>=<sp/>128<sp/>*<sp/>1024<sp/>*<sp/>1024;</highlight></codeline>
 <codeline></codeline>
 <codeline><highlight class="normal">///<sp/>A<sp/>simple<sp/>version<sp/>of<sp/>thrust::device_vector&lt;T&gt;,<sp/>but<sp/>has<sp/>more<sp/>control</highlight></codeline>
 <codeline><highlight class="normal">///<sp/>over<sp/>streams,<sp/>whether<sp/>resize()<sp/>initializes<sp/>new<sp/>space<sp/>with<sp/>T()<sp/>(which<sp/>we</highlight></codeline>
@@ -131,7 +141,7 @@
 <codeline><highlight class="normal"><sp/><sp/><sp/><sp/>bool<sp/>resize(size_t<sp/>newSize,<sp/>cudaStream_t<sp/>stream)<sp/>{</highlight></codeline>
 <codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>bool<sp/>mem<sp/>=<sp/>false;</highlight></codeline>
 <codeline></codeline>
-<codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>if<sp/>(num_<sp/>&lt;<sp/>newSize)<sp/>{</highlight></codeline>
+<codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>if<sp/>(newSize<sp/>&gt;<sp/>capacity_)<sp/>{</highlight></codeline>
 <codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>mem<sp/>=<sp/>reserve(getNewCapacity_(newSize),<sp/>stream);</highlight></codeline>
 <codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>}</highlight></codeline>
 <codeline></codeline>
@@ -168,6 +178,8 @@
 <codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>T<sp/>out;</highlight></codeline>
 <codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>CUDA_VERIFY(cudaMemcpyAsync(</highlight></codeline>
 <codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>&amp;out,<sp/>data()<sp/>+<sp/>idx,<sp/>sizeof(T),<sp/>cudaMemcpyDeviceToHost,<sp/>stream));</highlight></codeline>
+<codeline></codeline>
+<codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>return<sp/>out;</highlight></codeline>
 <codeline><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
 <codeline></codeline>
 <codeline><highlight class="normal"><sp/><sp/><sp/><sp/>//<sp/>Clean<sp/>up<sp/>after<sp/>oversized<sp/>allocations,<sp/>while<sp/>leaving<sp/>some<sp/>space<sp/>to</highlight></codeline>
@@ -245,7 +257,13 @@
 <codeline><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
 <codeline></codeline>
 <codeline><highlight class="normal"><sp/><sp/><sp/><sp/>size_t<sp/>getNewCapacity_(size_t<sp/>preferredSize)<sp/>{</highlight></codeline>
-<codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>return<sp/>utils::nextHighestPowerOf2(preferredSize);</highlight></codeline>
+<codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>if<sp/>(preferredSize<sp/>&lt;=<sp/>kDeviceVector_2x_Limit)<sp/>{</highlight></codeline>
+<codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>return<sp/>utils::nextHighestPowerOf2(preferredSize);</highlight></codeline>
+<codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>}<sp/>else<sp/>if<sp/>(preferredSize<sp/>&lt;=<sp/>kDeviceVector_1_25x_Limit)<sp/>{</highlight></codeline>
+<codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>return<sp/>preferredSize<sp/>+<sp/>(preferredSize<sp/>&gt;&gt;<sp/>2);</highlight></codeline>
+<codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>}<sp/>else<sp/>{</highlight></codeline>
+<codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>return<sp/>preferredSize;</highlight></codeline>
+<codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>}</highlight></codeline>
 <codeline><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
 <codeline></codeline>
 <codeline><highlight class="normal"><sp/><sp/><sp/><sp/>///<sp/>Our<sp/>current<sp/>memory<sp/>allocation,<sp/>if<sp/>any</highlight></codeline>
