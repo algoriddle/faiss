@@ -1,13 +1,14 @@
 <?xml version='1.0' encoding='UTF-8' standalone='no'?>
-<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.1" xml:lang="en-US">
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.8" xml:lang="en-US">
   <compounddef id="structfaiss_1_1ClusteringIterationStats" kind="struct" language="C++" prot="public">
     <compoundname>faiss::ClusteringIterationStats</compoundname>
-      <sectiondef kind="public-attrib">
+    <sectiondef kind="public-attrib">
       <memberdef kind="variable" id="structfaiss_1_1ClusteringIterationStats_1a3a1ee76ac7d9cfda93284a846679e56a" prot="public" static="no" mutable="no">
         <type>float</type>
         <definition>float faiss::ClusteringIterationStats::obj</definition>
         <argsstring></argsstring>
         <name>obj</name>
+        <qualifiedname>faiss::ClusteringIterationStats::obj</qualifiedname>
         <briefdescription>
 <para>objective values (sum of distances reported by index) </para>
         </briefdescription>
@@ -15,13 +16,14 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/Clustering.h" line="54" column="11" bodyfile="faiss/Clustering.h" bodystart="54" bodyend="-1"/>
+        <location file="faiss/Clustering.h" line="75" column="11" bodyfile="faiss/Clustering.h" bodystart="75" bodyend="-1"/>
       </memberdef>
       <memberdef kind="variable" id="structfaiss_1_1ClusteringIterationStats_1a5e705d865d7e3c9ea224d1b7fb25c55e" prot="public" static="no" mutable="no">
         <type>double</type>
         <definition>double faiss::ClusteringIterationStats::time</definition>
         <argsstring></argsstring>
         <name>time</name>
+        <qualifiedname>faiss::ClusteringIterationStats::time</qualifiedname>
         <briefdescription>
 <para>seconds for iteration </para>
         </briefdescription>
@@ -29,13 +31,14 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/Clustering.h" line="55" column="12" bodyfile="faiss/Clustering.h" bodystart="55" bodyend="-1"/>
+        <location file="faiss/Clustering.h" line="76" column="12" bodyfile="faiss/Clustering.h" bodystart="76" bodyend="-1"/>
       </memberdef>
       <memberdef kind="variable" id="structfaiss_1_1ClusteringIterationStats_1a4f851c82080b3ac7dfa70f84900c7e04" prot="public" static="no" mutable="no">
         <type>double</type>
         <definition>double faiss::ClusteringIterationStats::time_search</definition>
         <argsstring></argsstring>
         <name>time_search</name>
+        <qualifiedname>faiss::ClusteringIterationStats::time_search</qualifiedname>
         <briefdescription>
 <para>seconds for just search </para>
         </briefdescription>
@@ -43,13 +46,14 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/Clustering.h" line="56" column="12" bodyfile="faiss/Clustering.h" bodystart="56" bodyend="-1"/>
+        <location file="faiss/Clustering.h" line="77" column="12" bodyfile="faiss/Clustering.h" bodystart="77" bodyend="-1"/>
       </memberdef>
       <memberdef kind="variable" id="structfaiss_1_1ClusteringIterationStats_1a49d02abe2f1a02839461e58bf0819b01" prot="public" static="no" mutable="no">
         <type>double</type>
         <definition>double faiss::ClusteringIterationStats::imbalance_factor</definition>
         <argsstring></argsstring>
         <name>imbalance_factor</name>
+        <qualifiedname>faiss::ClusteringIterationStats::imbalance_factor</qualifiedname>
         <briefdescription>
 <para>imbalance factor of iteration </para>
         </briefdescription>
@@ -57,13 +61,14 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/Clustering.h" line="57" column="12" bodyfile="faiss/Clustering.h" bodystart="57" bodyend="-1"/>
+        <location file="faiss/Clustering.h" line="78" column="12" bodyfile="faiss/Clustering.h" bodystart="78" bodyend="-1"/>
       </memberdef>
       <memberdef kind="variable" id="structfaiss_1_1ClusteringIterationStats_1abd83b0cdd436033c0d93ddeebf0ff05f" prot="public" static="no" mutable="no">
         <type>int</type>
         <definition>int faiss::ClusteringIterationStats::nsplit</definition>
         <argsstring></argsstring>
         <name>nsplit</name>
+        <qualifiedname>faiss::ClusteringIterationStats::nsplit</qualifiedname>
         <briefdescription>
 <para>number of cluster splits </para>
         </briefdescription>
@@ -71,14 +76,14 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/Clustering.h" line="58" column="9" bodyfile="faiss/Clustering.h" bodystart="58" bodyend="-1"/>
+        <location file="faiss/Clustering.h" line="79" column="9" bodyfile="faiss/Clustering.h" bodystart="79" bodyend="-1"/>
       </memberdef>
-      </sectiondef>
+    </sectiondef>
     <briefdescription>
     </briefdescription>
     <detaileddescription>
     </detaileddescription>
-    <location file="faiss/Clustering.h" line="53" column="1" bodyfile="faiss/Clustering.h" bodystart="53" bodyend="59"/>
+    <location file="faiss/Clustering.h" line="74" column="1" bodyfile="faiss/Clustering.h" bodystart="74" bodyend="80"/>
     <listofallmembers>
       <member refid="structfaiss_1_1ClusteringIterationStats_1a49d02abe2f1a02839461e58bf0819b01" prot="public" virt="non-virtual"><scope>faiss::ClusteringIterationStats</scope><name>imbalance_factor</name></member>
       <member refid="structfaiss_1_1ClusteringIterationStats_1abd83b0cdd436033c0d93ddeebf0ff05f" prot="public" virt="non-virtual"><scope>faiss::ClusteringIterationStats</scope><name>nsplit</name></member>

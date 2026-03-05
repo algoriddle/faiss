@@ -1,13 +1,14 @@
 <?xml version='1.0' encoding='UTF-8' standalone='no'?>
-<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.1" xml:lang="en-US">
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.8" xml:lang="en-US">
   <compounddef id="structfaiss_1_1ProductQuantizer" kind="struct" language="C++" prot="public">
     <compoundname>faiss::ProductQuantizer</compoundname>
     <basecompoundref refid="structfaiss_1_1Quantizer" prot="public" virt="non-virtual">faiss::Quantizer</basecompoundref>
     <includes refid="ProductQuantizer_8h" local="no">ProductQuantizer.h</includes>
-      <sectiondef kind="public-type">
+    <sectiondef kind="public-type">
       <memberdef kind="enum" id="structfaiss_1_1ProductQuantizer_1a3a41c6286095e731be744548d9535a35" prot="public" static="no" strong="no">
         <type></type>
         <name>train_type_t</name>
+        <qualifiedname>faiss::ProductQuantizer::train_type_t</qualifiedname>
         <enumvalue id="structfaiss_1_1ProductQuantizer_1a3a41c6286095e731be744548d9535a35a432f9ec2bcb0c1148a088e2c4fbb1145" prot="public">
           <name>Train_default</name>
           <briefdescription>
@@ -54,15 +55,16 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/impl/ProductQuantizer.h" line="35" column="5" bodyfile="faiss/impl/ProductQuantizer.h" bodystart="35" bodyend="41"/>
+        <location file="faiss/impl/ProductQuantizer.h" line="39" column="5" bodyfile="faiss/impl/ProductQuantizer.h" bodystart="39" bodyend="45"/>
       </memberdef>
-      </sectiondef>
-      <sectiondef kind="public-attrib">
+    </sectiondef>
+    <sectiondef kind="public-attrib">
       <memberdef kind="variable" id="structfaiss_1_1ProductQuantizer_1a83600e328893ce5f41fe459f5a3acf41" prot="public" static="no" mutable="no">
         <type>size_t</type>
         <definition>size_t faiss::ProductQuantizer::M</definition>
         <argsstring></argsstring>
         <name>M</name>
+        <qualifiedname>faiss::ProductQuantizer::M</qualifiedname>
         <briefdescription>
 <para>number of subquantizers </para>
         </briefdescription>
@@ -70,13 +72,14 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/impl/ProductQuantizer.h" line="26" column="12" bodyfile="faiss/impl/ProductQuantizer.h" bodystart="26" bodyend="-1"/>
+        <location file="faiss/impl/ProductQuantizer.h" line="30" column="12" bodyfile="faiss/impl/ProductQuantizer.h" bodystart="30" bodyend="-1"/>
       </memberdef>
       <memberdef kind="variable" id="structfaiss_1_1ProductQuantizer_1ac920fea11f02e8407d12cc99a09f5ea5" prot="public" static="no" mutable="no">
         <type>size_t</type>
         <definition>size_t faiss::ProductQuantizer::nbits</definition>
         <argsstring></argsstring>
         <name>nbits</name>
+        <qualifiedname>faiss::ProductQuantizer::nbits</qualifiedname>
         <briefdescription>
 <para>number of bits per quantization index </para>
         </briefdescription>
@@ -84,13 +87,14 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/impl/ProductQuantizer.h" line="27" column="12" bodyfile="faiss/impl/ProductQuantizer.h" bodystart="27" bodyend="-1"/>
+        <location file="faiss/impl/ProductQuantizer.h" line="31" column="12" bodyfile="faiss/impl/ProductQuantizer.h" bodystart="31" bodyend="-1"/>
       </memberdef>
       <memberdef kind="variable" id="structfaiss_1_1ProductQuantizer_1a467b451ca203544e42c250e4be65b983" prot="public" static="no" mutable="no">
         <type>size_t</type>
         <definition>size_t faiss::ProductQuantizer::dsub</definition>
         <argsstring></argsstring>
         <name>dsub</name>
+        <qualifiedname>faiss::ProductQuantizer::dsub</qualifiedname>
         <briefdescription>
 <para>dimensionality of each subvector </para>
         </briefdescription>
@@ -98,13 +102,14 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/impl/ProductQuantizer.h" line="30" column="12" bodyfile="faiss/impl/ProductQuantizer.h" bodystart="30" bodyend="-1"/>
+        <location file="faiss/impl/ProductQuantizer.h" line="34" column="12" bodyfile="faiss/impl/ProductQuantizer.h" bodystart="34" bodyend="-1"/>
       </memberdef>
       <memberdef kind="variable" id="structfaiss_1_1ProductQuantizer_1a0feee45e4151547b7a0444c14bad398f" prot="public" static="no" mutable="no">
         <type>size_t</type>
         <definition>size_t faiss::ProductQuantizer::ksub</definition>
         <argsstring></argsstring>
         <name>ksub</name>
+        <qualifiedname>faiss::ProductQuantizer::ksub</qualifiedname>
         <briefdescription>
 <para>number of centroids for each subquantizer </para>
         </briefdescription>
@@ -112,13 +117,14 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/impl/ProductQuantizer.h" line="31" column="12" bodyfile="faiss/impl/ProductQuantizer.h" bodystart="31" bodyend="-1"/>
+        <location file="faiss/impl/ProductQuantizer.h" line="35" column="12" bodyfile="faiss/impl/ProductQuantizer.h" bodystart="35" bodyend="-1"/>
       </memberdef>
       <memberdef kind="variable" id="structfaiss_1_1ProductQuantizer_1a1e4056fa3938ed8c9fe701e90d94ad95" prot="public" static="no" mutable="no">
         <type>bool</type>
         <definition>bool faiss::ProductQuantizer::verbose</definition>
         <argsstring></argsstring>
         <name>verbose</name>
+        <qualifiedname>faiss::ProductQuantizer::verbose</qualifiedname>
         <briefdescription>
 <para>verbose during training? </para>
         </briefdescription>
@@ -126,26 +132,28 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/impl/ProductQuantizer.h" line="32" column="10" bodyfile="faiss/impl/ProductQuantizer.h" bodystart="32" bodyend="-1"/>
+        <location file="faiss/impl/ProductQuantizer.h" line="36" column="10" bodyfile="faiss/impl/ProductQuantizer.h" bodystart="36" bodyend="-1"/>
       </memberdef>
       <memberdef kind="variable" id="structfaiss_1_1ProductQuantizer_1adc7c3cb8bcbd76e5b4b1c2e645091179" prot="public" static="no" mutable="no">
         <type><ref refid="structfaiss_1_1ProductQuantizer_1a3a41c6286095e731be744548d9535a35" kindref="member">train_type_t</ref></type>
         <definition>train_type_t faiss::ProductQuantizer::train_type</definition>
         <argsstring></argsstring>
         <name>train_type</name>
+        <qualifiedname>faiss::ProductQuantizer::train_type</qualifiedname>
         <briefdescription>
         </briefdescription>
         <detaileddescription>
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/impl/ProductQuantizer.h" line="42" column="18" bodyfile="faiss/impl/ProductQuantizer.h" bodystart="42" bodyend="-1"/>
+        <location file="faiss/impl/ProductQuantizer.h" line="46" column="18" bodyfile="faiss/impl/ProductQuantizer.h" bodystart="46" bodyend="-1"/>
       </memberdef>
       <memberdef kind="variable" id="structfaiss_1_1ProductQuantizer_1af265acf5aa1bcda60898002287e6a3d6" prot="public" static="no" mutable="no">
         <type><ref refid="structfaiss_1_1ClusteringParameters" kindref="compound">ClusteringParameters</ref></type>
         <definition>ClusteringParameters faiss::ProductQuantizer::cp</definition>
         <argsstring></argsstring>
         <name>cp</name>
+        <qualifiedname>faiss::ProductQuantizer::cp</qualifiedname>
         <briefdescription>
 <para>parameters used during clustering </para>
         </briefdescription>
@@ -153,13 +161,14 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/impl/ProductQuantizer.h" line="44" column="26" bodyfile="faiss/impl/ProductQuantizer.h" bodystart="44" bodyend="-1"/>
+        <location file="faiss/impl/ProductQuantizer.h" line="48" column="26" bodyfile="faiss/impl/ProductQuantizer.h" bodystart="48" bodyend="-1"/>
       </memberdef>
       <memberdef kind="variable" id="structfaiss_1_1ProductQuantizer_1a62def246cfef670f2973fdf4af1414e1" prot="public" static="no" mutable="no">
         <type><ref refid="structfaiss_1_1Index" kindref="compound">Index</ref> *</type>
         <definition>Index* faiss::ProductQuantizer::assign_index</definition>
         <argsstring></argsstring>
         <name>assign_index</name>
+        <qualifiedname>faiss::ProductQuantizer::assign_index</qualifiedname>
         <briefdescription>
         </briefdescription>
         <detaileddescription>
@@ -167,13 +176,14 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/impl/ProductQuantizer.h" line="48" column="11" bodyfile="faiss/impl/ProductQuantizer.h" bodystart="48" bodyend="-1"/>
+        <location file="faiss/impl/ProductQuantizer.h" line="52" column="11" bodyfile="faiss/impl/ProductQuantizer.h" bodystart="52" bodyend="-1"/>
       </memberdef>
       <memberdef kind="variable" id="structfaiss_1_1ProductQuantizer_1aab1109a29ba0544358e274d727b23cae" prot="public" static="no" mutable="no">
         <type>std::vector&lt; float &gt;</type>
         <definition>std::vector&lt;float&gt; faiss::ProductQuantizer::centroids</definition>
         <argsstring></argsstring>
         <name>centroids</name>
+        <qualifiedname>faiss::ProductQuantizer::centroids</qualifiedname>
         <briefdescription>
         </briefdescription>
         <detaileddescription>
@@ -181,13 +191,14 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/impl/ProductQuantizer.h" line="52" column="17" bodyfile="faiss/impl/ProductQuantizer.h" bodystart="52" bodyend="-1"/>
+        <location file="faiss/impl/ProductQuantizer.h" line="56" column="17" bodyfile="faiss/impl/ProductQuantizer.h" bodystart="56" bodyend="-1"/>
       </memberdef>
       <memberdef kind="variable" id="structfaiss_1_1ProductQuantizer_1a106129ce7f970aaa059c6c43437d72e5" prot="public" static="no" mutable="no">
         <type>std::vector&lt; float &gt;</type>
         <definition>std::vector&lt;float&gt; faiss::ProductQuantizer::transposed_centroids</definition>
         <argsstring></argsstring>
         <name>transposed_centroids</name>
+        <qualifiedname>faiss::ProductQuantizer::transposed_centroids</qualifiedname>
         <briefdescription>
         </briefdescription>
         <detaileddescription>
@@ -195,13 +206,14 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/impl/ProductQuantizer.h" line="56" column="17" bodyfile="faiss/impl/ProductQuantizer.h" bodystart="56" bodyend="-1"/>
+        <location file="faiss/impl/ProductQuantizer.h" line="60" column="17" bodyfile="faiss/impl/ProductQuantizer.h" bodystart="60" bodyend="-1"/>
       </memberdef>
       <memberdef kind="variable" id="structfaiss_1_1ProductQuantizer_1adb062ef85ba4ad595add97ac9751e18c" prot="public" static="no" mutable="no">
         <type>std::vector&lt; float &gt;</type>
         <definition>std::vector&lt;float&gt; faiss::ProductQuantizer::centroids_sq_lengths</definition>
         <argsstring></argsstring>
         <name>centroids_sq_lengths</name>
+        <qualifiedname>faiss::ProductQuantizer::centroids_sq_lengths</qualifiedname>
         <briefdescription>
         </briefdescription>
         <detaileddescription>
@@ -209,13 +221,14 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/impl/ProductQuantizer.h" line="60" column="17" bodyfile="faiss/impl/ProductQuantizer.h" bodystart="60" bodyend="-1"/>
+        <location file="faiss/impl/ProductQuantizer.h" line="64" column="17" bodyfile="faiss/impl/ProductQuantizer.h" bodystart="64" bodyend="-1"/>
       </memberdef>
       <memberdef kind="variable" id="structfaiss_1_1ProductQuantizer_1a6bd65fb4407452f73acb7242931d09e4" prot="public" static="no" mutable="no">
         <type>std::vector&lt; float &gt;</type>
         <definition>std::vector&lt;float&gt; faiss::ProductQuantizer::sdc_table</definition>
         <argsstring></argsstring>
         <name>sdc_table</name>
+        <qualifiedname>faiss::ProductQuantizer::sdc_table</qualifiedname>
         <briefdescription>
 <para>Symmetric Distance Table. </para>
         </briefdescription>
@@ -223,13 +236,14 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/impl/ProductQuantizer.h" line="163" column="17" bodyfile="faiss/impl/ProductQuantizer.h" bodystart="163" bodyend="-1"/>
+        <location file="faiss/impl/ProductQuantizer.h" line="167" column="17" bodyfile="faiss/impl/ProductQuantizer.h" bodystart="167" bodyend="-1"/>
       </memberdef>
       <memberdef kind="variable" id="structfaiss_1_1Quantizer_1a416da1bab43fefa36563210a86298a75" prot="public" static="no" mutable="no">
         <type>size_t</type>
         <definition>size_t faiss::Quantizer::d</definition>
         <argsstring></argsstring>
         <name>d</name>
+        <qualifiedname>faiss::Quantizer::d</qualifiedname>
         <briefdescription>
 <para>size of the input vectors </para>
         </briefdescription>
@@ -244,6 +258,7 @@
         <definition>size_t faiss::Quantizer::code_size</definition>
         <argsstring></argsstring>
         <name>code_size</name>
+        <qualifiedname>faiss::Quantizer::code_size</qualifiedname>
         <briefdescription>
 <para>bytes per indexed vector </para>
         </briefdescription>
@@ -253,13 +268,14 @@
         </inbodydescription>
         <location file="faiss/impl/Quantizer.h" line="17" column="12" bodyfile="faiss/impl/Quantizer.h" bodystart="17" bodyend="-1"/>
       </memberdef>
-      </sectiondef>
-      <sectiondef kind="public-func">
-      <memberdef kind="function" id="structfaiss_1_1ProductQuantizer_1a4f0f33c011dffe633a1748a48a082c22" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+    </sectiondef>
+    <sectiondef kind="public-func">
+      <memberdef kind="function" id="structfaiss_1_1ProductQuantizer_1ae9124e52d1c7b69ec88e1096af00ac2c" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
         <type>float *</type>
-        <definition>float* faiss::ProductQuantizer::get_centroids</definition>
+        <definition>float * faiss::ProductQuantizer::get_centroids</definition>
         <argsstring>(size_t m, size_t i)</argsstring>
         <name>get_centroids</name>
+        <qualifiedname>faiss::ProductQuantizer::get_centroids</qualifiedname>
         <param>
           <type>size_t</type>
           <declname>m</declname>
@@ -275,13 +291,14 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/impl/ProductQuantizer.h" line="63" column="11" bodyfile="faiss/impl/ProductQuantizer.h" bodystart="63" bodyend="65"/>
+        <location file="faiss/impl/ProductQuantizer.h" line="67" column="11" bodyfile="faiss/impl/ProductQuantizer.h" bodystart="67" bodyend="69"/>
       </memberdef>
-      <memberdef kind="function" id="structfaiss_1_1ProductQuantizer_1a12992f5e54bd77128267411c1b1c14a3" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+      <memberdef kind="function" id="structfaiss_1_1ProductQuantizer_1abbad6c9b36e70aa724b05867323a0719" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
         <type>const float *</type>
-        <definition>const float* faiss::ProductQuantizer::get_centroids</definition>
+        <definition>const float * faiss::ProductQuantizer::get_centroids</definition>
         <argsstring>(size_t m, size_t i) const</argsstring>
         <name>get_centroids</name>
+        <qualifiedname>faiss::ProductQuantizer::get_centroids</qualifiedname>
         <param>
           <type>size_t</type>
           <declname>m</declname>
@@ -296,13 +313,14 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/impl/ProductQuantizer.h" line="66" column="17" bodyfile="faiss/impl/ProductQuantizer.h" bodystart="66" bodyend="68"/>
+        <location file="faiss/impl/ProductQuantizer.h" line="70" column="17" bodyfile="faiss/impl/ProductQuantizer.h" bodystart="70" bodyend="72"/>
       </memberdef>
       <memberdef kind="function" id="structfaiss_1_1ProductQuantizer_1a3d066376adf471dd936c251f9f5706c3" prot="public" static="no" const="no" explicit="no" inline="no" virt="virtual">
         <type>void</type>
         <definition>void faiss::ProductQuantizer::train</definition>
         <argsstring>(size_t n, const float *x) override</argsstring>
         <name>train</name>
+        <qualifiedname>faiss::ProductQuantizer::train</qualifiedname>
         <reimplements refid="structfaiss_1_1Quantizer_1a6e97ff4cce0bb4163aa8fbe95df456c9">train</reimplements>
         <param>
           <type>size_t</type>
@@ -329,13 +347,14 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/impl/ProductQuantizer.h" line="72" column="10"/>
+        <location file="faiss/impl/ProductQuantizer.h" line="76" column="10"/>
       </memberdef>
       <memberdef kind="function" id="structfaiss_1_1ProductQuantizer_1a4722cff4131366b124d0a39e934d1460" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
         <type></type>
         <definition>faiss::ProductQuantizer::ProductQuantizer</definition>
         <argsstring>(size_t d, size_t M, size_t nbits)</argsstring>
         <name>ProductQuantizer</name>
+        <qualifiedname>faiss::ProductQuantizer::ProductQuantizer</qualifiedname>
         <param>
           <type>size_t</type>
           <declname>d</declname>
@@ -354,26 +373,28 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/impl/ProductQuantizer.h" line="74" column="5"/>
+        <location file="faiss/impl/ProductQuantizer.h" line="78" column="5"/>
       </memberdef>
       <memberdef kind="function" id="structfaiss_1_1ProductQuantizer_1aee09cc5fdfa7aa4032604303e3e03eb9" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
         <type></type>
         <definition>faiss::ProductQuantizer::ProductQuantizer</definition>
         <argsstring>()</argsstring>
         <name>ProductQuantizer</name>
+        <qualifiedname>faiss::ProductQuantizer::ProductQuantizer</qualifiedname>
         <briefdescription>
         </briefdescription>
         <detaileddescription>
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/impl/ProductQuantizer.h" line="79" column="5"/>
+        <location file="faiss/impl/ProductQuantizer.h" line="83" column="5"/>
       </memberdef>
       <memberdef kind="function" id="structfaiss_1_1ProductQuantizer_1ab3067f333b26811537a8519fb08292ce" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
         <type>void</type>
         <definition>void faiss::ProductQuantizer::set_derived_values</definition>
         <argsstring>()</argsstring>
         <name>set_derived_values</name>
+        <qualifiedname>faiss::ProductQuantizer::set_derived_values</qualifiedname>
         <briefdescription>
 <para>compute derived values when d, M and nbits have been set </para>
         </briefdescription>
@@ -381,13 +402,14 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/impl/ProductQuantizer.h" line="82" column="10"/>
+        <location file="faiss/impl/ProductQuantizer.h" line="86" column="10"/>
       </memberdef>
       <memberdef kind="function" id="structfaiss_1_1ProductQuantizer_1ad291f113c6d44a634ddc1972f9a3c775" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
         <type>void</type>
         <definition>void faiss::ProductQuantizer::set_params</definition>
         <argsstring>(const float *centroids, int m)</argsstring>
         <name>set_params</name>
+        <qualifiedname>faiss::ProductQuantizer::set_params</qualifiedname>
         <param>
           <type>const float *</type>
           <declname>centroids</declname>
@@ -403,13 +425,14 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/impl/ProductQuantizer.h" line="85" column="10"/>
+        <location file="faiss/impl/ProductQuantizer.h" line="89" column="10"/>
       </memberdef>
       <memberdef kind="function" id="structfaiss_1_1ProductQuantizer_1a0af195096d925aa3daaedca4884c6ccd" prot="public" static="no" const="yes" explicit="no" inline="no" virt="non-virtual">
         <type>void</type>
         <definition>void faiss::ProductQuantizer::compute_code</definition>
         <argsstring>(const float *x, uint8_t *code) const</argsstring>
         <name>compute_code</name>
+        <qualifiedname>faiss::ProductQuantizer::compute_code</qualifiedname>
         <param>
           <type>const float *</type>
           <declname>x</declname>
@@ -425,13 +448,14 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/impl/ProductQuantizer.h" line="88" column="10"/>
+        <location file="faiss/impl/ProductQuantizer.h" line="92" column="10"/>
       </memberdef>
       <memberdef kind="function" id="structfaiss_1_1ProductQuantizer_1a4cf7deeb4d4454e2b79876458ada36bc" prot="public" static="no" const="yes" explicit="no" inline="no" virt="virtual">
         <type>void</type>
         <definition>void faiss::ProductQuantizer::compute_codes</definition>
         <argsstring>(const float *x, uint8_t *codes, size_t n) const override</argsstring>
         <name>compute_codes</name>
+        <qualifiedname>faiss::ProductQuantizer::compute_codes</qualifiedname>
         <reimplements refid="structfaiss_1_1Quantizer_1a2590aabcafa9fb9ae05587d334fd8205">compute_codes</reimplements>
         <param>
           <type>const float *</type>
@@ -452,13 +476,14 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/impl/ProductQuantizer.h" line="91" column="10"/>
+        <location file="faiss/impl/ProductQuantizer.h" line="95" column="10"/>
       </memberdef>
       <memberdef kind="function" id="structfaiss_1_1ProductQuantizer_1aecd05d180799f3956065b0c5c54fd406" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
         <type>void</type>
         <definition>void faiss::ProductQuantizer::compute_codes_with_assign_index</definition>
         <argsstring>(const float *x, uint8_t *codes, size_t n)</argsstring>
         <name>compute_codes_with_assign_index</name>
+        <qualifiedname>faiss::ProductQuantizer::compute_codes_with_assign_index</qualifiedname>
         <param>
           <type>const float *</type>
           <declname>x</declname>
@@ -478,13 +503,14 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/impl/ProductQuantizer.h" line="95" column="10"/>
+        <location file="faiss/impl/ProductQuantizer.h" line="99" column="10"/>
       </memberdef>
       <memberdef kind="function" id="structfaiss_1_1ProductQuantizer_1a933a195a8e8deabb40ed1a31661a53c1" prot="public" static="no" const="yes" explicit="no" inline="no" virt="non-virtual">
         <type>void</type>
         <definition>void faiss::ProductQuantizer::decode</definition>
         <argsstring>(const uint8_t *code, float *x) const</argsstring>
         <name>decode</name>
+        <qualifiedname>faiss::ProductQuantizer::decode</qualifiedname>
         <param>
           <type>const uint8_t *</type>
           <declname>code</declname>
@@ -500,13 +526,14 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/impl/ProductQuantizer.h" line="101" column="10"/>
+        <location file="faiss/impl/ProductQuantizer.h" line="105" column="10"/>
       </memberdef>
       <memberdef kind="function" id="structfaiss_1_1ProductQuantizer_1ad8c4cd19b05301ef3afca0589d16a199" prot="public" static="no" const="yes" explicit="no" inline="no" virt="virtual">
         <type>void</type>
         <definition>void faiss::ProductQuantizer::decode</definition>
         <argsstring>(const uint8_t *code, float *x, size_t n) const override</argsstring>
         <name>decode</name>
+        <qualifiedname>faiss::ProductQuantizer::decode</qualifiedname>
         <reimplements refid="structfaiss_1_1Quantizer_1a71b20a9a5f98f9e8889bb22cfb7f9fac">decode</reimplements>
         <param>
           <type>const uint8_t *</type>
@@ -545,13 +572,14 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/impl/ProductQuantizer.h" line="102" column="10"/>
+        <location file="faiss/impl/ProductQuantizer.h" line="106" column="10"/>
       </memberdef>
       <memberdef kind="function" id="structfaiss_1_1ProductQuantizer_1a95ddfd9f296816a6bdb7470d92abe4c4" prot="public" static="no" const="yes" explicit="no" inline="no" virt="non-virtual">
         <type>void</type>
         <definition>void faiss::ProductQuantizer::compute_code_from_distance_table</definition>
         <argsstring>(const float *tab, uint8_t *code) const</argsstring>
         <name>compute_code_from_distance_table</name>
+        <qualifiedname>faiss::ProductQuantizer::compute_code_from_distance_table</qualifiedname>
         <param>
           <type>const float *</type>
           <declname>tab</declname>
@@ -567,13 +595,14 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/impl/ProductQuantizer.h" line="106" column="10"/>
+        <location file="faiss/impl/ProductQuantizer.h" line="110" column="10"/>
       </memberdef>
       <memberdef kind="function" id="structfaiss_1_1ProductQuantizer_1a6363a356656b77497dd2f544ea1c8607" prot="public" static="no" const="yes" explicit="no" inline="no" virt="non-virtual">
         <type>void</type>
         <definition>void faiss::ProductQuantizer::compute_distance_table</definition>
         <argsstring>(const float *x, float *dis_table) const</argsstring>
         <name>compute_distance_table</name>
+        <qualifiedname>faiss::ProductQuantizer::compute_distance_table</qualifiedname>
         <param>
           <type>const float *</type>
           <declname>x</declname>
@@ -610,13 +639,14 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/impl/ProductQuantizer.h" line="122" column="10"/>
+        <location file="faiss/impl/ProductQuantizer.h" line="126" column="10"/>
       </memberdef>
       <memberdef kind="function" id="structfaiss_1_1ProductQuantizer_1a4730e88cc9fc5eb1eddeddcffcae87b7" prot="public" static="no" const="yes" explicit="no" inline="no" virt="non-virtual">
         <type>void</type>
         <definition>void faiss::ProductQuantizer::compute_inner_prod_table</definition>
         <argsstring>(const float *x, float *dis_table) const</argsstring>
         <name>compute_inner_prod_table</name>
+        <qualifiedname>faiss::ProductQuantizer::compute_inner_prod_table</qualifiedname>
         <param>
           <type>const float *</type>
           <declname>x</declname>
@@ -631,13 +661,14 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/impl/ProductQuantizer.h" line="124" column="10"/>
+        <location file="faiss/impl/ProductQuantizer.h" line="128" column="10"/>
       </memberdef>
       <memberdef kind="function" id="structfaiss_1_1ProductQuantizer_1ad4743f0b4ae6034ad8801593dc97b711" prot="public" static="no" const="yes" explicit="no" inline="no" virt="non-virtual">
         <type>void</type>
         <definition>void faiss::ProductQuantizer::compute_distance_tables</definition>
         <argsstring>(size_t nx, const float *x, float *dis_tables) const</argsstring>
         <name>compute_distance_tables</name>
+        <qualifiedname>faiss::ProductQuantizer::compute_distance_tables</qualifiedname>
         <param>
           <type>size_t</type>
           <declname>nx</declname>
@@ -682,13 +713,14 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/impl/ProductQuantizer.h" line="131" column="10"/>
+        <location file="faiss/impl/ProductQuantizer.h" line="135" column="10"/>
       </memberdef>
       <memberdef kind="function" id="structfaiss_1_1ProductQuantizer_1a316adc8d2e1ff9d7f74f8aa4b161a9ae" prot="public" static="no" const="yes" explicit="no" inline="no" virt="non-virtual">
         <type>void</type>
         <definition>void faiss::ProductQuantizer::compute_inner_prod_tables</definition>
         <argsstring>(size_t nx, const float *x, float *dis_tables) const</argsstring>
         <name>compute_inner_prod_tables</name>
+        <qualifiedname>faiss::ProductQuantizer::compute_inner_prod_tables</qualifiedname>
         <param>
           <type>size_t</type>
           <declname>nx</declname>
@@ -707,13 +739,14 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/impl/ProductQuantizer.h" line="134" column="10"/>
+        <location file="faiss/impl/ProductQuantizer.h" line="138" column="10"/>
       </memberdef>
       <memberdef kind="function" id="structfaiss_1_1ProductQuantizer_1a7a1da5dbad9cfdd552590af1df9e96ad" prot="public" static="no" const="yes" explicit="no" inline="no" virt="non-virtual">
         <type>void</type>
         <definition>void faiss::ProductQuantizer::search</definition>
         <argsstring>(const float *x, size_t nx, const uint8_t *codes, const size_t ncodes, float_maxheap_array_t *res, bool init_finalize_heap=true) const</argsstring>
         <name>search</name>
+        <qualifiedname>faiss::ProductQuantizer::search</qualifiedname>
         <param>
           <type>const float *</type>
           <declname>x</declname>
@@ -795,13 +828,14 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/impl/ProductQuantizer.h" line="145" column="10"/>
+        <location file="faiss/impl/ProductQuantizer.h" line="149" column="10"/>
       </memberdef>
       <memberdef kind="function" id="structfaiss_1_1ProductQuantizer_1a7aebd290b0d52de7789d68599002bcf3" prot="public" static="no" const="yes" explicit="no" inline="no" virt="non-virtual">
         <type>void</type>
         <definition>void faiss::ProductQuantizer::search_ip</definition>
         <argsstring>(const float *x, size_t nx, const uint8_t *codes, const size_t ncodes, float_minheap_array_t *res, bool init_finalize_heap=true) const</argsstring>
         <name>search_ip</name>
+        <qualifiedname>faiss::ProductQuantizer::search_ip</qualifiedname>
         <param>
           <type>const float *</type>
           <declname>x</declname>
@@ -834,26 +868,28 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/impl/ProductQuantizer.h" line="154" column="10"/>
+        <location file="faiss/impl/ProductQuantizer.h" line="158" column="10"/>
       </memberdef>
       <memberdef kind="function" id="structfaiss_1_1ProductQuantizer_1a75e4ef2c5dbeb8d642bb9a6ea5fb6c06" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
         <type>void</type>
         <definition>void faiss::ProductQuantizer::compute_sdc_table</definition>
         <argsstring>()</argsstring>
         <name>compute_sdc_table</name>
+        <qualifiedname>faiss::ProductQuantizer::compute_sdc_table</qualifiedname>
         <briefdescription>
         </briefdescription>
         <detaileddescription>
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/impl/ProductQuantizer.h" line="166" column="10"/>
+        <location file="faiss/impl/ProductQuantizer.h" line="170" column="10"/>
       </memberdef>
       <memberdef kind="function" id="structfaiss_1_1ProductQuantizer_1a4254a38e600719fd363985196c170426" prot="public" static="no" const="yes" explicit="no" inline="no" virt="non-virtual">
         <type>void</type>
         <definition>void faiss::ProductQuantizer::search_sdc</definition>
         <argsstring>(const uint8_t *qcodes, size_t nq, const uint8_t *bcodes, const size_t ncodes, float_maxheap_array_t *res, bool init_finalize_heap=true) const</argsstring>
         <name>search_sdc</name>
+        <qualifiedname>faiss::ProductQuantizer::search_sdc</qualifiedname>
         <param>
           <type>const uint8_t *</type>
           <declname>qcodes</declname>
@@ -885,13 +921,14 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/impl/ProductQuantizer.h" line="168" column="10"/>
+        <location file="faiss/impl/ProductQuantizer.h" line="172" column="10"/>
       </memberdef>
       <memberdef kind="function" id="structfaiss_1_1ProductQuantizer_1ac2e3dc171f2b58a0394ab81368cf4b78" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
         <type>void</type>
         <definition>void faiss::ProductQuantizer::sync_transposed_centroids</definition>
         <argsstring>()</argsstring>
         <name>sync_transposed_centroids</name>
+        <qualifiedname>faiss::ProductQuantizer::sync_transposed_centroids</qualifiedname>
         <briefdescription>
         </briefdescription>
         <detaileddescription>
@@ -899,13 +936,14 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/impl/ProductQuantizer.h" line="178" column="10"/>
+        <location file="faiss/impl/ProductQuantizer.h" line="182" column="10"/>
       </memberdef>
       <memberdef kind="function" id="structfaiss_1_1ProductQuantizer_1ac8b70d04d5037883ac69772f1967ab7e" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
         <type>void</type>
         <definition>void faiss::ProductQuantizer::clear_transposed_centroids</definition>
         <argsstring>()</argsstring>
         <name>clear_transposed_centroids</name>
+        <qualifiedname>faiss::ProductQuantizer::clear_transposed_centroids</qualifiedname>
         <briefdescription>
 <para>Clear transposed centroids table so ones are no longer used. </para>
         </briefdescription>
@@ -913,38 +951,34 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/impl/ProductQuantizer.h" line="181" column="10"/>
+        <location file="faiss/impl/ProductQuantizer.h" line="185" column="10"/>
       </memberdef>
-      </sectiondef>
+    </sectiondef>
     <briefdescription>
     </briefdescription>
     <detaileddescription>
-<para>Product <ref refid="structfaiss_1_1Quantizer" kindref="compound">Quantizer</ref>. Implemented only for METRIC_L2 </para>
+<para>Product <ref refid="structfaiss_1_1Quantizer" kindref="compound">Quantizer</ref>. PQ is trained using k-means, minimizing the L2 distance to centroids. PQ supports L2 and Inner Product search, however the quantization error is biased towards L2 distance. </para>
     </detaileddescription>
     <inheritancegraph>
-      <node id="2">
-        <label>faiss::Quantizer</label>
-        <link refid="structfaiss_1_1Quantizer"/>
-      </node>
       <node id="1">
         <label>faiss::ProductQuantizer</label>
         <link refid="structfaiss_1_1ProductQuantizer"/>
         <childnode refid="2" relation="public-inheritance">
         </childnode>
       </node>
-    </inheritancegraph>
-    <collaborationgraph>
-      <node id="4">
-        <label>faiss::ClusteringParameters</label>
-        <link refid="structfaiss_1_1ClusteringParameters"/>
-      </node>
-      <node id="3">
-        <label>faiss::Index</label>
-        <link refid="structfaiss_1_1Index"/>
-      </node>
       <node id="2">
         <label>faiss::Quantizer</label>
         <link refid="structfaiss_1_1Quantizer"/>
+      </node>
+    </inheritancegraph>
+    <collaborationgraph>
+      <node id="3">
+        <label>faiss::ClusteringParameters</label>
+        <link refid="structfaiss_1_1ClusteringParameters"/>
+      </node>
+      <node id="4">
+        <label>faiss::Index</label>
+        <link refid="structfaiss_1_1Index"/>
       </node>
       <node id="1">
         <label>faiss::ProductQuantizer</label>
@@ -952,14 +986,18 @@
         <childnode refid="2" relation="public-inheritance">
         </childnode>
         <childnode refid="3" relation="usage">
-          <edgelabel>assign_index</edgelabel>
-        </childnode>
-        <childnode refid="4" relation="usage">
           <edgelabel>cp</edgelabel>
         </childnode>
+        <childnode refid="4" relation="usage">
+          <edgelabel>assign_index</edgelabel>
+        </childnode>
+      </node>
+      <node id="2">
+        <label>faiss::Quantizer</label>
+        <link refid="structfaiss_1_1Quantizer"/>
       </node>
     </collaborationgraph>
-    <location file="faiss/impl/ProductQuantizer.h" line="25" column="1" bodyfile="faiss/impl/ProductQuantizer.h" bodystart="25" bodyend="182"/>
+    <location file="faiss/impl/ProductQuantizer.h" line="29" column="1" bodyfile="faiss/impl/ProductQuantizer.h" bodystart="29" bodyend="186"/>
     <listofallmembers>
       <member refid="structfaiss_1_1ProductQuantizer_1a62def246cfef670f2973fdf4af1414e1" prot="public" virt="non-virtual"><scope>faiss::ProductQuantizer</scope><name>assign_index</name></member>
       <member refid="structfaiss_1_1ProductQuantizer_1aab1109a29ba0544358e274d727b23cae" prot="public" virt="non-virtual"><scope>faiss::ProductQuantizer</scope><name>centroids</name></member>
@@ -980,8 +1018,8 @@
       <member refid="structfaiss_1_1ProductQuantizer_1a933a195a8e8deabb40ed1a31661a53c1" prot="public" virt="non-virtual"><scope>faiss::ProductQuantizer</scope><name>decode</name></member>
       <member refid="structfaiss_1_1ProductQuantizer_1ad8c4cd19b05301ef3afca0589d16a199" prot="public" virt="virtual"><scope>faiss::ProductQuantizer</scope><name>decode</name></member>
       <member refid="structfaiss_1_1ProductQuantizer_1a467b451ca203544e42c250e4be65b983" prot="public" virt="non-virtual"><scope>faiss::ProductQuantizer</scope><name>dsub</name></member>
-      <member refid="structfaiss_1_1ProductQuantizer_1a4f0f33c011dffe633a1748a48a082c22" prot="public" virt="non-virtual"><scope>faiss::ProductQuantizer</scope><name>get_centroids</name></member>
-      <member refid="structfaiss_1_1ProductQuantizer_1a12992f5e54bd77128267411c1b1c14a3" prot="public" virt="non-virtual"><scope>faiss::ProductQuantizer</scope><name>get_centroids</name></member>
+      <member refid="structfaiss_1_1ProductQuantizer_1ae9124e52d1c7b69ec88e1096af00ac2c" prot="public" virt="non-virtual"><scope>faiss::ProductQuantizer</scope><name>get_centroids</name></member>
+      <member refid="structfaiss_1_1ProductQuantizer_1abbad6c9b36e70aa724b05867323a0719" prot="public" virt="non-virtual"><scope>faiss::ProductQuantizer</scope><name>get_centroids</name></member>
       <member refid="structfaiss_1_1ProductQuantizer_1a0feee45e4151547b7a0444c14bad398f" prot="public" virt="non-virtual"><scope>faiss::ProductQuantizer</scope><name>ksub</name></member>
       <member refid="structfaiss_1_1ProductQuantizer_1a83600e328893ce5f41fe459f5a3acf41" prot="public" virt="non-virtual"><scope>faiss::ProductQuantizer</scope><name>M</name></member>
       <member refid="structfaiss_1_1ProductQuantizer_1ac920fea11f02e8407d12cc99a09f5ea5" prot="public" virt="non-virtual"><scope>faiss::ProductQuantizer</scope><name>nbits</name></member>

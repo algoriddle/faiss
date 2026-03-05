@@ -1,13 +1,14 @@
 <?xml version='1.0' encoding='UTF-8' standalone='no'?>
-<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.1" xml:lang="en-US">
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.8" xml:lang="en-US">
   <compounddef id="structfaiss_1_1gpu_1_1IVFPQBuildCagraConfig" kind="struct" language="C++" prot="public">
     <compoundname>faiss::gpu::IVFPQBuildCagraConfig</compoundname>
-      <sectiondef kind="public-attrib">
+    <sectiondef kind="public-attrib">
       <memberdef kind="variable" id="structfaiss_1_1gpu_1_1IVFPQBuildCagraConfig_1a8a01cd2c61cc670e31e90565296f0d07" prot="public" static="no" mutable="no">
         <type>uint32_t</type>
         <definition>uint32_t faiss::gpu::IVFPQBuildCagraConfig::n_lists</definition>
         <argsstring></argsstring>
         <name>n_lists</name>
+        <qualifiedname>faiss::gpu::IVFPQBuildCagraConfig::n_lists</qualifiedname>
         <initializer>= 1024</initializer>
         <briefdescription>
         </briefdescription>
@@ -17,13 +18,14 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/gpu/GpuIndexCagra.h" line="58" column="14" bodyfile="faiss/gpu/GpuIndexCagra.h" bodystart="58" bodyend="-1"/>
+        <location file="faiss/gpu/GpuIndexCagra.h" line="65" column="14" bodyfile="faiss/gpu/GpuIndexCagra.h" bodystart="65" bodyend="-1"/>
       </memberdef>
       <memberdef kind="variable" id="structfaiss_1_1gpu_1_1IVFPQBuildCagraConfig_1a46e1a050c0276db771da671898801fe5" prot="public" static="no" mutable="no">
         <type>uint32_t</type>
         <definition>uint32_t faiss::gpu::IVFPQBuildCagraConfig::kmeans_n_iters</definition>
         <argsstring></argsstring>
         <name>kmeans_n_iters</name>
+        <qualifiedname>faiss::gpu::IVFPQBuildCagraConfig::kmeans_n_iters</qualifiedname>
         <initializer>= 20</initializer>
         <briefdescription>
 <para>The number of iterations searching for kmeans centers (index building). </para>
@@ -32,13 +34,14 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/gpu/GpuIndexCagra.h" line="60" column="14" bodyfile="faiss/gpu/GpuIndexCagra.h" bodystart="60" bodyend="-1"/>
+        <location file="faiss/gpu/GpuIndexCagra.h" line="67" column="14" bodyfile="faiss/gpu/GpuIndexCagra.h" bodystart="67" bodyend="-1"/>
       </memberdef>
       <memberdef kind="variable" id="structfaiss_1_1gpu_1_1IVFPQBuildCagraConfig_1a273fbb45a2836ae66a40ab970d4e1926" prot="public" static="no" mutable="no">
         <type>double</type>
         <definition>double faiss::gpu::IVFPQBuildCagraConfig::kmeans_trainset_fraction</definition>
         <argsstring></argsstring>
         <name>kmeans_trainset_fraction</name>
+        <qualifiedname>faiss::gpu::IVFPQBuildCagraConfig::kmeans_trainset_fraction</qualifiedname>
         <initializer>= 0.5</initializer>
         <briefdescription>
 <para>The fraction of data to use during iterative kmeans building. </para>
@@ -47,13 +50,14 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/gpu/GpuIndexCagra.h" line="62" column="12" bodyfile="faiss/gpu/GpuIndexCagra.h" bodystart="62" bodyend="-1"/>
+        <location file="faiss/gpu/GpuIndexCagra.h" line="69" column="12" bodyfile="faiss/gpu/GpuIndexCagra.h" bodystart="69" bodyend="-1"/>
       </memberdef>
       <memberdef kind="variable" id="structfaiss_1_1gpu_1_1IVFPQBuildCagraConfig_1a355bae5d62b534d15f6ce190621df585" prot="public" static="no" mutable="no">
         <type>uint32_t</type>
         <definition>uint32_t faiss::gpu::IVFPQBuildCagraConfig::pq_bits</definition>
         <argsstring></argsstring>
         <name>pq_bits</name>
+        <qualifiedname>faiss::gpu::IVFPQBuildCagraConfig::pq_bits</qualifiedname>
         <initializer>= 8</initializer>
         <briefdescription>
         </briefdescription>
@@ -64,13 +68,14 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/gpu/GpuIndexCagra.h" line="71" column="14" bodyfile="faiss/gpu/GpuIndexCagra.h" bodystart="71" bodyend="-1"/>
+        <location file="faiss/gpu/GpuIndexCagra.h" line="78" column="14" bodyfile="faiss/gpu/GpuIndexCagra.h" bodystart="78" bodyend="-1"/>
       </memberdef>
       <memberdef kind="variable" id="structfaiss_1_1gpu_1_1IVFPQBuildCagraConfig_1ab15a53159033c52f39f2c3e3e2021309" prot="public" static="no" mutable="no">
         <type>uint32_t</type>
         <definition>uint32_t faiss::gpu::IVFPQBuildCagraConfig::pq_dim</definition>
         <argsstring></argsstring>
         <name>pq_dim</name>
+        <qualifiedname>faiss::gpu::IVFPQBuildCagraConfig::pq_dim</qualifiedname>
         <initializer>= 0</initializer>
         <briefdescription>
         </briefdescription>
@@ -81,13 +86,14 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/gpu/GpuIndexCagra.h" line="85" column="14" bodyfile="faiss/gpu/GpuIndexCagra.h" bodystart="85" bodyend="-1"/>
+        <location file="faiss/gpu/GpuIndexCagra.h" line="92" column="14" bodyfile="faiss/gpu/GpuIndexCagra.h" bodystart="92" bodyend="-1"/>
       </memberdef>
       <memberdef kind="variable" id="structfaiss_1_1gpu_1_1IVFPQBuildCagraConfig_1a0c4f52f09b36894948535a41f2dee860" prot="public" static="no" mutable="no">
-        <type>codebook_gen</type>
+        <type><ref refid="namespacefaiss_1_1gpu_1aa3d8d5d9d02d583d49ccb9d2c70e8a39" kindref="member">codebook_gen</ref></type>
         <definition>codebook_gen faiss::gpu::IVFPQBuildCagraConfig::codebook_kind</definition>
         <argsstring></argsstring>
         <name>codebook_kind</name>
+        <qualifiedname>faiss::gpu::IVFPQBuildCagraConfig::codebook_kind</qualifiedname>
         <initializer>= codebook_gen::PER_SUBSPACE</initializer>
         <briefdescription>
 <para>How PQ codebooks are created. </para>
@@ -96,30 +102,32 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/gpu/GpuIndexCagra.h" line="87" column="18" bodyfile="faiss/gpu/GpuIndexCagra.h" bodystart="87" bodyend="-1"/>
+        <location file="faiss/gpu/GpuIndexCagra.h" line="94" column="18" bodyfile="faiss/gpu/GpuIndexCagra.h" bodystart="94" bodyend="-1"/>
       </memberdef>
       <memberdef kind="variable" id="structfaiss_1_1gpu_1_1IVFPQBuildCagraConfig_1a3e37fd29e824d40d97bd34a59d26e862" prot="public" static="no" mutable="no">
         <type>bool</type>
         <definition>bool faiss::gpu::IVFPQBuildCagraConfig::force_random_rotation</definition>
         <argsstring></argsstring>
         <name>force_random_rotation</name>
+        <qualifiedname>faiss::gpu::IVFPQBuildCagraConfig::force_random_rotation</qualifiedname>
         <initializer>= false</initializer>
         <briefdescription>
         </briefdescription>
         <detaileddescription>
 <para>Apply a random rotation matrix on the input data and queries even if <computeroutput>dim % pq_dim == 0</computeroutput>.</para>
-<para>Note: if <computeroutput>dim</computeroutput> is not multiple of <computeroutput>pq_dim</computeroutput>, a random rotation is always applied to the input data and queries to transform the working space from <computeroutput>dim</computeroutput> to <computeroutput>rot_dim</computeroutput>, which may be slightly larger than the original space and and is a multiple of <computeroutput>pq_dim</computeroutput> (<computeroutput>rot_dim % pq_dim == 0</computeroutput>). However, this transform is not necessary when <computeroutput>dim</computeroutput> is multiple of <computeroutput>pq_dim</computeroutput> (<computeroutput>dim == rot_dim</computeroutput>, hence no need in adding &quot;extra&quot; data columns / features).</para>
+<para>Note: if <computeroutput>dim</computeroutput> is not multiple of <computeroutput>pq_dim</computeroutput>, a random rotation is always applied to the input data and queries to transform the working space from <computeroutput>dim</computeroutput> to <computeroutput>rot_dim</computeroutput>, which may be slightly larger than the original space and is a multiple of <computeroutput>pq_dim</computeroutput> (<computeroutput>rot_dim % pq_dim == 0</computeroutput>). However, this transform is not necessary when <computeroutput>dim</computeroutput> is multiple of <computeroutput>pq_dim</computeroutput> (<computeroutput>dim == rot_dim</computeroutput>, hence no need in adding &quot;extra&quot; data columns / features).</para>
 <para>By default, if <computeroutput>dim == rot_dim</computeroutput>, the rotation transform is initialized with the identity matrix. When <computeroutput>force_random_rotation == true</computeroutput>, a random orthogonal transform matrix is generated regardless of the values of <computeroutput>dim</computeroutput> and <computeroutput>pq_dim</computeroutput>. </para>
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/gpu/GpuIndexCagra.h" line="106" column="10" bodyfile="faiss/gpu/GpuIndexCagra.h" bodystart="106" bodyend="-1"/>
+        <location file="faiss/gpu/GpuIndexCagra.h" line="113" column="10" bodyfile="faiss/gpu/GpuIndexCagra.h" bodystart="113" bodyend="-1"/>
       </memberdef>
       <memberdef kind="variable" id="structfaiss_1_1gpu_1_1IVFPQBuildCagraConfig_1afa6d4e798be91d7037d80bdad690236a" prot="public" static="no" mutable="no">
         <type>bool</type>
         <definition>bool faiss::gpu::IVFPQBuildCagraConfig::conservative_memory_allocation</definition>
         <argsstring></argsstring>
         <name>conservative_memory_allocation</name>
+        <qualifiedname>faiss::gpu::IVFPQBuildCagraConfig::conservative_memory_allocation</qualifiedname>
         <initializer>= false</initializer>
         <briefdescription>
         </briefdescription>
@@ -129,14 +137,14 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/gpu/GpuIndexCagra.h" line="119" column="10" bodyfile="faiss/gpu/GpuIndexCagra.h" bodystart="119" bodyend="-1"/>
+        <location file="faiss/gpu/GpuIndexCagra.h" line="125" column="10" bodyfile="faiss/gpu/GpuIndexCagra.h" bodystart="125" bodyend="-1"/>
       </memberdef>
-      </sectiondef>
+    </sectiondef>
     <briefdescription>
     </briefdescription>
     <detaileddescription>
     </detaileddescription>
-    <location file="faiss/gpu/GpuIndexCagra.h" line="51" column="1" bodyfile="faiss/gpu/GpuIndexCagra.h" bodystart="51" bodyend="120"/>
+    <location file="faiss/gpu/GpuIndexCagra.h" line="58" column="1" bodyfile="faiss/gpu/GpuIndexCagra.h" bodystart="58" bodyend="126"/>
     <listofallmembers>
       <member refid="structfaiss_1_1gpu_1_1IVFPQBuildCagraConfig_1a0c4f52f09b36894948535a41f2dee860" prot="public" virt="non-virtual"><scope>faiss::gpu::IVFPQBuildCagraConfig</scope><name>codebook_kind</name></member>
       <member refid="structfaiss_1_1gpu_1_1IVFPQBuildCagraConfig_1afa6d4e798be91d7037d80bdad690236a" prot="public" virt="non-virtual"><scope>faiss::gpu::IVFPQBuildCagraConfig</scope><name>conservative_memory_allocation</name></member>

@@ -1,14 +1,17 @@
 <?xml version='1.0' encoding='UTF-8' standalone='no'?>
-<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.1" xml:lang="en-US">
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.8" xml:lang="en-US">
   <compounddef id="structfaiss_1_1InvertedListScanner" kind="struct" language="C++" prot="public" abstract="yes">
     <compoundname>faiss::InvertedListScanner</compoundname>
+    <derivedcompoundref refid="structfaiss_1_1scalar__quantizer_1_1IVFSQScannerIP" prot="public" virt="non-virtual">faiss::scalar_quantizer::IVFSQScannerIP&lt; DCClass &gt;</derivedcompoundref>
+    <derivedcompoundref refid="structfaiss_1_1scalar__quantizer_1_1IVFSQScannerL2" prot="public" virt="non-virtual">faiss::scalar_quantizer::IVFSQScannerL2&lt; DCClass &gt;</derivedcompoundref>
     <includes refid="IndexIVF_8h" local="no">IndexIVF.h</includes>
-      <sectiondef kind="public-attrib">
+    <sectiondef kind="public-attrib">
       <memberdef kind="variable" id="structfaiss_1_1InvertedListScanner_1a843a53d7df43c6dd9f6c550708e3a7fc" prot="public" static="no" mutable="no">
         <type><ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref></type>
         <definition>idx_t faiss::InvertedListScanner::list_no</definition>
         <argsstring></argsstring>
         <name>list_no</name>
+        <qualifiedname>faiss::InvertedListScanner::list_no</qualifiedname>
         <initializer>= -1</initializer>
         <briefdescription>
 <para>remember current list </para>
@@ -17,13 +20,14 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/IndexIVF.h" line="456" column="11" bodyfile="faiss/IndexIVF.h" bodystart="456" bodyend="-1"/>
+        <location file="faiss/IndexIVF.h" line="478" column="11" bodyfile="faiss/IndexIVF.h" bodystart="478" bodyend="-1"/>
       </memberdef>
       <memberdef kind="variable" id="structfaiss_1_1InvertedListScanner_1a00cb1d807f47fe2a21077919e3458db7" prot="public" static="no" mutable="no">
         <type>bool</type>
         <definition>bool faiss::InvertedListScanner::keep_max</definition>
         <argsstring></argsstring>
         <name>keep_max</name>
+        <qualifiedname>faiss::InvertedListScanner::keep_max</qualifiedname>
         <initializer>= false</initializer>
         <briefdescription>
         </briefdescription>
@@ -32,13 +36,14 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/IndexIVF.h" line="457" column="10" bodyfile="faiss/IndexIVF.h" bodystart="457" bodyend="-1"/>
+        <location file="faiss/IndexIVF.h" line="479" column="10" bodyfile="faiss/IndexIVF.h" bodystart="479" bodyend="-1"/>
       </memberdef>
       <memberdef kind="variable" id="structfaiss_1_1InvertedListScanner_1a005618e4c8d1198d8cd55a520778344e" prot="public" static="no" mutable="no">
         <type>bool</type>
         <definition>bool faiss::InvertedListScanner::store_pairs</definition>
         <argsstring></argsstring>
         <name>store_pairs</name>
+        <qualifiedname>faiss::InvertedListScanner::store_pairs</qualifiedname>
         <briefdescription>
 <para>store positions in invlists rather than labels </para>
         </briefdescription>
@@ -46,13 +51,14 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/IndexIVF.h" line="459" column="10" bodyfile="faiss/IndexIVF.h" bodystart="459" bodyend="-1"/>
+        <location file="faiss/IndexIVF.h" line="481" column="10" bodyfile="faiss/IndexIVF.h" bodystart="481" bodyend="-1"/>
       </memberdef>
       <memberdef kind="variable" id="structfaiss_1_1InvertedListScanner_1a5599f24188e06b9c4d3db82a401e6ac2" prot="public" static="no" mutable="no">
         <type>const <ref refid="structfaiss_1_1IDSelector" kindref="compound">IDSelector</ref> *</type>
         <definition>const IDSelector* faiss::InvertedListScanner::sel</definition>
         <argsstring></argsstring>
         <name>sel</name>
+        <qualifiedname>faiss::InvertedListScanner::sel</qualifiedname>
         <briefdescription>
 <para>search in this subset of ids </para>
         </briefdescription>
@@ -60,13 +66,14 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/IndexIVF.h" line="462" column="22" bodyfile="faiss/IndexIVF.h" bodystart="462" bodyend="-1"/>
+        <location file="faiss/IndexIVF.h" line="484" column="22" bodyfile="faiss/IndexIVF.h" bodystart="484" bodyend="-1"/>
       </memberdef>
       <memberdef kind="variable" id="structfaiss_1_1InvertedListScanner_1a5f1aeb6b7f06f79c3a2b2fc9e1404b3c" prot="public" static="no" mutable="no">
         <type>size_t</type>
         <definition>size_t faiss::InvertedListScanner::code_size</definition>
         <argsstring></argsstring>
         <name>code_size</name>
+        <qualifiedname>faiss::InvertedListScanner::code_size</qualifiedname>
         <initializer>= 0</initializer>
         <briefdescription>
 <para>used in default implementation of scan_codes </para>
@@ -75,15 +82,16 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/IndexIVF.h" line="470" column="12" bodyfile="faiss/IndexIVF.h" bodystart="470" bodyend="-1"/>
+        <location file="faiss/IndexIVF.h" line="492" column="12" bodyfile="faiss/IndexIVF.h" bodystart="492" bodyend="-1"/>
       </memberdef>
-      </sectiondef>
-      <sectiondef kind="public-func">
+    </sectiondef>
+    <sectiondef kind="public-func">
       <memberdef kind="function" id="structfaiss_1_1InvertedListScanner_1a7a351436a857000778aeabc81f554daf" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
         <type></type>
         <definition>faiss::InvertedListScanner::InvertedListScanner</definition>
         <argsstring>(bool store_pairs=false, const IDSelector *sel=nullptr)</argsstring>
         <name>InvertedListScanner</name>
+        <qualifiedname>faiss::InvertedListScanner::InvertedListScanner</qualifiedname>
         <param>
           <type>bool</type>
           <declname>store_pairs</declname>
@@ -100,13 +108,16 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/IndexIVF.h" line="464" column="5" bodyfile="faiss/IndexIVF.h" bodystart="464" bodyend="467"/>
+        <location file="faiss/IndexIVF.h" line="486" column="5" bodyfile="faiss/IndexIVF.h" bodystart="486" bodyend="489"/>
       </memberdef>
       <memberdef kind="function" id="structfaiss_1_1InvertedListScanner_1a97cab8fbf8203bdda6c42fc4b8f92319" prot="public" static="no" const="no" explicit="no" inline="no" virt="pure-virtual">
         <type>void</type>
         <definition>virtual void faiss::InvertedListScanner::set_query</definition>
         <argsstring>(const float *query_vector)=0</argsstring>
         <name>set_query</name>
+        <qualifiedname>faiss::InvertedListScanner::set_query</qualifiedname>
+        <reimplementedby refid="structfaiss_1_1scalar__quantizer_1_1IVFSQScannerIP_1a35e0e0dd17881bf2350ef7aff22ac628">set_query</reimplementedby>
+        <reimplementedby refid="structfaiss_1_1scalar__quantizer_1_1IVFSQScannerL2_1a255923afc0c80b1041e51d2c37047031">set_query</reimplementedby>
         <param>
           <type>const float *</type>
           <declname>query_vector</declname>
@@ -118,13 +129,16 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/IndexIVF.h" line="473" column="18"/>
+        <location file="faiss/IndexIVF.h" line="495" column="18"/>
       </memberdef>
-      <memberdef kind="function" id="structfaiss_1_1InvertedListScanner_1ae801ea7ba0086a05ace3b779c3acf305" prot="public" static="no" const="no" explicit="no" inline="no" virt="pure-virtual">
+      <memberdef kind="function" id="structfaiss_1_1InvertedListScanner_1a19e1c4d0e237eae9e24cad0a7b34e4b0" prot="public" static="no" const="no" explicit="no" inline="no" virt="virtual">
         <type>void</type>
         <definition>virtual void faiss::InvertedListScanner::set_list</definition>
-        <argsstring>(idx_t list_no, float coarse_dis)=0</argsstring>
+        <argsstring>(idx_t list_no, float coarse_dis)</argsstring>
         <name>set_list</name>
+        <qualifiedname>faiss::InvertedListScanner::set_list</qualifiedname>
+        <reimplementedby refid="structfaiss_1_1scalar__quantizer_1_1IVFSQScannerIP_1ad0e44119153ba72e078d01b1d64232be">set_list</reimplementedby>
+        <reimplementedby refid="structfaiss_1_1scalar__quantizer_1_1IVFSQScannerL2_1a15a9254cb50839bbae6ef8e70091f82e">set_list</reimplementedby>
         <param>
           <type><ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref></type>
           <declname>list_no</declname>
@@ -140,13 +154,16 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/IndexIVF.h" line="476" column="18"/>
+        <location file="faiss/IndexIVF.h" line="498" column="18"/>
       </memberdef>
       <memberdef kind="function" id="structfaiss_1_1InvertedListScanner_1ade9518f1b0ee00c2a43a2eb2ae350ae1" prot="public" static="no" const="yes" explicit="no" inline="no" virt="pure-virtual">
         <type>float</type>
         <definition>virtual float faiss::InvertedListScanner::distance_to_code</definition>
         <argsstring>(const uint8_t *code) const =0</argsstring>
         <name>distance_to_code</name>
+        <qualifiedname>faiss::InvertedListScanner::distance_to_code</qualifiedname>
+        <reimplementedby refid="structfaiss_1_1scalar__quantizer_1_1IVFSQScannerIP_1a799c381d6dc4c1ce219ce21b9706415e">distance_to_code</reimplementedby>
+        <reimplementedby refid="structfaiss_1_1scalar__quantizer_1_1IVFSQScannerL2_1a92a120a2b6f83a9a1037771e134e15f5">distance_to_code</reimplementedby>
         <param>
           <type>const uint8_t *</type>
           <declname>code</declname>
@@ -158,13 +175,14 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/IndexIVF.h" line="479" column="19"/>
+        <location file="faiss/IndexIVF.h" line="501" column="19"/>
       </memberdef>
       <memberdef kind="function" id="structfaiss_1_1InvertedListScanner_1ab50ad33ecf0080ca218b27aa2698329e" prot="public" static="no" const="yes" explicit="no" inline="no" virt="virtual">
         <type>size_t</type>
         <definition>virtual size_t faiss::InvertedListScanner::scan_codes</definition>
         <argsstring>(size_t n, const uint8_t *codes, const idx_t *ids, float *distances, idx_t *labels, size_t k) const</argsstring>
         <name>scan_codes</name>
+        <qualifiedname>faiss::InvertedListScanner::scan_codes</qualifiedname>
         <param>
           <type>size_t</type>
           <declname>n</declname>
@@ -192,7 +210,7 @@
         <briefdescription>
         </briefdescription>
         <detaileddescription>
-<para>scan a set of codes, compute distances to current query and update heap of results if necessary. Default implemetation calls distance_to_code.</para>
+<para>scan a set of codes, compute distances to current query, and update heap of results if necessary. Default implementation calls distance_to_code.</para>
 <para><parameterlist kind="param"><parameteritem>
 <parameternamelist>
 <parametername>n</parametername>
@@ -248,13 +266,14 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/IndexIVF.h" line="493" column="20"/>
+        <location file="faiss/IndexIVF.h" line="515" column="20"/>
       </memberdef>
       <memberdef kind="function" id="structfaiss_1_1InvertedListScanner_1a19253dd282bf8f07d35ca953d2c33b2c" prot="public" static="no" const="yes" explicit="no" inline="no" virt="virtual">
         <type>size_t</type>
         <definition>virtual size_t faiss::InvertedListScanner::iterate_codes</definition>
         <argsstring>(InvertedListsIterator *iterator, float *distances, idx_t *labels, size_t k, size_t &amp;list_size) const</argsstring>
         <name>iterate_codes</name>
+        <qualifiedname>faiss::InvertedListScanner::iterate_codes</qualifiedname>
         <param>
           <type><ref refid="structfaiss_1_1InvertedListsIterator" kindref="compound">InvertedListsIterator</ref> *</type>
           <declname>iterator</declname>
@@ -281,13 +300,14 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/IndexIVF.h" line="502" column="20"/>
+        <location file="faiss/IndexIVF.h" line="524" column="20"/>
       </memberdef>
       <memberdef kind="function" id="structfaiss_1_1InvertedListScanner_1a7c9489c951e682c72930b7a26b5418b2" prot="public" static="no" const="yes" explicit="no" inline="no" virt="virtual">
         <type>void</type>
         <definition>virtual void faiss::InvertedListScanner::scan_codes_range</definition>
         <argsstring>(size_t n, const uint8_t *codes, const idx_t *ids, float radius, RangeQueryResult &amp;result) const</argsstring>
         <name>scan_codes_range</name>
+        <qualifiedname>faiss::InvertedListScanner::scan_codes_range</qualifiedname>
         <param>
           <type>size_t</type>
           <declname>n</declname>
@@ -316,13 +336,14 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/IndexIVF.h" line="513" column="18"/>
+        <location file="faiss/IndexIVF.h" line="535" column="18"/>
       </memberdef>
       <memberdef kind="function" id="structfaiss_1_1InvertedListScanner_1a173186ff4f20b144f0066571fa2a50e4" prot="public" static="no" const="yes" explicit="no" inline="no" virt="virtual">
         <type>void</type>
         <definition>virtual void faiss::InvertedListScanner::iterate_codes_range</definition>
         <argsstring>(InvertedListsIterator *iterator, float radius, RangeQueryResult &amp;result, size_t &amp;list_size) const</argsstring>
         <name>iterate_codes_range</name>
+        <qualifiedname>faiss::InvertedListScanner::iterate_codes_range</qualifiedname>
         <param>
           <type><ref refid="structfaiss_1_1InvertedListsIterator" kindref="compound">InvertedListsIterator</ref> *</type>
           <declname>iterator</declname>
@@ -345,28 +366,83 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/IndexIVF.h" line="521" column="18"/>
+        <location file="faiss/IndexIVF.h" line="543" column="18"/>
       </memberdef>
-      <memberdef kind="function" id="structfaiss_1_1InvertedListScanner_1aa660ce2637299466c486080f44fd9820" prot="public" static="no" const="no" explicit="no" inline="yes" virt="virtual">
-        <type></type>
-        <definition>virtual faiss::InvertedListScanner::~InvertedListScanner</definition>
-        <argsstring>()</argsstring>
-        <name>~InvertedListScanner</name>
+      <memberdef kind="function" id="structfaiss_1_1InvertedListScanner_1a9f01f56555294a395bd527f761f32ab0" prot="public" static="no" const="yes" explicit="no" inline="no" virt="virtual">
+        <type>size_t</type>
+        <definition>virtual size_t faiss::InvertedListScanner::scan_codes</definition>
+        <argsstring>(size_t n, const uint8_t *codes, const idx_t *ids, ResultHandler &amp;handler) const</argsstring>
+        <name>scan_codes</name>
+        <qualifiedname>faiss::InvertedListScanner::scan_codes</qualifiedname>
+        <reimplementedby refid="structfaiss_1_1scalar__quantizer_1_1IVFSQScannerIP_1af4602275509ac492f5e37de3ede50b2a">scan_codes</reimplementedby>
+        <reimplementedby refid="structfaiss_1_1scalar__quantizer_1_1IVFSQScannerL2_1aa0a064413a7205841ad31070dc839901">scan_codes</reimplementedby>
+        <param>
+          <type>size_t</type>
+          <declname>n</declname>
+        </param>
+        <param>
+          <type>const uint8_t *</type>
+          <declname>codes</declname>
+        </param>
+        <param>
+          <type>const <ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref> *</type>
+          <declname>ids</declname>
+        </param>
+        <param>
+          <type><ref refid="structfaiss_1_1ResultHandlerUnordered" kindref="compound">ResultHandler</ref> &amp;</type>
+          <declname>handler</declname>
+        </param>
         <briefdescription>
         </briefdescription>
         <detaileddescription>
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/IndexIVF.h" line="527" column="13" bodyfile="faiss/IndexIVF.h" bodystart="527" bodyend="527"/>
+        <location file="faiss/IndexIVF.h" line="550" column="20"/>
       </memberdef>
-      </sectiondef>
+      <memberdef kind="function" id="structfaiss_1_1InvertedListScanner_1aa660ce2637299466c486080f44fd9820" prot="public" static="no" const="no" explicit="no" inline="yes" virt="virtual">
+        <type></type>
+        <definition>virtual faiss::InvertedListScanner::~InvertedListScanner</definition>
+        <argsstring>()</argsstring>
+        <name>~InvertedListScanner</name>
+        <qualifiedname>faiss::InvertedListScanner::~InvertedListScanner</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="faiss/IndexIVF.h" line="556" column="13" bodyfile="faiss/IndexIVF.h" bodystart="556" bodyend="556"/>
+      </memberdef>
+    </sectiondef>
     <briefdescription>
     </briefdescription>
     <detaileddescription>
 <para>Object that handles a query. The inverted lists to scan are provided externally. The object has a lot of state, but distance_to_code and scan_codes can be called in multiple threads </para>
     </detaileddescription>
+    <inheritancegraph>
+      <node id="1">
+        <label>faiss::InvertedListScanner</label>
+        <link refid="structfaiss_1_1InvertedListScanner"/>
+      </node>
+      <node id="2">
+        <label>faiss::scalar_quantizer::IVFSQScannerIP&lt; DCClass &gt;</label>
+        <link refid="structfaiss_1_1scalar__quantizer_1_1IVFSQScannerIP"/>
+        <childnode refid="1" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="3">
+        <label>faiss::scalar_quantizer::IVFSQScannerL2&lt; DCClass &gt;</label>
+        <link refid="structfaiss_1_1scalar__quantizer_1_1IVFSQScannerL2"/>
+        <childnode refid="1" relation="public-inheritance">
+        </childnode>
+      </node>
+    </inheritancegraph>
     <collaborationgraph>
+      <node id="2">
+        <label>faiss::IDSelector</label>
+        <link refid="structfaiss_1_1IDSelector"/>
+      </node>
       <node id="1">
         <label>faiss::InvertedListScanner</label>
         <link refid="structfaiss_1_1InvertedListScanner"/>
@@ -374,12 +450,8 @@
           <edgelabel>sel</edgelabel>
         </childnode>
       </node>
-      <node id="2">
-        <label>faiss::IDSelector</label>
-        <link refid="structfaiss_1_1IDSelector"/>
-      </node>
     </collaborationgraph>
-    <location file="faiss/IndexIVF.h" line="455" column="1" bodyfile="faiss/IndexIVF.h" bodystart="455" bodyend="528"/>
+    <location file="faiss/IndexIVF.h" line="477" column="1" bodyfile="faiss/IndexIVF.h" bodystart="477" bodyend="557"/>
     <listofallmembers>
       <member refid="structfaiss_1_1InvertedListScanner_1a5f1aeb6b7f06f79c3a2b2fc9e1404b3c" prot="public" virt="non-virtual"><scope>faiss::InvertedListScanner</scope><name>code_size</name></member>
       <member refid="structfaiss_1_1InvertedListScanner_1ade9518f1b0ee00c2a43a2eb2ae350ae1" prot="public" virt="pure-virtual"><scope>faiss::InvertedListScanner</scope><name>distance_to_code</name></member>
@@ -389,9 +461,10 @@
       <member refid="structfaiss_1_1InvertedListScanner_1a00cb1d807f47fe2a21077919e3458db7" prot="public" virt="non-virtual"><scope>faiss::InvertedListScanner</scope><name>keep_max</name></member>
       <member refid="structfaiss_1_1InvertedListScanner_1a843a53d7df43c6dd9f6c550708e3a7fc" prot="public" virt="non-virtual"><scope>faiss::InvertedListScanner</scope><name>list_no</name></member>
       <member refid="structfaiss_1_1InvertedListScanner_1ab50ad33ecf0080ca218b27aa2698329e" prot="public" virt="virtual"><scope>faiss::InvertedListScanner</scope><name>scan_codes</name></member>
+      <member refid="structfaiss_1_1InvertedListScanner_1a9f01f56555294a395bd527f761f32ab0" prot="public" virt="virtual"><scope>faiss::InvertedListScanner</scope><name>scan_codes</name></member>
       <member refid="structfaiss_1_1InvertedListScanner_1a7c9489c951e682c72930b7a26b5418b2" prot="public" virt="virtual"><scope>faiss::InvertedListScanner</scope><name>scan_codes_range</name></member>
       <member refid="structfaiss_1_1InvertedListScanner_1a5599f24188e06b9c4d3db82a401e6ac2" prot="public" virt="non-virtual"><scope>faiss::InvertedListScanner</scope><name>sel</name></member>
-      <member refid="structfaiss_1_1InvertedListScanner_1ae801ea7ba0086a05ace3b779c3acf305" prot="public" virt="pure-virtual"><scope>faiss::InvertedListScanner</scope><name>set_list</name></member>
+      <member refid="structfaiss_1_1InvertedListScanner_1a19e1c4d0e237eae9e24cad0a7b34e4b0" prot="public" virt="virtual"><scope>faiss::InvertedListScanner</scope><name>set_list</name></member>
       <member refid="structfaiss_1_1InvertedListScanner_1a97cab8fbf8203bdda6c42fc4b8f92319" prot="public" virt="pure-virtual"><scope>faiss::InvertedListScanner</scope><name>set_query</name></member>
       <member refid="structfaiss_1_1InvertedListScanner_1a005618e4c8d1198d8cd55a520778344e" prot="public" virt="non-virtual"><scope>faiss::InvertedListScanner</scope><name>store_pairs</name></member>
       <member refid="structfaiss_1_1InvertedListScanner_1aa660ce2637299466c486080f44fd9820" prot="public" virt="virtual"><scope>faiss::InvertedListScanner</scope><name>~InvertedListScanner</name></member>

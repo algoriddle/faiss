@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='UTF-8' standalone='no'?>
-<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.1" xml:lang="en-US">
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.8" xml:lang="en-US">
   <compounddef id="residual__quantizer__encode__steps_8h" kind="file" language="C++">
     <compoundname>residual_quantizer_encode_steps.h</compoundname>
     <includes local="no">cstdint</includes>
@@ -7,16 +7,65 @@
     <includes refid="Index_8h" local="no">faiss/Index.h</includes>
     <includes refid="mode_8h" local="no">faiss/utils/approx_topk/mode.h</includes>
     <incdepgraph>
-      <node id="6">
+      <node id="4">
+        <label>faiss/Index.h</label>
+        <link refid="Index_8h_source"/>
+        <childnode refid="5" relation="include">
+        </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+        <childnode refid="6" relation="include">
+        </childnode>
+      </node>
+      <node id="5">
+        <label>faiss/MetricType.h</label>
+        <link refid="MetricType_8h_source"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+        <childnode refid="6" relation="include">
+        </childnode>
+        <childnode refid="7" relation="include">
+        </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+      </node>
+      <node id="8">
+        <label>faiss/impl/FaissAssert.h</label>
+        <link refid="FaissAssert_8h_source"/>
+        <childnode refid="9" relation="include">
+        </childnode>
+        <childnode refid="13" relation="include">
+        </childnode>
+        <childnode refid="14" relation="include">
+        </childnode>
+        <childnode refid="6" relation="include">
+        </childnode>
+        <childnode refid="7" relation="include">
+        </childnode>
+        <childnode refid="11" relation="include">
+        </childnode>
+        <childnode refid="15" relation="include">
+        </childnode>
+      </node>
+      <node id="9">
+        <label>faiss/impl/FaissException.h</label>
+        <link refid="FaissException_8h_source"/>
+        <childnode refid="10" relation="include">
+        </childnode>
+        <childnode refid="11" relation="include">
+        </childnode>
+        <childnode refid="12" relation="include">
+        </childnode>
+        <childnode refid="3" relation="include">
+        </childnode>
+      </node>
+      <node id="13">
         <label>faiss/impl/platform_macros.h</label>
         <link refid="platform__macros_8h_source"/>
         <childnode refid="2" relation="include">
         </childnode>
-        <childnode refid="7" relation="include">
+        <childnode refid="6" relation="include">
         </childnode>
-      </node>
-      <node id="2">
-        <label>cstdint</label>
       </node>
       <node id="1">
         <label>faiss/impl/residual_quantizer_encode_steps.h</label>
@@ -27,47 +76,39 @@
         </childnode>
         <childnode refid="4" relation="include">
         </childnode>
-        <childnode refid="11" relation="include">
+        <childnode refid="16" relation="include">
         </childnode>
       </node>
-      <node id="9">
-        <label>string</label>
-      </node>
-      <node id="11">
+      <node id="16">
         <label>faiss/utils/approx_topk/mode.h</label>
         <link refid="mode_8h_source"/>
       </node>
-      <node id="10">
-        <label>typeinfo</label>
+      <node id="14">
+        <label>cinttypes</label>
+      </node>
+      <node id="2">
+        <label>cstdint</label>
+      </node>
+      <node id="6">
+        <label>cstdio</label>
       </node>
       <node id="7">
-        <label>cstdio</label>
+        <label>cstdlib</label>
+      </node>
+      <node id="10">
+        <label>exception</label>
+      </node>
+      <node id="15">
+        <label>limits</label>
+      </node>
+      <node id="11">
+        <label>string</label>
+      </node>
+      <node id="12">
+        <label>utility</label>
       </node>
       <node id="3">
         <label>vector</label>
-      </node>
-      <node id="8">
-        <label>sstream</label>
-      </node>
-      <node id="4">
-        <label>faiss/Index.h</label>
-        <link refid="Index_8h_source"/>
-        <childnode refid="5" relation="include">
-        </childnode>
-        <childnode refid="7" relation="include">
-        </childnode>
-        <childnode refid="8" relation="include">
-        </childnode>
-        <childnode refid="9" relation="include">
-        </childnode>
-        <childnode refid="10" relation="include">
-        </childnode>
-      </node>
-      <node id="5">
-        <label>faiss/MetricType.h</label>
-        <link refid="MetricType_8h_source"/>
-        <childnode refid="6" relation="include">
-        </childnode>
       </node>
     </incdepgraph>
     <innerclass refid="structfaiss_1_1rq__encode__steps_1_1RefineBeamMemoryPool" prot="public">faiss::rq_encode_steps::RefineBeamMemoryPool</innerclass>
@@ -81,8 +122,8 @@
     <detaileddescription>
     </detaileddescription>
     <programlisting>
-<codeline lineno="1"><highlight class="comment">/**</highlight></codeline>
-<codeline lineno="2"><highlight class="comment"><sp/>*<sp/>Copyright<sp/>(c)<sp/>Facebook,<sp/>Inc.<sp/>and<sp/>its<sp/>affiliates.</highlight></codeline>
+<codeline lineno="1"><highlight class="comment">/*</highlight></codeline>
+<codeline lineno="2"><highlight class="comment"><sp/>*<sp/>Copyright<sp/>(c)<sp/>Meta<sp/>Platforms,<sp/>Inc.<sp/>and<sp/>affiliates.</highlight></codeline>
 <codeline lineno="3"><highlight class="comment"><sp/>*</highlight></codeline>
 <codeline lineno="4"><highlight class="comment"><sp/>*<sp/>This<sp/>source<sp/>code<sp/>is<sp/>licensed<sp/>under<sp/>the<sp/>MIT<sp/>license<sp/>found<sp/>in<sp/>the</highlight></codeline>
 <codeline lineno="5"><highlight class="comment"><sp/>*<sp/>LICENSE<sp/>file<sp/>in<sp/>the<sp/>root<sp/>directory<sp/>of<sp/>this<sp/>source<sp/>tree.</highlight></codeline>
@@ -108,7 +149,7 @@
 <codeline lineno="25"><highlight class="comment"><sp/>*<sp/>It<sp/>allows<sp/>low-level<sp/>access<sp/>to<sp/>the<sp/>encoding<sp/>function,<sp/>exposed<sp/>mainly<sp/>for<sp/>unit</highlight></codeline>
 <codeline lineno="26"><highlight class="comment"><sp/>*<sp/>tests.</highlight></codeline>
 <codeline lineno="27"><highlight class="comment"><sp/>*</highlight></codeline>
-<codeline lineno="28"><highlight class="comment"><sp/>*<sp/>@param<sp/>n<sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>number<sp/>of<sp/>vectors<sp/>to<sp/>hanlde</highlight></codeline>
+<codeline lineno="28"><highlight class="comment"><sp/>*<sp/>@param<sp/>n<sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>number<sp/>of<sp/>vectors<sp/>to<sp/>handle</highlight></codeline>
 <codeline lineno="29"><highlight class="comment"><sp/>*<sp/>@param<sp/>residuals<sp/><sp/><sp/><sp/><sp/><sp/>vectors<sp/>to<sp/>encode,<sp/>size<sp/>(n,<sp/>beam_size,<sp/>d)</highlight></codeline>
 <codeline lineno="30"><highlight class="comment"><sp/>*<sp/>@param<sp/>cent<sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>centroids,<sp/>size<sp/>(K,<sp/>d)</highlight></codeline>
 <codeline lineno="31"><highlight class="comment"><sp/>*<sp/>@param<sp/>beam_size<sp/><sp/><sp/><sp/><sp/><sp/>input<sp/>beam<sp/>size</highlight></codeline>

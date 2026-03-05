@@ -1,12 +1,12 @@
 <?xml version='1.0' encoding='UTF-8' standalone='no'?>
-<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.1" xml:lang="en-US">
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.8" xml:lang="en-US">
   <compounddef id="Tensor_8cuh" kind="file" language="C++">
     <compoundname>Tensor.cuh</compoundname>
-    <includedby refid="RaftUtils_8h" local="no">faiss/gpu/utils/RaftUtils.h</includedby>
+    <includedby refid="CuvsUtils_8h" local="no">faiss/gpu/utils/CuvsUtils.h</includedby>
     <invincdepgraph>
       <node id="2">
-        <label>faiss/gpu/utils/RaftUtils.h</label>
-        <link refid="RaftUtils_8h_source"/>
+        <label>faiss/gpu/utils/CuvsUtils.h</label>
+        <link refid="CuvsUtils_8h_source"/>
       </node>
       <node id="1">
         <label>faiss/gpu/utils/Tensor.cuh</label>
@@ -20,8 +20,8 @@
     <detaileddescription>
     </detaileddescription>
     <programlisting>
-<codeline><highlight class="normal">/**</highlight></codeline>
-<codeline><highlight class="normal"><sp/>*<sp/>Copyright<sp/>(c)<sp/>Facebook,<sp/>Inc.<sp/>and<sp/>its<sp/>affiliates.</highlight></codeline>
+<codeline><highlight class="normal">/*</highlight></codeline>
+<codeline><highlight class="normal"><sp/>*<sp/>Copyright<sp/>(c)<sp/>Meta<sp/>Platforms,<sp/>Inc.<sp/>and<sp/>affiliates.</highlight></codeline>
 <codeline><highlight class="normal"><sp/>*</highlight></codeline>
 <codeline><highlight class="normal"><sp/>*<sp/>This<sp/>source<sp/>code<sp/>is<sp/>licensed<sp/>under<sp/>the<sp/>MIT<sp/>license<sp/>found<sp/>in<sp/>the</highlight></codeline>
 <codeline><highlight class="normal"><sp/>*<sp/>LICENSE<sp/>file<sp/>in<sp/>the<sp/>root<sp/>directory<sp/>of<sp/>this<sp/>source<sp/>tree.</highlight></codeline>
@@ -50,8 +50,7 @@
 <codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>int<sp/>Dim,</highlight></codeline>
 <codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>bool<sp/>InnerContig,</highlight></codeline>
 <codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>typename<sp/>IndexT,</highlight></codeline>
-<codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>template<sp/>&lt;typename<sp/>U&gt;</highlight></codeline>
-<codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>class<sp/>PtrTraits&gt;</highlight></codeline>
+<codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>template<sp/>&lt;typename<sp/>U&gt;<sp/>class<sp/>PtrTraits&gt;</highlight></codeline>
 <codeline><highlight class="normal">class<sp/>Tensor;</highlight></codeline>
 <codeline></codeline>
 <codeline><highlight class="normal">///<sp/>Type<sp/>of<sp/>a<sp/>subspace<sp/>of<sp/>a<sp/>tensor</highlight></codeline>
@@ -59,8 +58,7 @@
 <codeline><highlight class="normal">template<sp/>&lt;</highlight></codeline>
 <codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>typename<sp/>TensorType,</highlight></codeline>
 <codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>int<sp/>SubDim,</highlight></codeline>
-<codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>template<sp/>&lt;typename<sp/>U&gt;</highlight></codeline>
-<codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>class<sp/>PtrTraits&gt;</highlight></codeline>
+<codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>template<sp/>&lt;typename<sp/>U&gt;<sp/>class<sp/>PtrTraits&gt;</highlight></codeline>
 <codeline><highlight class="normal">class<sp/>SubTensor;</highlight></codeline>
 <codeline><highlight class="normal">}</highlight></codeline>
 <codeline></codeline>
@@ -434,12 +432,12 @@
 <codeline><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
 <codeline></codeline>
 <codeline><highlight class="normal"><sp/><sp/><sp/><sp/>//<sp/>operator<sp/>T&amp;</highlight></codeline>
-<codeline><highlight class="normal"><sp/><sp/><sp/><sp/>__host__<sp/>__device__<sp/>operator<sp/>typename<sp/>TensorType::DataType<sp/>&amp;()<sp/>{</highlight></codeline>
+<codeline><highlight class="normal"><sp/><sp/><sp/><sp/>__host__<sp/>__device__<sp/>operator<sp/>typename<sp/>TensorType::DataType&amp;()<sp/>{</highlight></codeline>
 <codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>return<sp/>*data_;</highlight></codeline>
 <codeline><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
 <codeline></codeline>
 <codeline><highlight class="normal"><sp/><sp/><sp/><sp/>//<sp/>const<sp/>operator<sp/>T&amp;<sp/>returning<sp/>const<sp/>T&amp;</highlight></codeline>
-<codeline><highlight class="normal"><sp/><sp/><sp/><sp/>__host__<sp/>__device__<sp/>operator<sp/>const<sp/>typename<sp/>TensorType::DataType<sp/>&amp;()<sp/>const<sp/>{</highlight></codeline>
+<codeline><highlight class="normal"><sp/><sp/><sp/><sp/>__host__<sp/>__device__<sp/>operator<sp/>const<sp/>typename<sp/>TensorType::DataType&amp;()<sp/>const<sp/>{</highlight></codeline>
 <codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>return<sp/>*data_;</highlight></codeline>
 <codeline><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
 <codeline></codeline>
@@ -491,7 +489,7 @@
 <codeline></codeline>
 <codeline><highlight class="normal"><sp/><sp/><sp/><sp/>///<sp/>Use<sp/>the<sp/>texture<sp/>cache<sp/>for<sp/>reads</highlight></codeline>
 <codeline><highlight class="normal"><sp/><sp/><sp/><sp/>__device__<sp/>inline<sp/>typename<sp/>TensorType::DataType<sp/>ldg()<sp/>const<sp/>{</highlight></codeline>
-<codeline><highlight class="normal">#if<sp/>__CUDA_ARCH__<sp/>&gt;=<sp/>350</highlight></codeline>
+<codeline><highlight class="normal">#if<sp/>__CUDA_ARCH__<sp/>&gt;=<sp/>350<sp/>||<sp/>defined(USE_AMD_ROCM)</highlight></codeline>
 <codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>return<sp/>__ldg(data_);</highlight></codeline>
 <codeline><highlight class="normal">#else</highlight></codeline>
 <codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>return<sp/>*data_;</highlight></codeline>
@@ -501,7 +499,7 @@
 <codeline><highlight class="normal"><sp/><sp/><sp/><sp/>///<sp/>Use<sp/>the<sp/>texture<sp/>cache<sp/>for<sp/>reads;<sp/>cast<sp/>as<sp/>a<sp/>particular<sp/>type</highlight></codeline>
 <codeline><highlight class="normal"><sp/><sp/><sp/><sp/>template<sp/>&lt;typename<sp/>T&gt;</highlight></codeline>
 <codeline><highlight class="normal"><sp/><sp/><sp/><sp/>__device__<sp/>inline<sp/>T<sp/>ldgAs()<sp/>const<sp/>{</highlight></codeline>
-<codeline><highlight class="normal">#if<sp/>__CUDA_ARCH__<sp/>&gt;=<sp/>350</highlight></codeline>
+<codeline><highlight class="normal">#if<sp/>__CUDA_ARCH__<sp/>&gt;=<sp/>350<sp/>||<sp/>defined(USE_AMD_ROCM)</highlight></codeline>
 <codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>return<sp/>__ldg(dataAs&lt;T&gt;());</highlight></codeline>
 <codeline><highlight class="normal">#else</highlight></codeline>
 <codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>return<sp/>as&lt;T&gt;();</highlight></codeline>
@@ -536,8 +534,7 @@
 <codeline><highlight class="normal">template<sp/>&lt;</highlight></codeline>
 <codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>typename<sp/>TensorType,</highlight></codeline>
 <codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>int<sp/>SubDim,</highlight></codeline>
-<codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>template<sp/>&lt;typename<sp/>U&gt;</highlight></codeline>
-<codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>class<sp/>PtrTraits&gt;</highlight></codeline>
+<codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>template<sp/>&lt;typename<sp/>U&gt;<sp/>class<sp/>PtrTraits&gt;</highlight></codeline>
 <codeline><highlight class="normal">class<sp/>SubTensor<sp/>{</highlight></codeline>
 <codeline><highlight class="normal"><sp/><sp/><sp/>public:</highlight></codeline>
 <codeline><highlight class="normal"><sp/><sp/><sp/><sp/>///<sp/>Returns<sp/>a<sp/>view<sp/>of<sp/>the<sp/>data<sp/>located<sp/>at<sp/>our<sp/>offset<sp/>(the<sp/>dimension</highlight></codeline>
@@ -627,7 +624,7 @@
 <codeline></codeline>
 <codeline><highlight class="normal"><sp/><sp/><sp/><sp/>///<sp/>Use<sp/>the<sp/>texture<sp/>cache<sp/>for<sp/>reads</highlight></codeline>
 <codeline><highlight class="normal"><sp/><sp/><sp/><sp/>__device__<sp/>inline<sp/>typename<sp/>TensorType::DataType<sp/>ldg()<sp/>const<sp/>{</highlight></codeline>
-<codeline><highlight class="normal">#if<sp/>__CUDA_ARCH__<sp/>&gt;=<sp/>350</highlight></codeline>
+<codeline><highlight class="normal">#if<sp/>__CUDA_ARCH__<sp/>&gt;=<sp/>350<sp/>||<sp/>defined(USE_AMD_ROCM)</highlight></codeline>
 <codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>return<sp/>__ldg(data_);</highlight></codeline>
 <codeline><highlight class="normal">#else</highlight></codeline>
 <codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>return<sp/>*data_;</highlight></codeline>
@@ -637,7 +634,7 @@
 <codeline><highlight class="normal"><sp/><sp/><sp/><sp/>///<sp/>Use<sp/>the<sp/>texture<sp/>cache<sp/>for<sp/>reads;<sp/>cast<sp/>as<sp/>a<sp/>particular<sp/>type</highlight></codeline>
 <codeline><highlight class="normal"><sp/><sp/><sp/><sp/>template<sp/>&lt;typename<sp/>T&gt;</highlight></codeline>
 <codeline><highlight class="normal"><sp/><sp/><sp/><sp/>__device__<sp/>inline<sp/>T<sp/>ldgAs()<sp/>const<sp/>{</highlight></codeline>
-<codeline><highlight class="normal">#if<sp/>__CUDA_ARCH__<sp/>&gt;=<sp/>350</highlight></codeline>
+<codeline><highlight class="normal">#if<sp/>__CUDA_ARCH__<sp/>&gt;=<sp/>350<sp/>||<sp/>defined(USE_AMD_ROCM)</highlight></codeline>
 <codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>return<sp/>__ldg(dataAs&lt;T&gt;());</highlight></codeline>
 <codeline><highlight class="normal">#else</highlight></codeline>
 <codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>return<sp/>as&lt;T&gt;();</highlight></codeline>
@@ -686,8 +683,7 @@
 <codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>int<sp/>Dim,</highlight></codeline>
 <codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>bool<sp/>InnerContig,</highlight></codeline>
 <codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>typename<sp/>IndexT,</highlight></codeline>
-<codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>template<sp/>&lt;typename<sp/>U&gt;</highlight></codeline>
-<codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>class<sp/>PtrTraits&gt;</highlight></codeline>
+<codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>template<sp/>&lt;typename<sp/>U&gt;<sp/>class<sp/>PtrTraits&gt;</highlight></codeline>
 <codeline><highlight class="normal">__host__<sp/>__device__<sp/>inline<sp/>detail::SubTensor&lt;</highlight></codeline>
 <codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>Tensor&lt;T,<sp/>Dim,<sp/>InnerContig,<sp/>IndexT,<sp/>PtrTraits&gt;,</highlight></codeline>
 <codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>Dim<sp/>-<sp/>1,</highlight></codeline>
@@ -702,8 +698,7 @@
 <codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>int<sp/>Dim,</highlight></codeline>
 <codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>bool<sp/>InnerContig,</highlight></codeline>
 <codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>typename<sp/>IndexT,</highlight></codeline>
-<codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>template<sp/>&lt;typename<sp/>U&gt;</highlight></codeline>
-<codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>class<sp/>PtrTraits&gt;</highlight></codeline>
+<codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>template<sp/>&lt;typename<sp/>U&gt;<sp/>class<sp/>PtrTraits&gt;</highlight></codeline>
 <codeline><highlight class="normal">__host__<sp/>__device__<sp/>inline<sp/>const<sp/>detail::SubTensor&lt;</highlight></codeline>
 <codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>Tensor&lt;T,<sp/>Dim,<sp/>InnerContig,<sp/>IndexT,<sp/>PtrTraits&gt;,</highlight></codeline>
 <codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>Dim<sp/>-<sp/>1,</highlight></codeline>

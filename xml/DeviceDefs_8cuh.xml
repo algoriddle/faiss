@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='UTF-8' standalone='no'?>
-<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.1" xml:lang="en-US">
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.8" xml:lang="en-US">
   <compounddef id="DeviceDefs_8cuh" kind="file" language="C++">
     <compoundname>DeviceDefs.cuh</compoundname>
     <briefdescription>
@@ -7,8 +7,8 @@
     <detaileddescription>
     </detaileddescription>
     <programlisting>
-<codeline><highlight class="normal">/**</highlight></codeline>
-<codeline><highlight class="normal"><sp/>*<sp/>Copyright<sp/>(c)<sp/>Facebook,<sp/>Inc.<sp/>and<sp/>its<sp/>affiliates.</highlight></codeline>
+<codeline><highlight class="normal">/*</highlight></codeline>
+<codeline><highlight class="normal"><sp/>*<sp/>Copyright<sp/>(c)<sp/>Meta<sp/>Platforms,<sp/>Inc.<sp/>and<sp/>affiliates.</highlight></codeline>
 <codeline><highlight class="normal"><sp/>*</highlight></codeline>
 <codeline><highlight class="normal"><sp/>*<sp/>This<sp/>source<sp/>code<sp/>is<sp/>licensed<sp/>under<sp/>the<sp/>MIT<sp/>license<sp/>found<sp/>in<sp/>the</highlight></codeline>
 <codeline><highlight class="normal"><sp/>*<sp/>LICENSE<sp/>file<sp/>in<sp/>the<sp/>root<sp/>directory<sp/>of<sp/>this<sp/>source<sp/>tree.</highlight></codeline>
@@ -20,6 +20,23 @@
 <codeline></codeline>
 <codeline><highlight class="normal">namespace<sp/>faiss<sp/>{</highlight></codeline>
 <codeline><highlight class="normal">namespace<sp/>gpu<sp/>{</highlight></codeline>
+<codeline></codeline>
+<codeline><highlight class="normal">#ifdef<sp/>USE_AMD_ROCM</highlight></codeline>
+<codeline></codeline>
+<codeline><highlight class="normal">#if<sp/>__AMDGCN_WAVEFRONT_SIZE<sp/>==<sp/>32u</highlight></codeline>
+<codeline><highlight class="normal">constexpr<sp/>int<sp/>kWarpSize<sp/>=<sp/>32;</highlight></codeline>
+<codeline><highlight class="normal">#else</highlight></codeline>
+<codeline><highlight class="normal">constexpr<sp/>int<sp/>kWarpSize<sp/>=<sp/>64;</highlight></codeline>
+<codeline><highlight class="normal">#endif</highlight></codeline>
+<codeline></codeline>
+<codeline><highlight class="normal">//<sp/>This<sp/>is<sp/>a<sp/>memory<sp/>barrier<sp/>for<sp/>intra-warp<sp/>writes<sp/>to<sp/>shared<sp/>memory.</highlight></codeline>
+<codeline><highlight class="normal">__forceinline__<sp/>__device__<sp/>void<sp/>warpFence()<sp/>{</highlight></codeline>
+<codeline><highlight class="normal"><sp/><sp/><sp/><sp/>__threadfence_block();</highlight></codeline>
+<codeline><highlight class="normal">}</highlight></codeline>
+<codeline></codeline>
+<codeline><highlight class="normal">#define<sp/>GPU_MAX_SELECTION_K<sp/>2048</highlight></codeline>
+<codeline></codeline>
+<codeline><highlight class="normal">#else<sp/>//<sp/>USE_AMD_ROCM</highlight></codeline>
 <codeline></codeline>
 <codeline><highlight class="normal">//<sp/>We<sp/>require<sp/>at<sp/>least<sp/>CUDA<sp/>8.0<sp/>for<sp/>compilation</highlight></codeline>
 <codeline><highlight class="normal">#if<sp/>CUDA_VERSION<sp/>&lt;<sp/>8000</highlight></codeline>
@@ -47,6 +64,8 @@
 <codeline><highlight class="normal">#else</highlight></codeline>
 <codeline><highlight class="normal">#define<sp/>GPU_MAX_SELECTION_K<sp/>1024</highlight></codeline>
 <codeline><highlight class="normal">#endif</highlight></codeline>
+<codeline></codeline>
+<codeline><highlight class="normal">#endif<sp/>//<sp/>USE_AMD_ROCM</highlight></codeline>
 <codeline></codeline>
 <codeline><highlight class="normal">}<sp/>//<sp/>namespace<sp/>gpu</highlight></codeline>
 <codeline><highlight class="normal">}<sp/>//<sp/>namespace<sp/>faiss</highlight></codeline>

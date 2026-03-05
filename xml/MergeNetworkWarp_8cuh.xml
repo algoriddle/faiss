@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='UTF-8' standalone='no'?>
-<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.1" xml:lang="en-US">
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.8" xml:lang="en-US">
   <compounddef id="MergeNetworkWarp_8cuh" kind="file" language="C++">
     <compoundname>MergeNetworkWarp.cuh</compoundname>
     <briefdescription>
@@ -7,8 +7,8 @@
     <detaileddescription>
     </detaileddescription>
     <programlisting>
-<codeline><highlight class="normal">/**</highlight></codeline>
-<codeline><highlight class="normal"><sp/>*<sp/>Copyright<sp/>(c)<sp/>Facebook,<sp/>Inc.<sp/>and<sp/>its<sp/>affiliates.</highlight></codeline>
+<codeline><highlight class="normal">/*</highlight></codeline>
+<codeline><highlight class="normal"><sp/>*<sp/>Copyright<sp/>(c)<sp/>Meta<sp/>Platforms,<sp/>Inc.<sp/>and<sp/>affiliates.</highlight></codeline>
 <codeline><highlight class="normal"><sp/>*</highlight></codeline>
 <codeline><highlight class="normal"><sp/>*<sp/>This<sp/>source<sp/>code<sp/>is<sp/>licensed<sp/>under<sp/>the<sp/>MIT<sp/>license<sp/>found<sp/>in<sp/>the</highlight></codeline>
 <codeline><highlight class="normal"><sp/>*<sp/>LICENSE<sp/>file<sp/>in<sp/>the<sp/>root<sp/>directory<sp/>of<sp/>this<sp/>source<sp/>tree.</highlight></codeline>
@@ -47,7 +47,7 @@
 <codeline><highlight class="normal">//<sp/>template<sp/>specialization<sp/>/<sp/>expansion<sp/>and<sp/>constexpr,<sp/>and<sp/>it<sp/>uses<sp/>warp</highlight></codeline>
 <codeline><highlight class="normal">//<sp/>shuffles<sp/>to<sp/>exchange<sp/>values<sp/>between<sp/>warp<sp/>lanes.</highlight></codeline>
 <codeline><highlight class="normal">//</highlight></codeline>
-<codeline><highlight class="normal">//<sp/>A<sp/>note<sp/>about<sp/>comparsions:</highlight></codeline>
+<codeline><highlight class="normal">//<sp/>A<sp/>note<sp/>about<sp/>comparisons:</highlight></codeline>
 <codeline><highlight class="normal">//</highlight></codeline>
 <codeline><highlight class="normal">//<sp/>For<sp/>a<sp/>sorting<sp/>network<sp/>of<sp/>keys<sp/>only,<sp/>we<sp/>only<sp/>need<sp/>one</highlight></codeline>
 <codeline><highlight class="normal">//<sp/>comparison<sp/>(a<sp/>&lt;<sp/>b).<sp/>However,<sp/>what<sp/>we<sp/>really<sp/>need<sp/>to<sp/>know<sp/>is</highlight></codeline>
@@ -83,7 +83,7 @@
 <codeline><highlight class="normal">//<sp/>I<sp/>have<sp/>tried<sp/>both<sp/>re-arranging<sp/>the<sp/>order<sp/>in<sp/>the<sp/>higher<sp/>lane<sp/>to<sp/>get</highlight></codeline>
 <codeline><highlight class="normal">//<sp/>away<sp/>with<sp/>one<sp/>comparison<sp/>or<sp/>adding<sp/>the<sp/>value<sp/>to<sp/>the<sp/>check;<sp/>both</highlight></codeline>
 <codeline><highlight class="normal">//<sp/>result<sp/>in<sp/>greater<sp/>register<sp/>consumption<sp/>or<sp/>lower<sp/>speed<sp/>than<sp/>just</highlight></codeline>
-<codeline><highlight class="normal">//<sp/>perfoming<sp/>both<sp/>&lt;<sp/>and<sp/>&gt;<sp/>comparisons<sp/>with<sp/>the<sp/>variables,<sp/>so<sp/>I<sp/>just</highlight></codeline>
+<codeline><highlight class="normal">//<sp/>performing<sp/>both<sp/>&lt;<sp/>and<sp/>&gt;<sp/>comparisons<sp/>with<sp/>the<sp/>variables,<sp/>so<sp/>I<sp/>just</highlight></codeline>
 <codeline><highlight class="normal">//<sp/>stick<sp/>with<sp/>this.</highlight></codeline>
 <codeline></codeline>
 <codeline><highlight class="normal">//<sp/>This<sp/>function<sp/>merges<sp/>kWarpSize<sp/>/<sp/>2L<sp/>lists<sp/>in<sp/>parallel<sp/>using<sp/>warp</highlight></codeline>
@@ -173,7 +173,11 @@
 <codeline><highlight class="normal">struct<sp/>BitonicMergeStep&lt;K,<sp/>V,<sp/>1,<sp/>Dir,<sp/>Comp,<sp/>Low,<sp/>true&gt;<sp/>{</highlight></codeline>
 <codeline><highlight class="normal"><sp/><sp/><sp/><sp/>static<sp/>inline<sp/>__device__<sp/>void<sp/>merge(K<sp/>k[1],<sp/>V<sp/>v[1])<sp/>{</highlight></codeline>
 <codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>//<sp/>Use<sp/>warp<sp/>shuffles</highlight></codeline>
-<codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>warpBitonicMergeLE16&lt;K,<sp/>V,<sp/>16,<sp/>Dir,<sp/>Comp,<sp/>true&gt;(k[0],<sp/>v[0]);</highlight></codeline>
+<codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>if<sp/>constexpr<sp/>(kWarpSize<sp/>==<sp/>32)<sp/>{</highlight></codeline>
+<codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>warpBitonicMergeLE16&lt;K,<sp/>V,<sp/>16,<sp/>Dir,<sp/>Comp,<sp/>true&gt;(k[0],<sp/>v[0]);</highlight></codeline>
+<codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>}<sp/>else<sp/>{</highlight></codeline>
+<codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>warpBitonicMergeLE16&lt;K,<sp/>V,<sp/>32,<sp/>Dir,<sp/>Comp,<sp/>true&gt;(k[0],<sp/>v[0]);</highlight></codeline>
+<codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>}</highlight></codeline>
 <codeline><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
 <codeline><highlight class="normal">};</highlight></codeline>
 <codeline></codeline>
@@ -538,13 +542,17 @@
 <codeline><highlight class="normal"><sp/><sp/><sp/><sp/>static<sp/>inline<sp/>__device__<sp/>void<sp/>sort(K<sp/>k[1],<sp/>V<sp/>v[1])<sp/>{</highlight></codeline>
 <codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>//<sp/>Update<sp/>this<sp/>code<sp/>if<sp/>this<sp/>changes</highlight></codeline>
 <codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>//<sp/>should<sp/>go<sp/>from<sp/>1<sp/>-&gt;<sp/>kWarpSize<sp/>in<sp/>multiples<sp/>of<sp/>2</highlight></codeline>
-<codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>static_assert(kWarpSize<sp/>==<sp/>32,<sp/>&quot;unexpected<sp/>warp<sp/>size&quot;);</highlight></codeline>
+<codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>static_assert(</highlight></codeline>
+<codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>kWarpSize<sp/>==<sp/>32<sp/>||<sp/>kWarpSize<sp/>==<sp/>64,<sp/>&quot;unexpected<sp/>warp<sp/>size&quot;);</highlight></codeline>
 <codeline></codeline>
 <codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>warpBitonicMergeLE16&lt;K,<sp/>V,<sp/>1,<sp/>Dir,<sp/>Comp,<sp/>false&gt;(k[0],<sp/>v[0]);</highlight></codeline>
 <codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>warpBitonicMergeLE16&lt;K,<sp/>V,<sp/>2,<sp/>Dir,<sp/>Comp,<sp/>false&gt;(k[0],<sp/>v[0]);</highlight></codeline>
 <codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>warpBitonicMergeLE16&lt;K,<sp/>V,<sp/>4,<sp/>Dir,<sp/>Comp,<sp/>false&gt;(k[0],<sp/>v[0]);</highlight></codeline>
 <codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>warpBitonicMergeLE16&lt;K,<sp/>V,<sp/>8,<sp/>Dir,<sp/>Comp,<sp/>false&gt;(k[0],<sp/>v[0]);</highlight></codeline>
 <codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>warpBitonicMergeLE16&lt;K,<sp/>V,<sp/>16,<sp/>Dir,<sp/>Comp,<sp/>false&gt;(k[0],<sp/>v[0]);</highlight></codeline>
+<codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>if<sp/>constexpr<sp/>(kWarpSize<sp/>==<sp/>64)<sp/>{</highlight></codeline>
+<codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>warpBitonicMergeLE16&lt;K,<sp/>V,<sp/>32,<sp/>Dir,<sp/>Comp,<sp/>false&gt;(k[0],<sp/>v[0]);</highlight></codeline>
+<codeline><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>}</highlight></codeline>
 <codeline><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
 <codeline><highlight class="normal">};</highlight></codeline>
 <codeline></codeline>

@@ -1,21 +1,24 @@
 <?xml version='1.0' encoding='UTF-8' standalone='no'?>
-<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.1" xml:lang="en-US">
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.8" xml:lang="en-US">
   <compounddef id="structfaiss_1_1SearchParameters" kind="struct" language="C++" prot="public">
     <compoundname>faiss::SearchParameters</compoundname>
     <derivedcompoundref refid="structfaiss_1_1IndexRefineSearchParameters" prot="public" virt="non-virtual">faiss::IndexRefineSearchParameters</derivedcompoundref>
+    <derivedcompoundref refid="structfaiss_1_1RaBitQSearchParameters" prot="public" virt="non-virtual">faiss::RaBitQSearchParameters</derivedcompoundref>
     <derivedcompoundref refid="structfaiss_1_1SearchParametersHNSW" prot="public" virt="non-virtual">faiss::SearchParametersHNSW</derivedcompoundref>
     <derivedcompoundref refid="structfaiss_1_1SearchParametersIVF" prot="public" virt="non-virtual">faiss::SearchParametersIVF</derivedcompoundref>
     <derivedcompoundref refid="structfaiss_1_1SearchParametersPQ" prot="public" virt="non-virtual">faiss::SearchParametersPQ</derivedcompoundref>
     <derivedcompoundref refid="structfaiss_1_1SearchParametersPreTransform" prot="public" virt="non-virtual">faiss::SearchParametersPreTransform</derivedcompoundref>
     <derivedcompoundref refid="structfaiss_1_1SearchParametersResidualCoarseQuantizer" prot="public" virt="non-virtual">faiss::SearchParametersResidualCoarseQuantizer</derivedcompoundref>
+    <derivedcompoundref refid="structfaiss_1_1SearchParametersSVSVamana" prot="public" virt="non-virtual">faiss::SearchParametersSVSVamana</derivedcompoundref>
     <derivedcompoundref refid="structfaiss_1_1gpu_1_1SearchParametersCagra" prot="public" virt="non-virtual">faiss::gpu::SearchParametersCagra</derivedcompoundref>
     <includes refid="Index_8h" local="no">Index.h</includes>
-      <sectiondef kind="public-attrib">
+    <sectiondef kind="public-attrib">
       <memberdef kind="variable" id="structfaiss_1_1SearchParameters_1a85e6514f1599673eb1cf3d0276f00e3a" prot="public" static="no" mutable="no">
         <type><ref refid="structfaiss_1_1IDSelector" kindref="compound">IDSelector</ref> *</type>
         <definition>IDSelector* faiss::SearchParameters::sel</definition>
         <argsstring></argsstring>
         <name>sel</name>
+        <qualifiedname>faiss::SearchParameters::sel</qualifiedname>
         <initializer>= nullptr</initializer>
         <briefdescription>
 <para>if non-null, only these IDs will be considered during search. </para>
@@ -24,15 +27,16 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/Index.h" line="54" column="16" bodyfile="faiss/Index.h" bodystart="54" bodyend="-1"/>
+        <location file="faiss/Index.h" line="90" column="16" bodyfile="faiss/Index.h" bodystart="90" bodyend="-1"/>
       </memberdef>
-      </sectiondef>
-      <sectiondef kind="public-func">
+    </sectiondef>
+    <sectiondef kind="public-func">
       <memberdef kind="function" id="structfaiss_1_1SearchParameters_1a8642013315dc5f9e4e6dd603c89b29ae" prot="public" static="no" const="no" explicit="no" inline="yes" virt="virtual">
         <type></type>
         <definition>virtual faiss::SearchParameters::~SearchParameters</definition>
         <argsstring>()</argsstring>
         <name>~SearchParameters</name>
+        <qualifiedname>faiss::SearchParameters::~SearchParameters</qualifiedname>
         <briefdescription>
 <para>make sure we can dynamic_cast this </para>
         </briefdescription>
@@ -40,26 +44,26 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/Index.h" line="56" column="13" bodyfile="faiss/Index.h" bodystart="56" bodyend="56"/>
+        <location file="faiss/Index.h" line="92" column="13" bodyfile="faiss/Index.h" bodystart="92" bodyend="92"/>
       </memberdef>
-      </sectiondef>
+    </sectiondef>
     <briefdescription>
     </briefdescription>
     <detaileddescription>
-<para>Parent class for the optional search paramenters.</para>
+<para>Parent class for the optional search parameters.</para>
 <para>Sub-classes with additional search parameters should inherit this class. Ownership of the object fields is always to the caller. </para>
     </detaileddescription>
     <inheritancegraph>
       <node id="6">
-        <label>faiss::SearchParametersPQ</label>
-        <link refid="structfaiss_1_1SearchParametersPQ"/>
-        <childnode refid="1" relation="public-inheritance">
+        <label>faiss::IVFPQSearchParameters</label>
+        <link refid="structfaiss_1_1IVFPQSearchParameters"/>
+        <childnode refid="5" relation="public-inheritance">
         </childnode>
       </node>
       <node id="7">
-        <label>faiss::SearchParametersPreTransform</label>
-        <link refid="structfaiss_1_1SearchParametersPreTransform"/>
-        <childnode refid="1" relation="public-inheritance">
+        <label>faiss::IVFRaBitQSearchParameters</label>
+        <link refid="structfaiss_1_1IVFRaBitQSearchParameters"/>
+        <childnode refid="5" relation="public-inheritance">
         </childnode>
       </node>
       <node id="2">
@@ -68,9 +72,9 @@
         <childnode refid="1" relation="public-inheritance">
         </childnode>
       </node>
-      <node id="4">
-        <label>faiss::SearchParametersIVF</label>
-        <link refid="structfaiss_1_1SearchParametersIVF"/>
+      <node id="3">
+        <label>faiss::RaBitQSearchParameters</label>
+        <link refid="structfaiss_1_1RaBitQSearchParameters"/>
         <childnode refid="1" relation="public-inheritance">
         </childnode>
       </node>
@@ -78,32 +82,54 @@
         <label>faiss::SearchParameters</label>
         <link refid="structfaiss_1_1SearchParameters"/>
       </node>
-      <node id="9">
-        <label>faiss::gpu::SearchParametersCagra</label>
-        <link refid="structfaiss_1_1gpu_1_1SearchParametersCagra"/>
-        <childnode refid="1" relation="public-inheritance">
-        </childnode>
-      </node>
-      <node id="5">
-        <label>faiss::IVFPQSearchParameters</label>
-        <link refid="structfaiss_1_1IVFPQSearchParameters"/>
-        <childnode refid="4" relation="public-inheritance">
-        </childnode>
-      </node>
-      <node id="3">
+      <node id="4">
         <label>faiss::SearchParametersHNSW</label>
         <link refid="structfaiss_1_1SearchParametersHNSW"/>
         <childnode refid="1" relation="public-inheritance">
         </childnode>
       </node>
+      <node id="5">
+        <label>faiss::SearchParametersIVF</label>
+        <link refid="structfaiss_1_1SearchParametersIVF"/>
+        <childnode refid="1" relation="public-inheritance">
+        </childnode>
+      </node>
       <node id="8">
+        <label>faiss::SearchParametersPQ</label>
+        <link refid="structfaiss_1_1SearchParametersPQ"/>
+        <childnode refid="1" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="9">
+        <label>faiss::SearchParametersPreTransform</label>
+        <link refid="structfaiss_1_1SearchParametersPreTransform"/>
+        <childnode refid="1" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="10">
         <label>faiss::SearchParametersResidualCoarseQuantizer</label>
         <link refid="structfaiss_1_1SearchParametersResidualCoarseQuantizer"/>
         <childnode refid="1" relation="public-inheritance">
         </childnode>
       </node>
+      <node id="11">
+        <label>faiss::SearchParametersSVSVamana</label>
+        <link refid="structfaiss_1_1SearchParametersSVSVamana"/>
+        <childnode refid="1" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="12">
+        <label>faiss::gpu::SearchParametersCagra</label>
+        <link refid="structfaiss_1_1gpu_1_1SearchParametersCagra"/>
+        <childnode refid="1" relation="public-inheritance">
+        </childnode>
+      </node>
     </inheritancegraph>
     <collaborationgraph>
+      <node id="2">
+        <label>faiss::IDSelector</label>
+        <link refid="structfaiss_1_1IDSelector"/>
+      </node>
       <node id="1">
         <label>faiss::SearchParameters</label>
         <link refid="structfaiss_1_1SearchParameters"/>
@@ -111,12 +137,8 @@
           <edgelabel>sel</edgelabel>
         </childnode>
       </node>
-      <node id="2">
-        <label>faiss::IDSelector</label>
-        <link refid="structfaiss_1_1IDSelector"/>
-      </node>
     </collaborationgraph>
-    <location file="faiss/Index.h" line="52" column="1" bodyfile="faiss/Index.h" bodystart="52" bodyend="57"/>
+    <location file="faiss/Index.h" line="88" column="1" bodyfile="faiss/Index.h" bodystart="88" bodyend="93"/>
     <listofallmembers>
       <member refid="structfaiss_1_1SearchParameters_1a85e6514f1599673eb1cf3d0276f00e3a" prot="public" virt="non-virtual"><scope>faiss::SearchParameters</scope><name>sel</name></member>
       <member refid="structfaiss_1_1SearchParameters_1a8642013315dc5f9e4e6dd603c89b29ae" prot="public" virt="virtual"><scope>faiss::SearchParameters</scope><name>~SearchParameters</name></member>
