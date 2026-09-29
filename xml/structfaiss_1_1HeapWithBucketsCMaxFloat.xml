@@ -1,0 +1,106 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.8" xml:lang="en-US">
+  <compounddef id="structfaiss_1_1HeapWithBucketsCMaxFloat" kind="struct" language="C++" prot="public">
+    <compoundname>faiss::HeapWithBucketsCMaxFloat</compoundname>
+    <templateparamlist>
+      <param>
+        <type>uint32_t</type>
+        <declname>NBUCKETS</declname>
+        <defname>NBUCKETS</defname>
+      </param>
+      <param>
+        <type>uint32_t</type>
+        <declname>N</declname>
+        <defname>N</defname>
+      </param>
+      <param>
+        <type>SIMDLevel</type>
+        <declname>SL</declname>
+        <defname>SL</defname>
+      </param>
+    </templateparamlist>
+    <sectiondef kind="public-static-func">
+      <memberdef kind="function" id="structfaiss_1_1HeapWithBucketsCMaxFloat_1a99ea3025d156b8ebcdf6c3eb48271adb" prot="public" static="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>void</type>
+        <definition>static void faiss::HeapWithBucketsCMaxFloat&lt; NBUCKETS, N, SL &gt;::addn</definition>
+        <argsstring>(const uint32_t n, const float *const __restrict distances, const uint32_t k, float *const __restrict bh_val, int32_t *const __restrict bh_ids)</argsstring>
+        <name>addn</name>
+        <qualifiedname>faiss::HeapWithBucketsCMaxFloat::addn</qualifiedname>
+        <param>
+          <type>const uint32_t</type>
+          <declname>n</declname>
+        </param>
+        <param>
+          <type>const float *const __restrict</type>
+          <declname>distances</declname>
+        </param>
+        <param>
+          <type>const uint32_t</type>
+          <declname>k</declname>
+        </param>
+        <param>
+          <type>float *const __restrict</type>
+          <declname>bh_val</declname>
+        </param>
+        <param>
+          <type>int32_t *const __restrict</type>
+          <declname>bh_ids</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="faiss/impl/approx_topk/approx_topk.h" line="137" column="17" bodyfile="faiss/impl/approx_topk/approx_topk.h" bodystart="137" bodyend="144"/>
+      </memberdef>
+      <memberdef kind="function" id="structfaiss_1_1HeapWithBucketsCMaxFloat_1aae3de457e49ba05cf72aecfc7c513b69" prot="public" static="yes" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void faiss::HeapWithBucketsCMaxFloat&lt; NBUCKETS, N, SL &gt;::bs_addn</definition>
+        <argsstring>(const uint32_t beam_size, const uint32_t n_per_beam, const float *const __restrict distances, const uint32_t k, float *const __restrict bh_val, int32_t *const __restrict bh_ids)</argsstring>
+        <name>bs_addn</name>
+        <qualifiedname>faiss::HeapWithBucketsCMaxFloat::bs_addn</qualifiedname>
+        <param>
+          <type>const uint32_t</type>
+          <declname>beam_size</declname>
+        </param>
+        <param>
+          <type>const uint32_t</type>
+          <declname>n_per_beam</declname>
+        </param>
+        <param>
+          <type>const float *const __restrict</type>
+          <declname>distances</declname>
+        </param>
+        <param>
+          <type>const uint32_t</type>
+          <declname>k</declname>
+        </param>
+        <param>
+          <type>float *const __restrict</type>
+          <declname>bh_val</declname>
+        </param>
+        <param>
+          <type>int32_t *const __restrict</type>
+          <declname>bh_ids</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="faiss/impl/approx_topk/approx_topk.h" line="147" column="17" bodyfile="faiss/impl/approx_topk/simdlib256-inl.h" bodystart="37" bodyend="144"/>
+      </memberdef>
+    </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="faiss/impl/approx_topk/approx_topk.h" line="132" column="1" bodyfile="faiss/impl/approx_topk/approx_topk.h" bodystart="132" bodyend="154"/>
+    <listofallmembers>
+      <member refid="structfaiss_1_1HeapWithBucketsCMaxFloat_1a99ea3025d156b8ebcdf6c3eb48271adb" prot="public" virt="non-virtual"><scope>faiss::HeapWithBucketsCMaxFloat</scope><name>addn</name></member>
+      <member refid="structfaiss_1_1HeapWithBucketsCMaxFloat_1aae3de457e49ba05cf72aecfc7c513b69" prot="public" virt="non-virtual"><scope>faiss::HeapWithBucketsCMaxFloat</scope><name>bs_addn</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

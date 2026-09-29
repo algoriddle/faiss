@@ -3,39 +3,39 @@
   <compounddef id="similarities_8h" kind="file" language="C++">
     <compoundname>similarities.h</compoundname>
     <includes refid="ScalarQuantizer_8h" local="no">faiss/impl/ScalarQuantizer.h</includes>
+    <includes refid="simdlib__dispatch_8h" local="no">faiss/impl/simdlib/simdlib_dispatch.h</includes>
     <includes refid="simd__levels_8h" local="no">faiss/utils/simd_levels.h</includes>
-    <includes refid="simdlib_8h" local="no">faiss/utils/simdlib.h</includes>
     <includedby refid="scanners_8h" local="no">faiss/impl/scalar_quantizer/scanners.h</includedby>
     <includedby refid="sq-dispatch_8h" local="no">faiss/impl/scalar_quantizer/sq-dispatch.h</includedby>
     <incdepgraph>
-      <node id="22">
+      <node id="25">
         <label>faiss/Index.h</label>
         <link refid="Index_8h_source"/>
-        <childnode refid="9" relation="include">
+        <childnode refid="11" relation="include">
+        </childnode>
+        <childnode refid="15" relation="include">
         </childnode>
         <childnode refid="13" relation="include">
         </childnode>
-        <childnode refid="11" relation="include">
-        </childnode>
       </node>
-      <node id="9">
+      <node id="11">
         <label>faiss/MetricType.h</label>
         <link refid="MetricType_8h_source"/>
-        <childnode refid="10" relation="include">
-        </childnode>
-        <childnode refid="11" relation="include">
-        </childnode>
         <childnode refid="12" relation="include">
         </childnode>
         <childnode refid="13" relation="include">
         </childnode>
+        <childnode refid="14" relation="include">
+        </childnode>
+        <childnode refid="15" relation="include">
+        </childnode>
       </node>
-      <node id="3">
+      <node id="4">
         <label>faiss/impl/AuxIndexStructures.h</label>
         <link refid="AuxIndexStructures_8h_source"/>
-        <childnode refid="4" relation="include">
-        </childnode>
         <childnode refid="5" relation="include">
+        </childnode>
+        <childnode refid="3" relation="include">
         </childnode>
         <childnode refid="6" relation="include">
         </childnode>
@@ -45,49 +45,57 @@
         </childnode>
         <childnode refid="9" relation="include">
         </childnode>
-        <childnode refid="18" relation="include">
+        <childnode refid="11" relation="include">
+        </childnode>
+        <childnode refid="20" relation="include">
         </childnode>
       </node>
-      <node id="21">
+      <node id="24">
         <label>faiss/impl/DistanceComputer.h</label>
         <link refid="DistanceComputer_8h_source"/>
-        <childnode refid="22" relation="include">
+        <childnode refid="25" relation="include">
         </childnode>
       </node>
-      <node id="13">
+      <node id="15">
         <label>faiss/impl/FaissAssert.h</label>
         <link refid="FaissAssert_8h_source"/>
+        <childnode refid="16" relation="include">
+        </childnode>
+        <childnode refid="20" relation="include">
+        </childnode>
+        <childnode refid="22" relation="include">
+        </childnode>
+        <childnode refid="13" relation="include">
+        </childnode>
         <childnode refid="14" relation="include">
+        </childnode>
+        <childnode refid="18" relation="include">
+        </childnode>
+        <childnode refid="23" relation="include">
+        </childnode>
+      </node>
+      <node id="16">
+        <label>faiss/impl/FaissException.h</label>
+        <link refid="FaissException_8h_source"/>
+        <childnode refid="17" relation="include">
         </childnode>
         <childnode refid="18" relation="include">
         </childnode>
         <childnode refid="19" relation="include">
         </childnode>
-        <childnode refid="11" relation="include">
-        </childnode>
-        <childnode refid="12" relation="include">
-        </childnode>
-        <childnode refid="16" relation="include">
-        </childnode>
-        <childnode refid="20" relation="include">
-        </childnode>
-      </node>
-      <node id="14">
-        <label>faiss/impl/FaissException.h</label>
-        <link refid="FaissException_8h_source"/>
-        <childnode refid="15" relation="include">
-        </childnode>
-        <childnode refid="16" relation="include">
-        </childnode>
-        <childnode refid="17" relation="include">
-        </childnode>
         <childnode refid="8" relation="include">
         </childnode>
       </node>
-      <node id="23">
+      <node id="9">
+        <label>faiss/impl/InvertedListScannerStats.h</label>
+        <link refid="InvertedListScannerStats_8h_source"/>
+        <childnode refid="10" relation="include">
+        </childnode>
+      </node>
+      <node id="26">
         <label>faiss/impl/Quantizer.h</label>
         <link refid="Quantizer_8h_source"/>
-        <childnode refid="4" relation="include">
+        <childnode refid="5" relation="include">
         </childnode>
       </node>
       <node id="2">
@@ -95,17 +103,21 @@
         <link refid="ScalarQuantizer_8h_source"/>
         <childnode refid="3" relation="include">
         </childnode>
-        <childnode refid="21" relation="include">
+        <childnode refid="4" relation="include">
         </childnode>
-        <childnode refid="23" relation="include">
+        <childnode refid="24" relation="include">
+        </childnode>
+        <childnode refid="26" relation="include">
         </childnode>
       </node>
-      <node id="18">
+      <node id="20">
         <label>faiss/impl/platform_macros.h</label>
         <link refid="platform__macros_8h_source"/>
-        <childnode refid="10" relation="include">
+        <childnode refid="21" relation="include">
         </childnode>
-        <childnode refid="11" relation="include">
+        <childnode refid="12" relation="include">
+        </childnode>
+        <childnode refid="13" relation="include">
         </childnode>
       </node>
       <node id="1">
@@ -113,61 +125,77 @@
         <link refid="similarities_8h"/>
         <childnode refid="2" relation="include">
         </childnode>
-        <childnode refid="24" relation="include">
-        </childnode>
-        <childnode refid="25" relation="include">
-        </childnode>
-      </node>
-      <node id="24">
-        <label>faiss/utils/simd_levels.h</label>
-        <link refid="simd__levels_8h_source"/>
-        <childnode refid="10" relation="include">
-        </childnode>
-        <childnode refid="16" relation="include">
-        </childnode>
-        <childnode refid="18" relation="include">
-        </childnode>
-      </node>
-      <node id="25">
-        <label>faiss/utils/simdlib.h</label>
-        <link refid="simdlib_8h_source"/>
-        <childnode refid="26" relation="include">
-        </childnode>
-      </node>
-      <node id="26">
-        <label>faiss/utils/simdlib_emulated.h</label>
-        <link refid="simdlib__emulated_8h_source"/>
         <childnode refid="27" relation="include">
         </childnode>
-        <childnode refid="10" relation="include">
+        <childnode refid="29" relation="include">
         </childnode>
-        <childnode refid="5" relation="include">
+      </node>
+      <node id="28">
+        <label>faiss/impl/simdlib/simdlib.h</label>
+        <link refid="simdlib_8h_source"/>
+        <childnode refid="29" relation="include">
         </childnode>
-        <childnode refid="16" relation="include">
+        <childnode refid="30" relation="include">
         </childnode>
       </node>
       <node id="27">
+        <label>faiss/impl/simdlib/simdlib_dispatch.h</label>
+        <link refid="simdlib__dispatch_8h_source"/>
+        <childnode refid="28" relation="include">
+        </childnode>
+      </node>
+      <node id="30">
+        <label>faiss/impl/simdlib/simdlib_emulated.h</label>
+        <link refid="simdlib__emulated_8h_source"/>
+        <childnode refid="31" relation="include">
+        </childnode>
+        <childnode refid="12" relation="include">
+        </childnode>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="18" relation="include">
+        </childnode>
+        <childnode refid="28" relation="include">
+        </childnode>
+      </node>
+      <node id="29">
+        <label>faiss/utils/simd_levels.h</label>
+        <link refid="simd__levels_8h_source"/>
+        <childnode refid="12" relation="include">
+        </childnode>
+        <childnode refid="18" relation="include">
+        </childnode>
+        <childnode refid="20" relation="include">
+        </childnode>
+      </node>
+      <node id="31">
         <label>algorithm</label>
       </node>
-      <node id="19">
+      <node id="21">
+        <label>atomic</label>
+      </node>
+      <node id="22">
         <label>cinttypes</label>
       </node>
       <node id="10">
-        <label>cstdint</label>
-      </node>
-      <node id="11">
-        <label>cstdio</label>
+        <label>cstddef</label>
       </node>
       <node id="12">
+        <label>cstdint</label>
+      </node>
+      <node id="13">
+        <label>cstdio</label>
+      </node>
+      <node id="14">
         <label>cstdlib</label>
       </node>
-      <node id="5">
+      <node id="3">
         <label>cstring</label>
       </node>
-      <node id="15">
+      <node id="17">
         <label>exception</label>
       </node>
-      <node id="20">
+      <node id="23">
         <label>limits</label>
       </node>
       <node id="6">
@@ -176,13 +204,13 @@
       <node id="7">
         <label>mutex</label>
       </node>
-      <node id="4">
+      <node id="5">
         <label>stdint.h</label>
       </node>
-      <node id="16">
+      <node id="18">
         <label>string</label>
       </node>
-      <node id="17">
+      <node id="19">
         <label>utility</label>
       </node>
       <node id="8">
@@ -230,8 +258,8 @@
 <codeline lineno="8"><highlight class="normal"></highlight><highlight class="preprocessor">#pragma<sp/>once</highlight><highlight class="normal"></highlight></codeline>
 <codeline lineno="9"><highlight class="normal"></highlight></codeline>
 <codeline lineno="10"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;faiss/impl/ScalarQuantizer.h&gt;</highlight><highlight class="normal"></highlight></codeline>
-<codeline lineno="11"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;faiss/utils/simd_levels.h&gt;</highlight><highlight class="normal"></highlight></codeline>
-<codeline lineno="12"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;faiss/utils/simdlib.h&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="11"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;faiss/impl/simdlib/simdlib_dispatch.h&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="12"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;faiss/utils/simd_levels.h&gt;</highlight><highlight class="normal"></highlight></codeline>
 <codeline lineno="13"><highlight class="normal"></highlight></codeline>
 <codeline lineno="14"><highlight class="normal"></highlight><highlight class="keyword">namespace<sp/></highlight><highlight class="normal"><ref refid="namespacefaiss" kindref="compound">faiss</ref><sp/>{</highlight></codeline>
 <codeline lineno="15"><highlight class="normal"></highlight></codeline>
@@ -254,7 +282,7 @@
 <codeline lineno="32"><highlight class="normal"></highlight></codeline>
 <codeline lineno="33"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal"><sp/>*y,<sp/>*yi;</highlight></codeline>
 <codeline lineno="34"><highlight class="normal"></highlight></codeline>
-<codeline lineno="35"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">explicit</highlight><highlight class="normal"><sp/><ref refid="structfaiss_1_1scalar__quantizer_1_1SimilarityL2" kindref="compound">SimilarityL2</ref>(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal">*<sp/>y)<sp/>:<sp/>y(y),<sp/>yi(</highlight><highlight class="keyword">nullptr</highlight><highlight class="normal">),<sp/>accu(0)<sp/>{}</highlight></codeline>
+<codeline lineno="35"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">explicit</highlight><highlight class="normal"><sp/><ref refid="structfaiss_1_1scalar__quantizer_1_1SimilarityL2" kindref="compound">SimilarityL2</ref>(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal">*<sp/>y_in)<sp/>:<sp/>y(y_in),<sp/>yi(</highlight><highlight class="keyword">nullptr</highlight><highlight class="normal">),<sp/>accu(0)<sp/>{}</highlight></codeline>
 <codeline lineno="36"><highlight class="normal"></highlight></codeline>
 <codeline lineno="37"><highlight class="normal"></highlight><highlight class="comment"><sp/><sp/><sp/><sp/>/*******<sp/>scalar<sp/>accumulator<sp/>*******/</highlight><highlight class="normal"></highlight></codeline>
 <codeline lineno="38"><highlight class="normal"></highlight></codeline>
@@ -292,7 +320,7 @@
 <codeline lineno="70"><highlight class="normal"></highlight></codeline>
 <codeline lineno="71"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal"><sp/>accu;</highlight></codeline>
 <codeline lineno="72"><highlight class="normal"></highlight></codeline>
-<codeline lineno="73"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">explicit</highlight><highlight class="normal"><sp/><ref refid="structfaiss_1_1scalar__quantizer_1_1SimilarityIP" kindref="compound">SimilarityIP</ref>(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal">*<sp/>y)<sp/>:<sp/>y(y),<sp/>yi(</highlight><highlight class="keyword">nullptr</highlight><highlight class="normal">),<sp/>accu(0)<sp/>{}</highlight></codeline>
+<codeline lineno="73"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">explicit</highlight><highlight class="normal"><sp/><ref refid="structfaiss_1_1scalar__quantizer_1_1SimilarityIP" kindref="compound">SimilarityIP</ref>(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal">*<sp/>y_in)<sp/>:<sp/>y(y_in),<sp/>yi(</highlight><highlight class="keyword">nullptr</highlight><highlight class="normal">),<sp/>accu(0)<sp/>{}</highlight></codeline>
 <codeline lineno="74"><highlight class="normal"></highlight></codeline>
 <codeline lineno="75"><highlight class="normal"><sp/><sp/><sp/><sp/>FAISS_ALWAYS_INLINE<sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>begin()<sp/>{</highlight></codeline>
 <codeline lineno="76"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>accu<sp/>=<sp/>0;</highlight></codeline>

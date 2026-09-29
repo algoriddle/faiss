@@ -33,6 +33,10 @@
         <label>faiss/IndexAdditiveQuantizerFastScan.h</label>
         <link refid="IndexAdditiveQuantizerFastScan_8h_source"/>
       </node>
+      <node id="48">
+        <label>faiss/IndexEDEN.h</label>
+        <link refid="IndexEDEN_8h_source"/>
+      </node>
       <node id="15">
         <label>faiss/IndexHNSW.h</label>
         <link refid="IndexHNSW_8h_source"/>
@@ -47,12 +51,22 @@
         <label>faiss/IndexIVFAdditiveQuantizerFastScan.h</label>
         <link refid="IndexIVFAdditiveQuantizerFastScan_8h_source"/>
       </node>
+      <node id="49">
+        <label>faiss/IndexIVFEDEN.h</label>
+        <link refid="IndexIVFEDEN_8h_source"/>
+      </node>
       <node id="16">
         <label>faiss/IndexIVFPQ.h</label>
         <link refid="IndexIVFPQ_8h_source"/>
         <childnode refid="12" relation="include">
         </childnode>
         <childnode refid="17" relation="include">
+        </childnode>
+        <childnode refid="18" relation="include">
+        </childnode>
+        <childnode refid="19" relation="include">
+        </childnode>
+        <childnode refid="20" relation="include">
         </childnode>
       </node>
       <node id="12">
@@ -63,17 +77,23 @@
         <label>faiss/IndexIVFPQR.h</label>
         <link refid="IndexIVFPQR_8h_source"/>
       </node>
-      <node id="27">
+      <node id="36">
         <label>faiss/IndexIVFRaBitQ.h</label>
         <link refid="IndexIVFRaBitQ_8h_source"/>
-        <childnode refid="28" relation="include">
+        <childnode refid="37" relation="include">
         </childnode>
       </node>
-      <node id="28">
+      <node id="37">
         <label>faiss/IndexIVFRaBitQFastScan.h</label>
         <link refid="IndexIVFRaBitQFastScan_8h_source"/>
+        <childnode refid="38" relation="include">
+        </childnode>
       </node>
-      <node id="18">
+      <node id="42">
+        <label>faiss/IndexIVFSQFastScan.h</label>
+        <link refid="IndexIVFSQFastScan_8h_source"/>
+      </node>
+      <node id="21">
         <label>faiss/IndexNSG.h</label>
         <link refid="IndexNSG_8h_source"/>
       </node>
@@ -86,64 +106,82 @@
         </childnode>
         <childnode refid="16" relation="include">
         </childnode>
-        <childnode refid="18" relation="include">
+        <childnode refid="21" relation="include">
         </childnode>
-        <childnode refid="19" relation="include">
+        <childnode refid="22" relation="include">
+        </childnode>
+        <childnode refid="23" relation="include">
+        </childnode>
+        <childnode refid="24" relation="include">
         </childnode>
       </node>
-      <node id="19">
+      <node id="22">
         <label>faiss/IndexPQFastScan.h</label>
         <link refid="IndexPQFastScan_8h_source"/>
       </node>
-      <node id="29">
+      <node id="39">
         <label>faiss/IndexRaBitQ.h</label>
         <link refid="IndexRaBitQ_8h_source"/>
-        <childnode refid="30" relation="include">
+        <childnode refid="40" relation="include">
         </childnode>
       </node>
-      <node id="30">
+      <node id="40">
         <label>faiss/IndexRaBitQFastScan.h</label>
         <link refid="IndexRaBitQFastScan_8h_source"/>
-        <childnode refid="28" relation="include">
+        <childnode refid="37" relation="include">
+        </childnode>
+        <childnode refid="38" relation="include">
         </childnode>
       </node>
-      <node id="32">
+      <node id="43">
+        <label>faiss/IndexSQFastScan.h</label>
+        <link refid="IndexSQFastScan_8h_source"/>
+      </node>
+      <node id="44">
         <label>faiss/IndexScalarQuantizer.h</label>
         <link refid="IndexScalarQuantizer_8h_source"/>
         <childnode refid="15" relation="include">
         </childnode>
-        <childnode refid="18" relation="include">
+        <childnode refid="42" relation="include">
         </childnode>
-        <childnode refid="33" relation="include">
+        <childnode refid="21" relation="include">
+        </childnode>
+        <childnode refid="43" relation="include">
+        </childnode>
+        <childnode refid="45" relation="include">
         </childnode>
       </node>
       <node id="8">
         <label>faiss/gpu/GpuIcmEncoder.h</label>
         <link refid="GpuIcmEncoder_8h_source"/>
       </node>
-      <node id="22">
+      <node id="27">
         <label>faiss/gpu/GpuIndexBinaryCagra.h</label>
         <link refid="GpuIndexBinaryCagra_8h_source"/>
       </node>
-      <node id="21">
+      <node id="26">
         <label>faiss/gpu/GpuIndexCagra.h</label>
         <link refid="GpuIndexCagra_8h_source"/>
-        <childnode refid="22" relation="include">
+        <childnode refid="27" relation="include">
         </childnode>
       </node>
-      <node id="34">
+      <node id="46">
         <label>faiss/gpu/GpuIndexIVFFlat.h</label>
         <link refid="GpuIndexIVFFlat_8h_source"/>
       </node>
-      <node id="20">
+      <node id="25">
         <label>faiss/gpu/GpuIndexIVFPQ.h</label>
         <link refid="GpuIndexIVFPQ_8h_source"/>
-        <childnode refid="21" relation="include">
+        <childnode refid="26" relation="include">
         </childnode>
       </node>
-      <node id="33">
+      <node id="45">
         <label>faiss/gpu/GpuIndexIVFScalarQuantizer.h</label>
         <link refid="GpuIndexIVFScalarQuantizer_8h_source"/>
+      </node>
+      <node id="18">
+        <label>faiss/gpu_metal/MetalIndexIVFPQ.h</label>
+        <link refid="MetalIndexIVFPQ_8h_source"/>
       </node>
       <node id="2">
         <label>faiss/impl/AdditiveQuantizer.h</label>
@@ -163,6 +201,14 @@
         <childnode refid="10" relation="include">
         </childnode>
       </node>
+      <node id="47">
+        <label>faiss/impl/EDENQuantizer.h</label>
+        <link refid="EDENQuantizer_8h_source"/>
+        <childnode refid="48" relation="include">
+        </childnode>
+        <childnode refid="49" relation="include">
+        </childnode>
+      </node>
       <node id="7">
         <label>faiss/impl/LocalSearchQuantizer.h</label>
         <link refid="LocalSearchQuantizer_8h_source"/>
@@ -175,7 +221,7 @@
         <childnode refid="9" relation="include">
         </childnode>
       </node>
-      <node id="23">
+      <node id="28">
         <label>faiss/impl/PolysemousTraining.h</label>
         <link refid="PolysemousTraining_8h_source"/>
         <childnode refid="13" relation="include">
@@ -200,13 +246,17 @@
         </childnode>
         <childnode refid="13" relation="include">
         </childnode>
-        <childnode refid="19" relation="include">
+        <childnode refid="22" relation="include">
+        </childnode>
+        <childnode refid="25" relation="include">
+        </childnode>
+        <childnode refid="28" relation="include">
         </childnode>
         <childnode refid="20" relation="include">
         </childnode>
-        <childnode refid="23" relation="include">
+        <childnode refid="29" relation="include">
         </childnode>
-        <childnode refid="24" relation="include">
+        <childnode refid="34" relation="include">
         </childnode>
       </node>
       <node id="1">
@@ -216,21 +266,21 @@
         </childnode>
         <childnode refid="11" relation="include">
         </childnode>
-        <childnode refid="26" relation="include">
+        <childnode refid="35" relation="include">
         </childnode>
-        <childnode refid="31" relation="include">
+        <childnode refid="41" relation="include">
         </childnode>
       </node>
-      <node id="26">
+      <node id="35">
         <label>faiss/impl/RaBitQuantizer.h</label>
         <link refid="RaBitQuantizer_8h_source"/>
-        <childnode refid="27" relation="include">
+        <childnode refid="36" relation="include">
         </childnode>
-        <childnode refid="28" relation="include">
+        <childnode refid="37" relation="include">
         </childnode>
-        <childnode refid="29" relation="include">
+        <childnode refid="39" relation="include">
         </childnode>
-        <childnode refid="30" relation="include">
+        <childnode refid="40" relation="include">
         </childnode>
       </node>
       <node id="10">
@@ -243,81 +293,143 @@
         <childnode refid="9" relation="include">
         </childnode>
       </node>
-      <node id="31">
+      <node id="41">
         <label>faiss/impl/ScalarQuantizer.h</label>
         <link refid="ScalarQuantizer_8h_source"/>
-        <childnode refid="32" relation="include">
+        <childnode refid="42" relation="include">
         </childnode>
-        <childnode refid="34" relation="include">
+        <childnode refid="43" relation="include">
         </childnode>
-        <childnode refid="35" relation="include">
+        <childnode refid="44" relation="include">
         </childnode>
-        <childnode refid="38" relation="include">
+        <childnode refid="46" relation="include">
         </childnode>
-        <childnode refid="39" relation="include">
+        <childnode refid="47" relation="include">
         </childnode>
-        <childnode refid="36" relation="include">
+        <childnode refid="50" relation="include">
         </childnode>
-        <childnode refid="40" relation="include">
+        <childnode refid="53" relation="include">
         </childnode>
-        <childnode refid="41" relation="include">
+        <childnode refid="54" relation="include">
+        </childnode>
+        <childnode refid="51" relation="include">
+        </childnode>
+        <childnode refid="55" relation="include">
+        </childnode>
+        <childnode refid="56" relation="include">
+        </childnode>
+        <childnode refid="57" relation="include">
         </childnode>
       </node>
-      <node id="25">
-        <label>faiss/impl/pq_code_distance/pq_code_distance-inl.h</label>
-        <link refid="pq__code__distance-inl_8h"/>
-      </node>
-      <node id="35">
-        <label>faiss/impl/scalar_quantizer/codecs.h</label>
-        <link refid="codecs_8h_source"/>
-        <childnode refid="36" relation="include">
-        </childnode>
-        <childnode refid="37" relation="include">
-        </childnode>
+      <node id="23">
+        <label>faiss/impl/binary_hamming/IndexPQ_impl.h</label>
+        <link refid="IndexPQ__impl_8h_source"/>
       </node>
       <node id="38">
+        <label>faiss/impl/fast_scan/rabitq_dispatching.h</label>
+        <link refid="rabitq__dispatching_8h"/>
+      </node>
+      <node id="19">
+        <label>faiss/impl/pq_code_distance/IVFPQScanner_impl.h</label>
+        <link refid="IVFPQScanner__impl_8h_source"/>
+      </node>
+      <node id="20">
+        <label>faiss/impl/pq_code_distance/IVFPQ_QueryTables.h</label>
+        <link refid="IVFPQ__QueryTables_8h_source"/>
+        <childnode refid="19" relation="include">
+        </childnode>
+      </node>
+      <node id="24">
+        <label>faiss/impl/pq_code_distance/PQDistanceComputer_impl.h</label>
+        <link refid="PQDistanceComputer__impl_8h_source"/>
+      </node>
+      <node id="30">
+        <label>faiss/impl/pq_code_distance/pq_code_distance-avx2.h</label>
+        <link refid="pq__code__distance-avx2_8h_source"/>
+      </node>
+      <node id="31">
+        <label>faiss/impl/pq_code_distance/pq_code_distance-avx512.h</label>
+        <link refid="pq__code__distance-avx512_8h_source"/>
+      </node>
+      <node id="32">
+        <label>faiss/impl/pq_code_distance/pq_code_distance-generic.h</label>
+        <link refid="pq__code__distance-generic_8h_source"/>
+      </node>
+      <node id="29">
+        <label>faiss/impl/pq_code_distance/pq_code_distance-inl.h</label>
+        <link refid="pq__code__distance-inl_8h"/>
+        <childnode refid="19" relation="include">
+        </childnode>
+        <childnode refid="24" relation="include">
+        </childnode>
+        <childnode refid="30" relation="include">
+        </childnode>
+        <childnode refid="31" relation="include">
+        </childnode>
+        <childnode refid="32" relation="include">
+        </childnode>
+        <childnode refid="33" relation="include">
+        </childnode>
+      </node>
+      <node id="33">
+        <label>faiss/impl/pq_code_distance/pq_scan_impl.h</label>
+        <link refid="pq__scan__impl_8h_source"/>
+      </node>
+      <node id="50">
+        <label>faiss/impl/scalar_quantizer/codecs.h</label>
+        <link refid="codecs_8h_source"/>
+        <childnode refid="51" relation="include">
+        </childnode>
+        <childnode refid="52" relation="include">
+        </childnode>
+      </node>
+      <node id="53">
         <label>faiss/impl/scalar_quantizer/distance_computers.h</label>
         <link refid="distance__computers_8h_source"/>
-        <childnode refid="36" relation="include">
+        <childnode refid="51" relation="include">
         </childnode>
-        <childnode refid="37" relation="include">
+        <childnode refid="52" relation="include">
         </childnode>
       </node>
-      <node id="39">
+      <node id="54">
         <label>faiss/impl/scalar_quantizer/quantizers.h</label>
         <link refid="quantizers_8h_source"/>
-        <childnode refid="36" relation="include">
+        <childnode refid="51" relation="include">
         </childnode>
-        <childnode refid="37" relation="include">
+        <childnode refid="52" relation="include">
         </childnode>
       </node>
-      <node id="36">
+      <node id="51">
         <label>faiss/impl/scalar_quantizer/scanners.h</label>
         <link refid="scanners_8h_source"/>
-        <childnode refid="37" relation="include">
+        <childnode refid="52" relation="include">
         </childnode>
       </node>
-      <node id="40">
+      <node id="55">
         <label>faiss/impl/scalar_quantizer/similarities.h</label>
         <link refid="similarities_8h_source"/>
-        <childnode refid="36" relation="include">
+        <childnode refid="51" relation="include">
         </childnode>
-        <childnode refid="37" relation="include">
+        <childnode refid="52" relation="include">
         </childnode>
       </node>
-      <node id="37">
+      <node id="52">
         <label>faiss/impl/scalar_quantizer/sq-dispatch.h</label>
         <link refid="sq-dispatch_8h_source"/>
       </node>
-      <node id="41">
+      <node id="56">
         <label>faiss/impl/scalar_quantizer/training.h</label>
         <link refid="training_8h_source"/>
       </node>
-      <node id="24">
+      <node id="57">
+        <label>faiss/impl/sq_fastscan_utils.h</label>
+        <link refid="sq__fastscan__utils_8h_source"/>
+        <childnode refid="42" relation="include">
+        </childnode>
+      </node>
+      <node id="34">
         <label>faiss/utils/pq_code_distance.h</label>
         <link refid="pq__code__distance_8h_source"/>
-        <childnode refid="25" relation="include">
-        </childnode>
       </node>
     </invincdepgraph>
     <innerclass refid="structfaiss_1_1Quantizer" prot="public">faiss::Quantizer</innerclass>
@@ -345,8 +457,8 @@
 <codeline lineno="16" refid="structfaiss_1_1Quantizer_1a416da1bab43fefa36563210a86298a75" refkind="member"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">size_t</highlight><highlight class="normal"><sp/><ref refid="structfaiss_1_1Quantizer_1a416da1bab43fefa36563210a86298a75" kindref="member">d</ref>;<sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="comment">///&lt;<sp/>size<sp/>of<sp/>the<sp/>input<sp/>vectors</highlight><highlight class="normal"></highlight></codeline>
 <codeline lineno="17" refid="structfaiss_1_1Quantizer_1a25120fac0a15262b52e54391cc642850" refkind="member"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">size_t</highlight><highlight class="normal"><sp/><ref refid="structfaiss_1_1Quantizer_1a25120fac0a15262b52e54391cc642850" kindref="member">code_size</ref>;<sp/></highlight><highlight class="comment">///&lt;<sp/>bytes<sp/>per<sp/>indexed<sp/>vector</highlight><highlight class="normal"></highlight></codeline>
 <codeline lineno="18"><highlight class="normal"></highlight></codeline>
-<codeline lineno="19"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">explicit</highlight><highlight class="normal"><sp/><ref refid="structfaiss_1_1Quantizer" kindref="compound">Quantizer</ref>(</highlight><highlight class="keywordtype">size_t</highlight><highlight class="normal"><sp/><ref refid="structfaiss_1_1Quantizer_1a416da1bab43fefa36563210a86298a75" kindref="member">d</ref><sp/>=<sp/>0,<sp/></highlight><highlight class="keywordtype">size_t</highlight><highlight class="normal"><sp/><ref refid="structfaiss_1_1Quantizer_1a25120fac0a15262b52e54391cc642850" kindref="member">code_size</ref><sp/>=<sp/>0)</highlight></codeline>
-<codeline lineno="20"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>:<sp/><ref refid="structfaiss_1_1Quantizer_1a416da1bab43fefa36563210a86298a75" kindref="member">d</ref>(<ref refid="structfaiss_1_1Quantizer_1a416da1bab43fefa36563210a86298a75" kindref="member">d</ref>),<sp/><ref refid="structfaiss_1_1Quantizer_1a25120fac0a15262b52e54391cc642850" kindref="member">code_size</ref>(<ref refid="structfaiss_1_1Quantizer_1a25120fac0a15262b52e54391cc642850" kindref="member">code_size</ref>)<sp/>{}</highlight></codeline>
+<codeline lineno="19"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">explicit</highlight><highlight class="normal"><sp/><ref refid="structfaiss_1_1Quantizer" kindref="compound">Quantizer</ref>(</highlight><highlight class="keywordtype">size_t</highlight><highlight class="normal"><sp/>d_in<sp/>=<sp/>0,<sp/></highlight><highlight class="keywordtype">size_t</highlight><highlight class="normal"><sp/>code_size_in<sp/>=<sp/>0)</highlight></codeline>
+<codeline lineno="20"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>:<sp/><ref refid="structfaiss_1_1Quantizer_1a416da1bab43fefa36563210a86298a75" kindref="member">d</ref>(d_in),<sp/><ref refid="structfaiss_1_1Quantizer_1a25120fac0a15262b52e54391cc642850" kindref="member">code_size</ref>(code_size_in)<sp/>{}</highlight></codeline>
 <codeline lineno="21"><highlight class="normal"></highlight><highlight class="comment"></highlight></codeline>
 <codeline lineno="22"><highlight class="comment"><sp/><sp/><sp/><sp/>/**<sp/>Train<sp/>the<sp/>quantizer</highlight></codeline>
 <codeline lineno="23"><highlight class="comment"><sp/><sp/><sp/><sp/><sp/>*</highlight></codeline>

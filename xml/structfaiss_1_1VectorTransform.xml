@@ -56,20 +56,20 @@
       </memberdef>
     </sectiondef>
     <sectiondef kind="public-func">
-      <memberdef kind="function" id="structfaiss_1_1VectorTransform_1a137f48bab695736f0b1d79a50cddc858" prot="public" static="no" const="no" explicit="yes" inline="yes" virt="non-virtual">
+      <memberdef kind="function" id="structfaiss_1_1VectorTransform_1a6af0c21e5b727f2202ab2e2fedea5034" prot="public" static="no" const="no" explicit="yes" inline="yes" virt="non-virtual">
         <type></type>
         <definition>faiss::VectorTransform::VectorTransform</definition>
-        <argsstring>(int d_in=0, int d_out=0)</argsstring>
+        <argsstring>(int d_in_val=0, int d_out_val=0)</argsstring>
         <name>VectorTransform</name>
         <qualifiedname>faiss::VectorTransform::VectorTransform</qualifiedname>
         <param>
           <type>int</type>
-          <declname>d_in</declname>
+          <declname>d_in_val</declname>
           <defval>0</defval>
         </param>
         <param>
           <type>int</type>
-          <declname>d_out</declname>
+          <declname>d_out_val</declname>
           <defval>0</defval>
         </param>
         <briefdescription>
@@ -95,7 +95,7 @@
         <reimplementedby refid="structfaiss_1_1OPQMatrix_1abc57f03c88623a5844c7ac06a927ab6a">train</reimplementedby>
         <reimplementedby refid="structfaiss_1_1CenteringTransform_1ae63f2afed997c435fda588b5a8642893">train</reimplementedby>
         <param>
-          <type><ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref></type>
+          <type><ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref></type>
           <declname>n</declname>
         </param>
         <param>
@@ -136,7 +136,7 @@
         <name>apply</name>
         <qualifiedname>faiss::VectorTransform::apply</qualifiedname>
         <param>
-          <type><ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref></type>
+          <type><ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref></type>
           <declname>n</declname>
         </param>
         <param>
@@ -184,7 +184,7 @@
         <reimplementedby refid="structfaiss_1_1NormalizationTransform_1a282007331f7f6d96792c89fe1f9ecefd">apply_noalloc</reimplementedby>
         <reimplementedby refid="structfaiss_1_1CenteringTransform_1a0d9a07e911c43a598f64981f23afec0a">apply_noalloc</reimplementedby>
         <param>
-          <type><ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref></type>
+          <type><ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref></type>
           <declname>n</declname>
         </param>
         <param>
@@ -236,11 +236,12 @@
         <name>reverse_transform</name>
         <qualifiedname>faiss::VectorTransform::reverse_transform</qualifiedname>
         <reimplementedby refid="structfaiss_1_1LinearTransform_1aabcea47432734c860fdf6fcc3a998563">reverse_transform</reimplementedby>
+        <reimplementedby refid="structfaiss_1_1HadamardRotation_1a843bd3c452ad07f0288fccf155b9bc36">reverse_transform</reimplementedby>
         <reimplementedby refid="structfaiss_1_1RemapDimensionsTransform_1ac94a16755e3eb8693547f3a7ae90cec3">reverse_transform</reimplementedby>
         <reimplementedby refid="structfaiss_1_1NormalizationTransform_1af280b21563b819ebb292a6f63d011ad1">reverse_transform</reimplementedby>
         <reimplementedby refid="structfaiss_1_1CenteringTransform_1a01aacceb0950fcb39b0f5e18103ea6d5">reverse_transform</reimplementedby>
         <param>
-          <type><ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref></type>
+          <type><ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref></type>
           <declname>n</declname>
         </param>
         <param>
@@ -380,7 +381,7 @@
       <member refid="structfaiss_1_1VectorTransform_1ab511f1ddf608c00204555881ca28cb02" prot="public" virt="non-virtual"><scope>faiss::VectorTransform</scope><name>is_trained</name></member>
       <member refid="structfaiss_1_1VectorTransform_1a0913e3b521a6d34f523c291508e82adb" prot="public" virt="virtual"><scope>faiss::VectorTransform</scope><name>reverse_transform</name></member>
       <member refid="structfaiss_1_1VectorTransform_1ab781e04a6c8afe04689b3fc64be512d5" prot="public" virt="virtual"><scope>faiss::VectorTransform</scope><name>train</name></member>
-      <member refid="structfaiss_1_1VectorTransform_1a137f48bab695736f0b1d79a50cddc858" prot="public" virt="non-virtual"><scope>faiss::VectorTransform</scope><name>VectorTransform</name></member>
+      <member refid="structfaiss_1_1VectorTransform_1a6af0c21e5b727f2202ab2e2fedea5034" prot="public" virt="non-virtual"><scope>faiss::VectorTransform</scope><name>VectorTransform</name></member>
       <member refid="structfaiss_1_1VectorTransform_1a6e003e61f6f88afb18e65f1493b904a8" prot="public" virt="virtual"><scope>faiss::VectorTransform</scope><name>~VectorTransform</name></member>
     </listofallmembers>
   </compounddef>

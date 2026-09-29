@@ -16,7 +16,7 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/svs/IndexSVSVamanaLeanVec.h" line="58" column="12" bodyfile="faiss/svs/IndexSVSVamanaLeanVec.h" bodystart="58" bodyend="-1"/>
+        <location file="faiss/svs/IndexSVSVamanaLeanVec.h" line="65" column="12" bodyfile="faiss/svs/IndexSVSVamanaLeanVec.h" bodystart="65" bodyend="-1"/>
       </memberdef>
       <memberdef kind="variable" id="structfaiss_1_1IndexSVSVamanaLeanVec_1ab344752de5f84659bd9f2a22e504852a" prot="public" static="no" mutable="no">
         <type>svs_runtime::LeanVecTrainingData *</type>
@@ -31,7 +31,7 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/svs/IndexSVSVamanaLeanVec.h" line="61" column="38" bodyfile="faiss/svs/IndexSVSVamanaLeanVec.h" bodystart="61" bodyend="61"/>
+        <location file="faiss/svs/IndexSVSVamanaLeanVec.h" line="68" column="38" bodyfile="faiss/svs/IndexSVSVamanaLeanVec.h" bodystart="68" bodyend="68"/>
       </memberdef>
       <memberdef kind="variable" id="structfaiss_1_1IndexSVSVamana_1aeeaa43e86cc2133b18d8574013b403a2" prot="public" static="no" mutable="no">
         <type>size_t</type>
@@ -45,7 +45,7 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/svs/IndexSVSVamana.h" line="80" column="12" bodyfile="faiss/svs/IndexSVSVamana.h" bodystart="80" bodyend="-1"/>
+        <location file="faiss/svs/IndexSVSVamana.h" line="93" column="12" bodyfile="faiss/svs/IndexSVSVamana.h" bodystart="93" bodyend="-1"/>
       </memberdef>
       <memberdef kind="variable" id="structfaiss_1_1IndexSVSVamana_1a7d869ca54cc04c99872e2f7efd59f8a3" prot="public" static="no" mutable="no">
         <type>size_t</type>
@@ -59,7 +59,7 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/svs/IndexSVSVamana.h" line="81" column="12" bodyfile="faiss/svs/IndexSVSVamana.h" bodystart="81" bodyend="-1"/>
+        <location file="faiss/svs/IndexSVSVamana.h" line="94" column="12" bodyfile="faiss/svs/IndexSVSVamana.h" bodystart="94" bodyend="-1"/>
       </memberdef>
       <memberdef kind="variable" id="structfaiss_1_1IndexSVSVamana_1ab311381b305090b844d970b19e5eaee0" prot="public" static="no" mutable="no">
         <type>float</type>
@@ -74,7 +74,7 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/svs/IndexSVSVamana.h" line="82" column="11" bodyfile="faiss/svs/IndexSVSVamana.h" bodystart="82" bodyend="-1"/>
+        <location file="faiss/svs/IndexSVSVamana.h" line="95" column="11" bodyfile="faiss/svs/IndexSVSVamana.h" bodystart="95" bodyend="-1"/>
       </memberdef>
       <memberdef kind="variable" id="structfaiss_1_1IndexSVSVamana_1adeef224eb1e33f3415a0dbe19a2cac1a" prot="public" static="no" mutable="no">
         <type>size_t</type>
@@ -89,7 +89,7 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/svs/IndexSVSVamana.h" line="83" column="12" bodyfile="faiss/svs/IndexSVSVamana.h" bodystart="83" bodyend="-1"/>
+        <location file="faiss/svs/IndexSVSVamana.h" line="96" column="12" bodyfile="faiss/svs/IndexSVSVamana.h" bodystart="96" bodyend="-1"/>
       </memberdef>
       <memberdef kind="variable" id="structfaiss_1_1IndexSVSVamana_1a05625593815e847ffb2b4f5c99f0a924" prot="public" static="no" mutable="no">
         <type>size_t</type>
@@ -104,7 +104,7 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/svs/IndexSVSVamana.h" line="84" column="12" bodyfile="faiss/svs/IndexSVSVamana.h" bodystart="84" bodyend="-1"/>
+        <location file="faiss/svs/IndexSVSVamana.h" line="97" column="12" bodyfile="faiss/svs/IndexSVSVamana.h" bodystart="97" bodyend="-1"/>
       </memberdef>
       <memberdef kind="variable" id="structfaiss_1_1IndexSVSVamana_1acee8bc45fc2eb1af1c44e28966046015" prot="public" static="no" mutable="no">
         <type>size_t</type>
@@ -119,7 +119,7 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/svs/IndexSVSVamana.h" line="85" column="12" bodyfile="faiss/svs/IndexSVSVamana.h" bodystart="85" bodyend="-1"/>
+        <location file="faiss/svs/IndexSVSVamana.h" line="98" column="12" bodyfile="faiss/svs/IndexSVSVamana.h" bodystart="98" bodyend="-1"/>
       </memberdef>
       <memberdef kind="variable" id="structfaiss_1_1IndexSVSVamana_1a4e97bcb1196c74bf479f79b8aa2bb59d" prot="public" static="no" mutable="no">
         <type>size_t</type>
@@ -134,7 +134,7 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/svs/IndexSVSVamana.h" line="86" column="12" bodyfile="faiss/svs/IndexSVSVamana.h" bodystart="86" bodyend="-1"/>
+        <location file="faiss/svs/IndexSVSVamana.h" line="99" column="12" bodyfile="faiss/svs/IndexSVSVamana.h" bodystart="99" bodyend="-1"/>
       </memberdef>
       <memberdef kind="variable" id="structfaiss_1_1IndexSVSVamana_1a462092757186a2e0a701555d4ca24a98" prot="public" static="no" mutable="no">
         <type>bool</type>
@@ -149,7 +149,23 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/svs/IndexSVSVamana.h" line="87" column="10" bodyfile="faiss/svs/IndexSVSVamana.h" bodystart="87" bodyend="-1"/>
+        <location file="faiss/svs/IndexSVSVamana.h" line="100" column="10" bodyfile="faiss/svs/IndexSVSVamana.h" bodystart="100" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structfaiss_1_1IndexSVSVamana_1ada826e4d618fb11e2fbedda558b94ea2" prot="public" static="no" mutable="no">
+        <type>bool</type>
+        <definition>bool faiss::IndexSVSVamana::is_static</definition>
+        <argsstring></argsstring>
+        <name>is_static</name>
+        <qualifiedname>faiss::IndexSVSVamana::is_static</qualifiedname>
+        <initializer>= false</initializer>
+        <briefdescription>
+<para>Whether this is a static (immutable) Vamana index. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="faiss/svs/IndexSVSVamana.h" line="103" column="10" bodyfile="faiss/svs/IndexSVSVamana.h" bodystart="103" bodyend="-1"/>
       </memberdef>
       <memberdef kind="variable" id="structfaiss_1_1IndexSVSVamana_1a567013895533970f56fecadfab20484b" prot="public" static="no" mutable="no">
         <type>SVSStorageKind</type>
@@ -157,17 +173,18 @@
         <argsstring></argsstring>
         <name>storage_kind</name>
         <qualifiedname>faiss::IndexSVSVamana::storage_kind</qualifiedname>
+        <initializer>= SVS_FP32</initializer>
         <briefdescription>
         </briefdescription>
         <detaileddescription>
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/svs/IndexSVSVamana.h" line="89" column="20" bodyfile="faiss/svs/IndexSVSVamana.h" bodystart="89" bodyend="-1"/>
+        <location file="faiss/svs/IndexSVSVamana.h" line="105" column="20" bodyfile="faiss/svs/IndexSVSVamana.h" bodystart="105" bodyend="-1"/>
       </memberdef>
-      <memberdef kind="variable" id="structfaiss_1_1IndexSVSVamana_1aa9e48aef39386f12d20b9e29bafb8b7e" prot="public" static="no" mutable="no">
-        <type>svs_runtime::DynamicVamanaIndex *</type>
-        <definition>svs_runtime::DynamicVamanaIndex* faiss::IndexSVSVamana::impl</definition>
+      <memberdef kind="variable" id="structfaiss_1_1IndexSVSVamana_1abed1972cbfcf22fe3dbb8b501343525e" prot="public" static="no" mutable="no">
+        <type>svs_runtime::VamanaIndex *</type>
+        <definition>svs_runtime::VamanaIndex* faiss::IndexSVSVamana::impl</definition>
         <argsstring></argsstring>
         <name>impl</name>
         <qualifiedname>faiss::IndexSVSVamana::impl</qualifiedname>
@@ -178,7 +195,66 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/svs/IndexSVSVamana.h" line="131" column="37" bodyfile="faiss/svs/IndexSVSVamana.h" bodystart="131" bodyend="131"/>
+        <location file="faiss/svs/IndexSVSVamana.h" line="155" column="30" bodyfile="faiss/svs/IndexSVSVamana.h" bodystart="155" bodyend="155"/>
+      </memberdef>
+      <memberdef kind="variable" id="structfaiss_1_1IndexSVSVamana_1a3c8a5d7f840ed2fe1e6fa914e5b49707" prot="public" static="no" mutable="no">
+        <type>std::shared_ptr&lt; <ref refid="structfaiss_1_1MmappedFileMappingOwner" kindref="compound">MmappedFileMappingOwner</ref> &gt;</type>
+        <definition>std::shared_ptr&lt;MmappedFileMappingOwner&gt; faiss::IndexSVSVamana::mmap_owner</definition>
+        <argsstring></argsstring>
+        <name>mmap_owner</name>
+        <qualifiedname>faiss::IndexSVSVamana::mmap_owner</qualifiedname>
+        <initializer>{nullptr}</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="faiss/svs/IndexSVSVamana.h" line="160" column="21" bodyfile="faiss/svs/IndexSVSVamana.h" bodystart="160" bodyend="160"/>
+      </memberdef>
+      <memberdef kind="variable" id="structfaiss_1_1IndexSVSVamana_1aeb7b6f7d87351e59e619257c208467b2" prot="public" static="no" mutable="no">
+        <type>std::vector&lt; float &gt;</type>
+        <definition>std::vector&lt;float&gt; faiss::IndexSVSVamana::stored_vectors</definition>
+        <argsstring></argsstring>
+        <name>stored_vectors</name>
+        <qualifiedname>faiss::IndexSVSVamana::stored_vectors</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="faiss/svs/IndexSVSVamana.h" line="165" column="17" bodyfile="faiss/svs/IndexSVSVamana.h" bodystart="165" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structfaiss_1_1IndexSVSVamana_1aa8b1c652e8b8d9e6aa530ccda7715e42" prot="public" static="no" mutable="no">
+        <type>bool</type>
+        <definition>bool faiss::IndexSVSVamana::stored_vectors_valid</definition>
+        <argsstring></argsstring>
+        <name>stored_vectors_valid</name>
+        <qualifiedname>faiss::IndexSVSVamana::stored_vectors_valid</qualifiedname>
+        <initializer>{true}</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="faiss/svs/IndexSVSVamana.h" line="166" column="10" bodyfile="faiss/svs/IndexSVSVamana.h" bodystart="166" bodyend="166"/>
+      </memberdef>
+      <memberdef kind="variable" id="structfaiss_1_1IndexSVSVamana_1a95c2268eb3f4091bbfe53040f6c8057c" prot="public" static="no" mutable="no">
+        <type>bool</type>
+        <definition>bool faiss::IndexSVSVamana::store_vectors</definition>
+        <argsstring></argsstring>
+        <name>store_vectors</name>
+        <qualifiedname>faiss::IndexSVSVamana::store_vectors</qualifiedname>
+        <initializer>{true}</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="faiss/svs/IndexSVSVamana.h" line="172" column="10" bodyfile="faiss/svs/IndexSVSVamana.h" bodystart="172" bodyend="172"/>
       </memberdef>
       <memberdef kind="variable" id="structfaiss_1_1Index_1a2a002388d2c081c2dbab8508dcefe73d" prot="public" static="no" mutable="no">
         <type>int</type>
@@ -196,7 +272,7 @@
         <location file="faiss/Index.h" line="105" column="9" bodyfile="faiss/Index.h" bodystart="105" bodyend="-1"/>
       </memberdef>
       <memberdef kind="variable" id="structfaiss_1_1Index_1a6970683faa021b7a6f1a0865c0d4eccd" prot="public" static="no" mutable="no">
-        <type><ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref></type>
+        <type><ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref></type>
         <definition>idx_t faiss::Index::ntotal</definition>
         <argsstring></argsstring>
         <name>ntotal</name>
@@ -286,14 +362,14 @@
         </inbodydescription>
         <location file="faiss/svs/IndexSVSVamanaLeanVec.h" line="31" column="5"/>
       </memberdef>
-      <memberdef kind="function" id="structfaiss_1_1IndexSVSVamanaLeanVec_1a86f5b7d206c1681962063583673c7340" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+      <memberdef kind="function" id="structfaiss_1_1IndexSVSVamanaLeanVec_1a16aa77760fd174df87a9ac2a0eb484bf" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
         <type></type>
         <definition>faiss::IndexSVSVamanaLeanVec::IndexSVSVamanaLeanVec</definition>
-        <argsstring>(idx_t d, size_t degree, MetricType metric=METRIC_L2, size_t leanvec_dims=0, SVSStorageKind storage=SVSStorageKind::SVS_LeanVec4x4)</argsstring>
+        <argsstring>(idx_t d, size_t degree, MetricType metric=METRIC_L2, size_t leanvec_dims=0, SVSStorageKind storage=SVSStorageKind::SVS_LeanVec4x4, bool is_static=false, bool store_vectors=true)</argsstring>
         <name>IndexSVSVamanaLeanVec</name>
         <qualifiedname>faiss::IndexSVSVamanaLeanVec::IndexSVSVamanaLeanVec</qualifiedname>
         <param>
-          <type><ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref></type>
+          <type><ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref></type>
           <declname>d</declname>
         </param>
         <param>
@@ -315,6 +391,16 @@
           <declname>storage</declname>
           <defval>SVSStorageKind::SVS_LeanVec4x4</defval>
         </param>
+        <param>
+          <type>bool</type>
+          <declname>is_static</declname>
+          <defval>false</defval>
+        </param>
+        <param>
+          <type>bool</type>
+          <declname>store_vectors</declname>
+          <defval>true</defval>
+        </param>
         <briefdescription>
         </briefdescription>
         <detaileddescription>
@@ -335,7 +421,7 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/svs/IndexSVSVamanaLeanVec.h" line="40" column="5"/>
+        <location file="faiss/svs/IndexSVSVamanaLeanVec.h" line="42" column="5"/>
       </memberdef>
       <memberdef kind="function" id="structfaiss_1_1IndexSVSVamanaLeanVec_1a7844fc7562f4fc827a9fa1a0b04f2ad9" prot="public" static="no" const="no" explicit="no" inline="no" virt="virtual">
         <type>void</type>
@@ -345,7 +431,7 @@
         <qualifiedname>faiss::IndexSVSVamanaLeanVec::add</qualifiedname>
         <reimplements refid="structfaiss_1_1IndexSVSVamana_1a47c20187774a20a2b280c5da652ca736">add</reimplements>
         <param>
-          <type><ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref></type>
+          <type><ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref></type>
           <declname>n</declname>
         </param>
         <param>
@@ -377,7 +463,7 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/svs/IndexSVSVamanaLeanVec.h" line="42" column="10"/>
+        <location file="faiss/svs/IndexSVSVamanaLeanVec.h" line="44" column="10"/>
       </memberdef>
       <memberdef kind="function" id="structfaiss_1_1IndexSVSVamanaLeanVec_1ae70030c46fe5bae48b84596069e670b0" prot="public" static="no" const="no" explicit="no" inline="no" virt="virtual">
         <type>void</type>
@@ -387,7 +473,7 @@
         <qualifiedname>faiss::IndexSVSVamanaLeanVec::train</qualifiedname>
         <reimplements refid="structfaiss_1_1Index_1a8f67dfd73993e192dc78f2c93d9d9532">train</reimplements>
         <param>
-          <type><ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref></type>
+          <type><ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref></type>
           <declname>n</declname>
         </param>
         <param>
@@ -419,17 +505,17 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/svs/IndexSVSVamanaLeanVec.h" line="45" column="10"/>
+        <location file="faiss/svs/IndexSVSVamanaLeanVec.h" line="47" column="10"/>
       </memberdef>
-      <memberdef kind="function" id="structfaiss_1_1IndexSVSVamanaLeanVec_1a0be9635c638cc74ca0285df76c690118" prot="public" static="no" const="no" explicit="no" inline="no" virt="virtual">
+      <memberdef kind="function" id="structfaiss_1_1IndexSVSVamanaLeanVec_1ae83c352204cc61df4adf2424e5bfe737" prot="public" static="no" const="no" explicit="no" inline="no" virt="virtual">
         <type>void</type>
-        <definition>void faiss::IndexSVSVamanaLeanVec::train</definition>
+        <definition>void faiss::IndexSVSVamanaLeanVec::train_with_queries</definition>
         <argsstring>(idx_t n, const float *x, idx_t n_train_q, const float *xq_train) override</argsstring>
-        <name>train</name>
-        <qualifiedname>faiss::IndexSVSVamanaLeanVec::train</qualifiedname>
-        <reimplements refid="structfaiss_1_1Index_1a54ff87dfd8b420f214e610865a70afbf">train</reimplements>
+        <name>train_with_queries</name>
+        <qualifiedname>faiss::IndexSVSVamanaLeanVec::train_with_queries</qualifiedname>
+        <reimplements refid="structfaiss_1_1Index_1ab1b5c141c872f5b37298322b1daefde5">train_with_queries</reimplements>
         <param>
-          <type><ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref></type>
+          <type><ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref></type>
           <declname>n</declname>
         </param>
         <param>
@@ -437,7 +523,7 @@
           <declname>x</declname>
         </param>
         <param>
-          <type><ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref></type>
+          <type><ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref></type>
           <declname>n_train_q</declname>
         </param>
         <param>
@@ -447,7 +533,7 @@
         <briefdescription>
         </briefdescription>
         <detaileddescription>
-<para>Perfrom training on a representative set of vectors and a representative set of queries</para>
+<para>Perform training on a representative set of vectors and a representative set of queries</para>
 <para><parameterlist kind="param"><parameteritem>
 <parameternamelist>
 <parametername>n</parametername>
@@ -485,7 +571,23 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/svs/IndexSVSVamanaLeanVec.h" line="52" column="10"/>
+        <location file="faiss/svs/IndexSVSVamanaLeanVec.h" line="54" column="10"/>
+      </memberdef>
+      <memberdef kind="function" id="structfaiss_1_1IndexSVSVamanaLeanVec_1a3d9b0af6fd46386a1b83aea806bdcb1d" prot="public" static="no" const="no" explicit="no" inline="no" virt="virtual">
+        <type>void</type>
+        <definition>void faiss::IndexSVSVamanaLeanVec::reset</definition>
+        <argsstring>() override</argsstring>
+        <name>reset</name>
+        <qualifiedname>faiss::IndexSVSVamanaLeanVec::reset</qualifiedname>
+        <reimplements refid="structfaiss_1_1IndexSVSVamana_1a9d65b591efa1bf7b7095300fb175cd50">reset</reimplements>
+        <briefdescription>
+<para>removes all elements from the database. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="faiss/svs/IndexSVSVamanaLeanVec.h" line="60" column="10"/>
       </memberdef>
       <memberdef kind="function" id="structfaiss_1_1IndexSVSVamanaLeanVec_1a07298f5256668319a9983fa215c37c66" prot="public" static="no" const="yes" explicit="no" inline="no" virt="non-virtual">
         <type>void</type>
@@ -503,7 +605,7 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/svs/IndexSVSVamanaLeanVec.h" line="55" column="10"/>
+        <location file="faiss/svs/IndexSVSVamanaLeanVec.h" line="62" column="10"/>
       </memberdef>
       <memberdef kind="function" id="structfaiss_1_1IndexSVSVamanaLeanVec_1a4dfda02c5a8612432e328eb7f446dcb7" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
         <type>void</type>
@@ -521,7 +623,49 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/svs/IndexSVSVamanaLeanVec.h" line="56" column="10"/>
+        <location file="faiss/svs/IndexSVSVamanaLeanVec.h" line="63" column="10"/>
+      </memberdef>
+      <memberdef kind="function" id="structfaiss_1_1IndexSVSVamana_1a26fb705776df212640d3ed8a1202f80e" prot="public" static="no" const="yes" explicit="no" inline="no" virt="virtual">
+        <type>void</type>
+        <definition>void faiss::IndexSVSVamana::reconstruct</definition>
+        <argsstring>(idx_t key, float *recons) const override</argsstring>
+        <name>reconstruct</name>
+        <qualifiedname>faiss::IndexSVSVamana::reconstruct</qualifiedname>
+        <reimplements refid="structfaiss_1_1Index_1afaf9673009f9fe5a53ed6db522a5f69c">reconstruct</reimplements>
+        <param>
+          <type><ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref></type>
+          <declname>key</declname>
+        </param>
+        <param>
+          <type>float *</type>
+          <declname>recons</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+<para>Reconstruct a stored vector (or an approximation if lossy coding)</para>
+<para>this function may not be defined for some indexes <parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>key</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>id of the vector to reconstruct </para>
+</parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>recons</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>reconstructed vector (size d) </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="faiss/svs/IndexSVSVamana.h" line="125" column="10"/>
       </memberdef>
       <memberdef kind="function" id="structfaiss_1_1IndexSVSVamana_1a019544f0725293e7cfe4d675d53eeaa0" prot="public" static="no" const="yes" explicit="no" inline="no" virt="virtual">
         <type>void</type>
@@ -531,7 +675,7 @@
         <qualifiedname>faiss::IndexSVSVamana::search</qualifiedname>
         <reimplements refid="structfaiss_1_1Index_1a4bec1a04796e20ea0bfa24bad5b246e3">search</reimplements>
         <param>
-          <type><ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref></type>
+          <type><ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref></type>
           <declname>n</declname>
         </param>
         <param>
@@ -539,7 +683,7 @@
           <declname>x</declname>
         </param>
         <param>
-          <type><ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref></type>
+          <type><ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref></type>
           <declname>k</declname>
         </param>
         <param>
@@ -547,7 +691,7 @@
           <declname>distances</declname>
         </param>
         <param>
-          <type><ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref> *</type>
+          <type><ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref> *</type>
           <declname>labels</declname>
         </param>
         <param>
@@ -605,7 +749,7 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/svs/IndexSVSVamana.h" line="107" column="10"/>
+        <location file="faiss/svs/IndexSVSVamana.h" line="127" column="10"/>
       </memberdef>
       <memberdef kind="function" id="structfaiss_1_1IndexSVSVamana_1a9d9b2ff0114ac59965bcf990b09b844c" prot="public" static="no" const="yes" explicit="no" inline="no" virt="virtual">
         <type>void</type>
@@ -615,7 +759,7 @@
         <qualifiedname>faiss::IndexSVSVamana::range_search</qualifiedname>
         <reimplements refid="structfaiss_1_1Index_1a5d69b1965b4cd9d11a57222dfc89b7ba">range_search</reimplements>
         <param>
-          <type><ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref></type>
+          <type><ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref></type>
           <declname>n</declname>
         </param>
         <param>
@@ -677,7 +821,7 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/svs/IndexSVSVamana.h" line="115" column="10"/>
+        <location file="faiss/svs/IndexSVSVamana.h" line="135" column="10"/>
       </memberdef>
       <memberdef kind="function" id="structfaiss_1_1IndexSVSVamana_1a4ae46d56b2782329c2c46a9553b3ce5a" prot="public" static="no" const="no" explicit="no" inline="no" virt="virtual">
         <type>size_t</type>
@@ -697,23 +841,7 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/svs/IndexSVSVamana.h" line="122" column="12"/>
-      </memberdef>
-      <memberdef kind="function" id="structfaiss_1_1IndexSVSVamana_1a9d65b591efa1bf7b7095300fb175cd50" prot="public" static="no" const="no" explicit="no" inline="no" virt="virtual">
-        <type>void</type>
-        <definition>void faiss::IndexSVSVamana::reset</definition>
-        <argsstring>() override</argsstring>
-        <name>reset</name>
-        <qualifiedname>faiss::IndexSVSVamana::reset</qualifiedname>
-        <reimplements refid="structfaiss_1_1Index_1a849361f5f0ab0aba8d419c86f2594191">reset</reimplements>
-        <briefdescription>
-<para>removes all elements from the database. </para>
-        </briefdescription>
-        <detaileddescription>
-        </detaileddescription>
-        <inbodydescription>
-        </inbodydescription>
-        <location file="faiss/svs/IndexSVSVamana.h" line="124" column="10"/>
+        <location file="faiss/svs/IndexSVSVamana.h" line="142" column="12"/>
       </memberdef>
       <memberdef kind="function" id="structfaiss_1_1IndexSVSVamana_1a12545dfde65b7439ad5100474b28dc17" prot="public" static="no" const="yes" explicit="no" inline="no" virt="non-virtual">
         <type>void</type>
@@ -731,7 +859,7 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/svs/IndexSVSVamana.h" line="127" column="10"/>
+        <location file="faiss/svs/IndexSVSVamana.h" line="147" column="10"/>
       </memberdef>
       <memberdef kind="function" id="structfaiss_1_1IndexSVSVamana_1a125ebfc4e368666d5c859accd8a115a7" prot="public" static="no" const="no" explicit="no" inline="no" virt="virtual">
         <type>void</type>
@@ -749,7 +877,25 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/svs/IndexSVSVamana.h" line="128" column="18"/>
+        <location file="faiss/svs/IndexSVSVamana.h" line="148" column="18"/>
+      </memberdef>
+      <memberdef kind="function" id="structfaiss_1_1IndexSVSVamana_1a57980aa15ff2062fca057073f7713372" prot="public" static="no" const="no" explicit="no" inline="no" virt="virtual">
+        <type>void</type>
+        <definition>virtual void faiss::IndexSVSVamana::map_to</definition>
+        <argsstring>(MappedFileIOReader *mf)</argsstring>
+        <name>map_to</name>
+        <qualifiedname>faiss::IndexSVSVamana::map_to</qualifiedname>
+        <param>
+          <type><ref refid="structfaiss_1_1MappedFileIOReader" kindref="compound">MappedFileIOReader</ref> *</type>
+          <declname>mf</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="faiss/svs/IndexSVSVamana.h" line="151" column="18"/>
       </memberdef>
       <memberdef kind="function" id="structfaiss_1_1Index_1af8f340497140cc8b091f4732c3460537" prot="public" static="no" const="no" explicit="no" inline="yes" virt="virtual">
         <type>void</type>
@@ -759,7 +905,7 @@
         <qualifiedname>faiss::Index::train_ex</qualifiedname>
         <reimplementedby refid="structfaiss_1_1gpu_1_1GpuIndexCagra_1a8a472fd13dca61dd0da11b0db3486d29">train_ex</reimplementedby>
         <param>
-          <type><ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref></type>
+          <type><ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref></type>
           <declname>n</declname>
         </param>
         <param>
@@ -787,7 +933,7 @@
         <reimplementedby refid="structfaiss_1_1gpu_1_1GpuIndexCagra_1ae6308a059e81139f55e67dfc709e6a6e">add_ex</reimplementedby>
         <reimplementedby refid="classfaiss_1_1gpu_1_1GpuIndex_1afab6f6c4b430e672bad9bee8264cc6f4">add_ex</reimplementedby>
         <param>
-          <type><ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref></type>
+          <type><ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref></type>
           <declname>n</declname>
         </param>
         <param>
@@ -813,13 +959,17 @@
         <name>add_with_ids</name>
         <qualifiedname>faiss::Index::add_with_ids</qualifiedname>
         <reimplementedby refid="classfaiss_1_1gpu_1_1GpuIndex_1a0e7fa779ba9d47b0af36161de2a3b191">add_with_ids</reimplementedby>
+        <reimplementedby refid="classfaiss_1_1gpu__metal_1_1MetalIndexFlat_1a7685d5790aaf5c4468fa9aabcde200f3">add_with_ids</reimplementedby>
+        <reimplementedby refid="classfaiss_1_1gpu__metal_1_1MetalIndexIVFFlat_1ab7e4e10d58122944ce80c9878b2ee605">add_with_ids</reimplementedby>
+        <reimplementedby refid="classfaiss_1_1gpu__metal_1_1MetalIndexIVFPQ_1a448f76cb2c8e2c58b55e674f8d25e4af">add_with_ids</reimplementedby>
         <reimplementedby refid="structfaiss_1_1IndexIVF_1a14e75169bddcd0251134821416b060a1">add_with_ids</reimplementedby>
         <reimplementedby refid="structfaiss_1_1IndexIVFFastScan_1a8699e7d828750f02bfc86014269e4a6c">add_with_ids</reimplementedby>
         <reimplementedby refid="structfaiss_1_1IndexIVFFlatDedup_1a4e27cfca56590371e0984d8f16b2b68d">add_with_ids</reimplementedby>
         <reimplementedby refid="structfaiss_1_1IndexIVFPQR_1ae526b4722b470a33643d40ef30cf27f7">add_with_ids</reimplementedby>
+        <reimplementedby refid="structfaiss_1_1IndexIVFSQFastScan_1a3fa7cbfe9580c89a521223ab8605ec21">add_with_ids</reimplementedby>
         <reimplementedby refid="structfaiss_1_1IndexPreTransform_1aa37b7428e0ac315db5e52b1cb1e42605">add_with_ids</reimplementedby>
         <param>
-          <type><ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref></type>
+          <type><ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref></type>
           <declname>n</declname>
         </param>
         <param>
@@ -827,7 +977,7 @@
           <declname>x</declname>
         </param>
         <param>
-          <type>const <ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref> *</type>
+          <type>const <ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref> *</type>
           <declname>xids</declname>
         </param>
         <briefdescription>
@@ -874,7 +1024,7 @@
         <qualifiedname>faiss::Index::add_with_ids_ex</qualifiedname>
         <reimplementedby refid="classfaiss_1_1gpu_1_1GpuIndex_1aa4ee320c856211e4e6238b95eb338996">add_with_ids_ex</reimplementedby>
         <param>
-          <type><ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref></type>
+          <type><ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref></type>
           <declname>n</declname>
         </param>
         <param>
@@ -886,7 +1036,7 @@
           <declname>numeric_type</declname>
         </param>
         <param>
-          <type>const <ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref> *</type>
+          <type>const <ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref> *</type>
           <declname>xids</declname>
         </param>
         <briefdescription>
@@ -905,7 +1055,7 @@
         <qualifiedname>faiss::Index::search_ex</qualifiedname>
         <reimplementedby refid="classfaiss_1_1gpu_1_1GpuIndex_1a5dbd8404a4bf32a43dbf9a349a680b9d">search_ex</reimplementedby>
         <param>
-          <type><ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref></type>
+          <type><ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref></type>
           <declname>n</declname>
         </param>
         <param>
@@ -917,7 +1067,7 @@
           <declname>numeric_type</declname>
         </param>
         <param>
-          <type><ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref></type>
+          <type><ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref></type>
           <declname>k</declname>
         </param>
         <param>
@@ -925,7 +1075,7 @@
           <declname>distances</declname>
         </param>
         <param>
-          <type><ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref> *</type>
+          <type><ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref> *</type>
           <declname>labels</declname>
         </param>
         <param>
@@ -950,6 +1100,7 @@
         <reimplementedby refid="structfaiss_1_1IndexFlatCodes_1ad77a588028c960099177d970ad092dba">search1</reimplementedby>
         <reimplementedby refid="structfaiss_1_1IndexHNSW_1a3c44c91bfe78cb7ef100d92b6512040b">search1</reimplementedby>
         <reimplementedby refid="structfaiss_1_1IndexIVF_1aa5956e28181a1081a0f2e529e0df5af4">search1</reimplementedby>
+        <reimplementedby refid="structfaiss_1_1IndexSQFastScan_1ac7f8211d748e79e4be7cdb0008e1a484">search1</reimplementedby>
         <param>
           <type>const float *</type>
           <declname>x</declname>
@@ -980,7 +1131,7 @@
         <qualifiedname>faiss::Index::assign</qualifiedname>
         <reimplementedby refid="classfaiss_1_1gpu_1_1GpuIndex_1ab6382636bc3f651645ee66d8744f7c0f">assign</reimplementedby>
         <param>
-          <type><ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref></type>
+          <type><ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref></type>
           <declname>n</declname>
         </param>
         <param>
@@ -988,11 +1139,11 @@
           <declname>x</declname>
         </param>
         <param>
-          <type><ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref> *</type>
+          <type><ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref> *</type>
           <declname>labels</declname>
         </param>
         <param>
-          <type><ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref></type>
+          <type><ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref></type>
           <declname>k</declname>
           <defval>1</defval>
         </param>
@@ -1039,61 +1190,6 @@
         </inbodydescription>
         <location file="faiss/Index.h" line="268" column="18"/>
       </memberdef>
-      <memberdef kind="function" id="structfaiss_1_1Index_1afaf9673009f9fe5a53ed6db522a5f69c" prot="public" static="no" const="yes" explicit="no" inline="no" virt="virtual">
-        <type>void</type>
-        <definition>virtual void faiss::Index::reconstruct</definition>
-        <argsstring>(idx_t key, float *recons) const</argsstring>
-        <name>reconstruct</name>
-        <qualifiedname>faiss::Index::reconstruct</qualifiedname>
-        <reimplementedby refid="classfaiss_1_1gpu_1_1GpuIndexFlat_1a43f3344a2855d2842873d868c192508b">reconstruct</reimplementedby>
-        <reimplementedby refid="structfaiss_1_1AdditiveCoarseQuantizer_1a68a74f41ca7c511663dd573183fb670b">reconstruct</reimplementedby>
-        <reimplementedby refid="structfaiss_1_1IndexFastScan_1a249e3ec94d8ca092d7aa1263c0e3fa67">reconstruct</reimplementedby>
-        <reimplementedby refid="structfaiss_1_1IndexFlat_1ae4b33315752b62cff1626f9f967167b1">reconstruct</reimplementedby>
-        <reimplementedby refid="structfaiss_1_1IndexFlatPanorama_1a1b0c9cb07922637cb0a1fbb1bb983b75">reconstruct</reimplementedby>
-        <reimplementedby refid="structfaiss_1_1IndexFlatCodes_1afe96eb3293cc5428f9077648b23fcc4e">reconstruct</reimplementedby>
-        <reimplementedby refid="structfaiss_1_1IndexHNSW_1a660e5c8de1ba9c71bf3fe1f3bf0c8812">reconstruct</reimplementedby>
-        <reimplementedby refid="structfaiss_1_1IndexIVF_1a3b3270dcfa248dc30117644382a54e39">reconstruct</reimplementedby>
-        <reimplementedby refid="structfaiss_1_1IndexNNDescent_1a1c6827189741d6d596421fae6475f4da">reconstruct</reimplementedby>
-        <reimplementedby refid="structfaiss_1_1IndexNSG_1a443fa9f9a866fca02ff55af0226ccb6a">reconstruct</reimplementedby>
-        <reimplementedby refid="structfaiss_1_1MultiIndexQuantizer_1aa5bd578560419955a4bf7035cf09a392">reconstruct</reimplementedby>
-        <reimplementedby refid="structfaiss_1_1IndexPreTransform_1afc92036fae3041caf6331b67754b599c">reconstruct</reimplementedby>
-        <reimplementedby refid="structfaiss_1_1IndexRefine_1a01356d39a4eda730517a295c2c7bb869">reconstruct</reimplementedby>
-        <reimplementedby refid="structfaiss_1_1IndexRandom_1aeb61a0418e111af3a3409905cd6b6483">reconstruct</reimplementedby>
-        <param>
-          <type><ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref></type>
-          <declname>key</declname>
-        </param>
-        <param>
-          <type>float *</type>
-          <declname>recons</declname>
-        </param>
-        <briefdescription>
-        </briefdescription>
-        <detaileddescription>
-<para>Reconstruct a stored vector (or an approximation if lossy coding)</para>
-<para>this function may not be defined for some indexes <parameterlist kind="param"><parameteritem>
-<parameternamelist>
-<parametername>key</parametername>
-</parameternamelist>
-<parameterdescription>
-<para>id of the vector to reconstruct </para>
-</parameterdescription>
-</parameteritem>
-<parameteritem>
-<parameternamelist>
-<parametername>recons</parametername>
-</parameternamelist>
-<parameterdescription>
-<para>reconstructed vector (size d) </para>
-</parameterdescription>
-</parameteritem>
-</parameterlist>
-</para>
-        </detaileddescription>
-        <inbodydescription>
-        </inbodydescription>
-        <location file="faiss/Index.h" line="285" column="18"/>
-      </memberdef>
       <memberdef kind="function" id="structfaiss_1_1Index_1a1dbf5eac7d05ca6271d2fd9bee568218" prot="public" static="no" const="yes" explicit="no" inline="no" virt="virtual">
         <type>void</type>
         <definition>virtual void faiss::Index::reconstruct_batch</definition>
@@ -1102,11 +1198,11 @@
         <qualifiedname>faiss::Index::reconstruct_batch</qualifiedname>
         <reimplementedby refid="classfaiss_1_1gpu_1_1GpuIndexFlat_1a66814ad5f94a9e7534d4fdf4951d9bee">reconstruct_batch</reimplementedby>
         <param>
-          <type><ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref></type>
+          <type><ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref></type>
           <declname>n</declname>
         </param>
         <param>
-          <type>const <ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref> *</type>
+          <type>const <ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref> *</type>
           <declname>keys</declname>
         </param>
         <param>
@@ -1156,16 +1252,18 @@
         <qualifiedname>faiss::Index::reconstruct_n</qualifiedname>
         <reimplementedby refid="structfaiss_1_1IndexFlatPanorama_1a4cb5411775c92c68d79efe2f8142386e">reconstruct_n</reimplementedby>
         <reimplementedby refid="classfaiss_1_1gpu_1_1GpuIndexIVFFlat_1ab95cbd3b7e87771c72c1e166a9caef2a">reconstruct_n</reimplementedby>
+        <reimplementedby refid="classfaiss_1_1gpu__metal_1_1MetalIndexIVFFlat_1a05d437f53c2d761c6c860ef961ba8126">reconstruct_n</reimplementedby>
         <reimplementedby refid="structfaiss_1_1IndexFlatCodes_1a166582b8b10fc86e77ce8c48854496f8">reconstruct_n</reimplementedby>
         <reimplementedby refid="structfaiss_1_1IndexIVF_1a7cc286dfbd8bfd43ea4b22173e28231c">reconstruct_n</reimplementedby>
         <reimplementedby refid="structfaiss_1_1IndexPreTransform_1a02ebb27dd56aec9a93c50bd6b96184e7">reconstruct_n</reimplementedby>
+        <reimplementedby refid="structfaiss_1_1IndexSQFastScan_1af71dec841c723e0c890bdfa83ee00880">reconstruct_n</reimplementedby>
         <reimplementedby refid="classfaiss_1_1gpu_1_1GpuIndexFlat_1a877b903b95d7b0d2bc48717a1690b6da">reconstruct_n</reimplementedby>
         <param>
-          <type><ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref></type>
+          <type><ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref></type>
           <declname>i0</declname>
         </param>
         <param>
-          <type><ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref></type>
+          <type><ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref></type>
           <declname>ni</declname>
         </param>
         <param>
@@ -1217,7 +1315,7 @@
         <reimplementedby refid="structfaiss_1_1IndexIVF_1ae370aa40139ca15359b1cbdf88c9b3d8">search_and_reconstruct</reimplementedby>
         <reimplementedby refid="structfaiss_1_1IndexPreTransform_1a6082f6ca04afc943d5e1c729f24de283">search_and_reconstruct</reimplementedby>
         <param>
-          <type><ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref></type>
+          <type><ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref></type>
           <declname>n</declname>
         </param>
         <param>
@@ -1225,7 +1323,7 @@
           <declname>x</declname>
         </param>
         <param>
-          <type><ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref></type>
+          <type><ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref></type>
           <declname>k</declname>
         </param>
         <param>
@@ -1233,7 +1331,7 @@
           <declname>distances</declname>
         </param>
         <param>
-          <type><ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref> *</type>
+          <type><ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref> *</type>
           <declname>labels</declname>
         </param>
         <param>
@@ -1314,7 +1412,7 @@
         <reimplementedby refid="structfaiss_1_1IndexFlatPanorama_1a87c06a8ca57d0b84f6fcf94fbfd1cfda">search_subset</reimplementedby>
         <reimplementedby refid="structfaiss_1_1IndexPreTransform_1a7a6a1dafa7e0ffacc9db2c18a669d35b">search_subset</reimplementedby>
         <param>
-          <type><ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref></type>
+          <type><ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref></type>
           <declname>n</declname>
         </param>
         <param>
@@ -1322,15 +1420,15 @@
           <declname>x</declname>
         </param>
         <param>
-          <type><ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref></type>
+          <type><ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref></type>
           <declname>k_base</declname>
         </param>
         <param>
-          <type>const <ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref> *</type>
+          <type>const <ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref> *</type>
           <declname>base_labels</declname>
         </param>
         <param>
-          <type><ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref></type>
+          <type><ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref></type>
           <declname>k</declname>
         </param>
         <param>
@@ -1338,7 +1436,7 @@
           <declname>distances</declname>
         </param>
         <param>
-          <type><ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref> *</type>
+          <type><ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref> *</type>
           <declname>labels</declname>
         </param>
         <briefdescription>
@@ -1426,7 +1524,7 @@
           <declname>residual</declname>
         </param>
         <param>
-          <type><ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref></type>
+          <type><ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref></type>
           <declname>key</declname>
         </param>
         <briefdescription>
@@ -1474,7 +1572,7 @@
         <reimplementedby refid="classfaiss_1_1gpu_1_1GpuIndex_1a1a1ccf88e127b613c5ef65e52d7a6428">compute_residual_n</reimplementedby>
         <reimplementedby refid="classfaiss_1_1gpu_1_1GpuIndexFlat_1a8dddfaa491c1c2cfe2e03fa06e9676b4">compute_residual_n</reimplementedby>
         <param>
-          <type><ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref></type>
+          <type><ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref></type>
           <declname>n</declname>
         </param>
         <param>
@@ -1486,7 +1584,7 @@
           <declname>residuals</declname>
         </param>
         <param>
-          <type>const <ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref> *</type>
+          <type>const <ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref> *</type>
           <declname>keys</declname>
         </param>
         <briefdescription>
@@ -1542,8 +1640,10 @@
         <reimplementedby refid="structfaiss_1_1Index2Layer_1ae148c7b7ab50a2d3859002b64572cb0f">get_distance_computer</reimplementedby>
         <reimplementedby refid="structfaiss_1_1IndexFlatCodes_1ad1f46f8661b11c413c4ba66d842f35ed">get_distance_computer</reimplementedby>
         <reimplementedby refid="structfaiss_1_1IndexHNSW_1af1f0080b012492ffcab261eaa25b1545">get_distance_computer</reimplementedby>
+        <reimplementedby refid="structfaiss_1_1IndexIVFEDEN_1aadaf80de860a7c5c967f2aba644fcf31">get_distance_computer</reimplementedby>
         <reimplementedby refid="structfaiss_1_1IndexIVFRaBitQ_1ad3bf565bb0446e201db587c39b84176f">get_distance_computer</reimplementedby>
         <reimplementedby refid="structfaiss_1_1IndexPreTransform_1a4e0180e2aa2aacaa2532660bdb4f9b8c">get_distance_computer</reimplementedby>
+        <reimplementedby refid="structfaiss_1_1IndexSQFastScan_1a527149c463ef65c3668faebcc414d187">get_distance_computer</reimplementedby>
         <briefdescription>
         </briefdescription>
         <detaileddescription>
@@ -1568,6 +1668,7 @@
         <reimplementedby refid="structfaiss_1_1IndexRefine_1a4f4fa1a53bd9603ea000e556cbd6940f">sa_code_size</reimplementedby>
         <reimplementedby refid="structfaiss_1_1IndexRowwiseMinMaxFP16_1a4fa54c45e907f5bb75b7c3dd46a24b9a">sa_code_size</reimplementedby>
         <reimplementedby refid="structfaiss_1_1IndexRowwiseMinMax_1a656e29f7f050b80cde5ca7e8b56eb960">sa_code_size</reimplementedby>
+        <reimplementedby refid="structfaiss_1_1IndexSQFastScan_1aeb336dcfa98a12878f657a40d265e564">sa_code_size</reimplementedby>
         <briefdescription>
         </briefdescription>
         <detaileddescription>
@@ -1585,6 +1686,7 @@
         <qualifiedname>faiss::Index::sa_encode</qualifiedname>
         <reimplementedby refid="structfaiss_1_1Index2Layer_1a205db18d83af2fc98faab3f0066e8c9f">sa_encode</reimplementedby>
         <reimplementedby refid="structfaiss_1_1IndexAdditiveQuantizer_1a32fa884e35be46b3244b90012bdcc016">sa_encode</reimplementedby>
+        <reimplementedby refid="structfaiss_1_1IndexEDEN_1a9ec8a51a09a4bb15e0fab5fea646a41c">sa_encode</reimplementedby>
         <reimplementedby refid="structfaiss_1_1IndexFastScan_1a57ce48e11490ead0689aee9df3a502be">sa_encode</reimplementedby>
         <reimplementedby refid="structfaiss_1_1IndexFlat_1aaa95cb6086e2889e1c3f4478e454bc67">sa_encode</reimplementedby>
         <reimplementedby refid="structfaiss_1_1IndexIVF_1a9d28b314ee008589eb41ce2823a088b6">sa_encode</reimplementedby>
@@ -1597,9 +1699,10 @@
         <reimplementedby refid="structfaiss_1_1IndexRowwiseMinMaxFP16_1a7f4963d9ea750a494151478fc56df10a">sa_encode</reimplementedby>
         <reimplementedby refid="structfaiss_1_1IndexRowwiseMinMax_1ab2dfc5e5adcbfa9fcf5ecd30ddd407a8">sa_encode</reimplementedby>
         <reimplementedby refid="structfaiss_1_1IndexScalarQuantizer_1ae8c5ed4f9c2145aa074986bf1be3af46">sa_encode</reimplementedby>
+        <reimplementedby refid="structfaiss_1_1IndexSQFastScan_1a867a0c887d5b7c2328b69256ec6f77f3">sa_encode</reimplementedby>
         <reimplementedby refid="structfaiss_1_1IndexNeuralNetCodec_1a90a9e0e680a9734bf24b029e4218a43c">sa_encode</reimplementedby>
         <param>
-          <type><ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref></type>
+          <type><ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref></type>
           <declname>n</declname>
         </param>
         <param>
@@ -1654,12 +1757,15 @@
         <reimplementedby refid="structfaiss_1_1Index2Layer_1aefba1e901bddaa812e853a8203b2f0b5">sa_decode</reimplementedby>
         <reimplementedby refid="structfaiss_1_1IndexAdditiveQuantizer_1af849220ce067392a737dcbca233326ad">sa_decode</reimplementedby>
         <reimplementedby refid="structfaiss_1_1IndexAdditiveQuantizerFastScan_1a3b295457588bd7f11782f84683eaff8d">sa_decode</reimplementedby>
+        <reimplementedby refid="structfaiss_1_1IndexEDEN_1a76ad42b193899fd944b3be309c7ec2e1">sa_decode</reimplementedby>
         <reimplementedby refid="structfaiss_1_1IndexFlat_1af84e108340092e5d3970ab8824a71658">sa_decode</reimplementedby>
+        <reimplementedby refid="structfaiss_1_1IndexIVFEDEN_1a8cbb8690d25f3629a18f54a4caf9dc66">sa_decode</reimplementedby>
         <reimplementedby refid="structfaiss_1_1IndexIVFFastScan_1a0f23ffc33cf0de396080f9c07888f9ca">sa_decode</reimplementedby>
         <reimplementedby refid="structfaiss_1_1IndexIVFFlat_1a1464960b17488f8ee8ae600c07f7b72c">sa_decode</reimplementedby>
         <reimplementedby refid="structfaiss_1_1IndexIVFPQ_1adb7494c07ce7812226ad41c8b6dca992">sa_decode</reimplementedby>
         <reimplementedby refid="structfaiss_1_1IndexIVFRaBitQ_1a79ceddd914b81c8fa67c6d27e4a3dc12">sa_decode</reimplementedby>
         <reimplementedby refid="structfaiss_1_1IndexIVFRaBitQFastScan_1a1463a1ea2123d2b672e7d74069a711f0">sa_decode</reimplementedby>
+        <reimplementedby refid="structfaiss_1_1IndexIVFSQFastScan_1adaadfecef75e60ae3596bd691c36da73">sa_decode</reimplementedby>
         <reimplementedby refid="structfaiss_1_1IndexLattice_1a3fd27c778f435412336110785ba7124d">sa_decode</reimplementedby>
         <reimplementedby refid="structfaiss_1_1IndexLSH_1ac1eaeea883e641e50c5b770fb02edc25">sa_decode</reimplementedby>
         <reimplementedby refid="structfaiss_1_1IndexPQ_1a104104a52149ebdcb8ab79dc01180b6e">sa_decode</reimplementedby>
@@ -1672,10 +1778,11 @@
         <reimplementedby refid="structfaiss_1_1IndexRowwiseMinMax_1ab04e9ffc561f4de77af64d9ab122d58f">sa_decode</reimplementedby>
         <reimplementedby refid="structfaiss_1_1IndexScalarQuantizer_1a96a5ca50fbdef07c7773bb9a27e860e5">sa_decode</reimplementedby>
         <reimplementedby refid="structfaiss_1_1IndexIVFScalarQuantizer_1ae10ad1a5c025337984277a68f4da4338">sa_decode</reimplementedby>
+        <reimplementedby refid="structfaiss_1_1IndexSQFastScan_1a4a1fc17711d686e63046b0d4989fc23c">sa_decode</reimplementedby>
         <reimplementedby refid="structfaiss_1_1IndexIVFAdditiveQuantizer_1a0ce87a96183a3bbd1b3d70b6fe7e30ce">sa_decode</reimplementedby>
         <reimplementedby refid="structfaiss_1_1IndexNeuralNetCodec_1a959a2734dcc70267ac5b900fbe0d7825">sa_decode</reimplementedby>
         <param>
-          <type><ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref></type>
+          <type><ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref></type>
           <declname>n</declname>
         </param>
         <param>
@@ -1733,12 +1840,13 @@
         <reimplementedby refid="structfaiss_1_1IndexFastScan_1af0e22783a659894065a86e8a60ce7bf8">merge_from</reimplementedby>
         <reimplementedby refid="structfaiss_1_1IndexFlatCodes_1a3648a16e47f5f9567c50ad4fd49453ca">merge_from</reimplementedby>
         <reimplementedby refid="structfaiss_1_1IndexPreTransform_1ae3af026662cdce35dbce0b73acf09ab7">merge_from</reimplementedby>
+        <reimplementedby refid="structfaiss_1_1IndexSQFastScan_1a6c09a4142163aa49c3087a2bcb6e6075">merge_from</reimplementedby>
         <param>
           <type><ref refid="structfaiss_1_1Index" kindref="compound">Index</ref> &amp;</type>
           <declname>otherIndex</declname>
         </param>
         <param>
-          <type><ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref></type>
+          <type><ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref></type>
           <declname>add_id</declname>
           <defval>0</defval>
         </param>
@@ -1761,6 +1869,7 @@
         <reimplementedby refid="structfaiss_1_1IndexFlatCodes_1a3ec1c75f8caa2ac5e59cfbb62efb910a">check_compatible_for_merge</reimplementedby>
         <reimplementedby refid="structfaiss_1_1IndexIVF_1a5a097e5b50f8b220db61b52c6fdaf1f9">check_compatible_for_merge</reimplementedby>
         <reimplementedby refid="structfaiss_1_1IndexPreTransform_1a882647c37d7b8eb55a5d494538283536">check_compatible_for_merge</reimplementedby>
+        <reimplementedby refid="structfaiss_1_1IndexSQFastScan_1ad5cb48a926715682dec290413639fd57">check_compatible_for_merge</reimplementedby>
         <param>
           <type>const <ref refid="structfaiss_1_1Index" kindref="compound">Index</ref> &amp;</type>
           <declname>otherIndex</declname>
@@ -1781,10 +1890,11 @@
         <name>add_sa_codes</name>
         <qualifiedname>faiss::Index::add_sa_codes</qualifiedname>
         <reimplementedby refid="structfaiss_1_1IndexIVF_1a23981fa9b4a027d8a43da073d9d2c685">add_sa_codes</reimplementedby>
+        <reimplementedby refid="structfaiss_1_1IndexSQFastScan_1ac0aad5bcf1f44691a38c235c3f966c51">add_sa_codes</reimplementedby>
         <reimplementedby refid="structfaiss_1_1IndexFlatPanorama_1a48d3d2d28ebfe217bc5b52ed40cab40d">add_sa_codes</reimplementedby>
         <reimplementedby refid="structfaiss_1_1IndexFlatCodes_1ad30841b719b3c4949f0ac5f656e28ee2">add_sa_codes</reimplementedby>
         <param>
-          <type><ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref></type>
+          <type><ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref></type>
           <declname>n</declname>
         </param>
         <param>
@@ -1792,7 +1902,7 @@
           <declname>codes</declname>
         </param>
         <param>
-          <type>const <ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref> *</type>
+          <type>const <ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref> *</type>
           <declname>xids</declname>
         </param>
         <briefdescription>
@@ -1824,20 +1934,42 @@
       </memberdef>
     </sectiondef>
     <sectiondef kind="protected-func">
-      <memberdef kind="function" id="structfaiss_1_1IndexSVSVamanaLeanVec_1a688740c8240aaaec8e9cdcacde4e1962" prot="protected" static="no" const="no" explicit="no" inline="no" virt="virtual">
+      <memberdef kind="function" id="structfaiss_1_1IndexSVSVamanaLeanVec_1a746f64379d0b12af4fd896b943c6e751" prot="protected" static="no" const="no" explicit="no" inline="no" virt="virtual">
         <type>void</type>
         <definition>void faiss::IndexSVSVamanaLeanVec::create_impl</definition>
-        <argsstring>() override</argsstring>
+        <argsstring>(idx_t n, const float *x) override</argsstring>
         <name>create_impl</name>
         <qualifiedname>faiss::IndexSVSVamanaLeanVec::create_impl</qualifiedname>
-        <reimplements refid="structfaiss_1_1IndexSVSVamana_1acbba5df70fe0aaed6886ef25cd3553a9">create_impl</reimplements>
+        <reimplements refid="structfaiss_1_1IndexSVSVamana_1a2f18895ace7682edf3ea544fa0cf87f5">create_impl</reimplements>
+        <param>
+          <type><ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref></type>
+          <declname>n</declname>
+        </param>
+        <param>
+          <type>const float *</type>
+          <declname>x</declname>
+        </param>
         <briefdescription>
         </briefdescription>
         <detaileddescription>
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/svs/IndexSVSVamanaLeanVec.h" line="64" column="10"/>
+        <location file="faiss/svs/IndexSVSVamanaLeanVec.h" line="71" column="10"/>
+      </memberdef>
+      <memberdef kind="function" id="structfaiss_1_1IndexSVSVamana_1a9d73616e83bdf602f1eae0e0fe4fdbb7" prot="protected" static="no" const="yes" explicit="no" inline="no" virt="non-virtual">
+        <type>svs_runtime::DynamicVamanaIndex *</type>
+        <definition>svs_runtime::DynamicVamanaIndex * faiss::IndexSVSVamana::dynamic_impl</definition>
+        <argsstring>() const</argsstring>
+        <name>dynamic_impl</name>
+        <qualifiedname>faiss::IndexSVSVamana::dynamic_impl</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="faiss/svs/IndexSVSVamana.h" line="181" column="37"/>
       </memberdef>
     </sectiondef>
     <sectiondef kind="public-static-func">
@@ -1853,7 +1985,7 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/svs/IndexSVSVamana.h" line="103" column="17"/>
+        <location file="faiss/svs/IndexSVSVamana.h" line="121" column="17"/>
       </memberdef>
     </sectiondef>
     <sectiondef kind="public-type">
@@ -1926,7 +2058,7 @@
         </childnode>
       </node>
     </collaborationgraph>
-    <location file="faiss/svs/IndexSVSVamanaLeanVec.h" line="30" column="1" bodyfile="faiss/svs/IndexSVSVamanaLeanVec.h" bodystart="30" bodyend="65"/>
+    <location file="faiss/svs/IndexSVSVamanaLeanVec.h" line="30" column="1" bodyfile="faiss/svs/IndexSVSVamanaLeanVec.h" bodystart="30" bodyend="72"/>
     <listofallmembers>
       <member refid="structfaiss_1_1IndexSVSVamanaLeanVec_1a7844fc7562f4fc827a9fa1a0b04f2ad9" prot="public" virt="virtual"><scope>faiss::IndexSVSVamanaLeanVec</scope><name>add</name></member>
       <member refid="structfaiss_1_1Index_1aa432f349b82d0909c33aa353b7a01fe1" prot="public" virt="virtual"><scope>faiss::IndexSVSVamanaLeanVec</scope><name>add_ex</name></member>
@@ -1940,34 +2072,38 @@
       <member refid="structfaiss_1_1Index_1a1f12e2118b37a511f51d63e1aa9c0c20" prot="public" virt="virtual"><scope>faiss::IndexSVSVamanaLeanVec</scope><name>compute_residual</name></member>
       <member refid="structfaiss_1_1Index_1aff98fbf8e7dadf9ff528a031c53a43fa" prot="public" virt="virtual"><scope>faiss::IndexSVSVamanaLeanVec</scope><name>compute_residual_n</name></member>
       <member refid="structfaiss_1_1IndexSVSVamana_1acee8bc45fc2eb1af1c44e28966046015" prot="public" virt="non-virtual"><scope>faiss::IndexSVSVamanaLeanVec</scope><name>construction_window_size</name></member>
-      <member refid="structfaiss_1_1IndexSVSVamanaLeanVec_1a688740c8240aaaec8e9cdcacde4e1962" prot="protected" virt="virtual"><scope>faiss::IndexSVSVamanaLeanVec</scope><name>create_impl</name></member>
+      <member refid="structfaiss_1_1IndexSVSVamanaLeanVec_1a746f64379d0b12af4fd896b943c6e751" prot="protected" virt="virtual"><scope>faiss::IndexSVSVamanaLeanVec</scope><name>create_impl</name></member>
       <member refid="structfaiss_1_1Index_1a2a002388d2c081c2dbab8508dcefe73d" prot="public" virt="non-virtual"><scope>faiss::IndexSVSVamanaLeanVec</scope><name>d</name></member>
       <member refid="structfaiss_1_1IndexSVSVamana_1a125ebfc4e368666d5c859accd8a115a7" prot="public" virt="virtual"><scope>faiss::IndexSVSVamanaLeanVec</scope><name>deserialize_impl</name></member>
       <member refid="structfaiss_1_1IndexSVSVamanaLeanVec_1a4dfda02c5a8612432e328eb7f446dcb7" prot="public" virt="non-virtual"><scope>faiss::IndexSVSVamanaLeanVec</scope><name>deserialize_training_data</name></member>
       <member refid="structfaiss_1_1Index_1a1c60d7a12bf3ad27054963df8cccd93f" prot="public" virt="non-virtual"><scope>faiss::IndexSVSVamanaLeanVec</scope><name>distance_t</name></member>
+      <member refid="structfaiss_1_1IndexSVSVamana_1a9d73616e83bdf602f1eae0e0fe4fdbb7" prot="protected" virt="non-virtual"><scope>faiss::IndexSVSVamanaLeanVec</scope><name>dynamic_impl</name></member>
       <member refid="structfaiss_1_1Index_1a5d7e4b432ee751157d470256a7fe8afc" prot="public" virt="virtual"><scope>faiss::IndexSVSVamanaLeanVec</scope><name>get_distance_computer</name></member>
       <member refid="structfaiss_1_1IndexSVSVamana_1aeeaa43e86cc2133b18d8574013b403a2" prot="public" virt="non-virtual"><scope>faiss::IndexSVSVamanaLeanVec</scope><name>graph_max_degree</name></member>
-      <member refid="structfaiss_1_1IndexSVSVamana_1aa9e48aef39386f12d20b9e29bafb8b7e" prot="public" virt="non-virtual"><scope>faiss::IndexSVSVamanaLeanVec</scope><name>impl</name></member>
-      <member refid="structfaiss_1_1Index_1a7b8cc435b5619d5d8382010a424bf67e" prot="public" virt="non-virtual"><scope>faiss::IndexSVSVamanaLeanVec</scope><name>Index</name></member>
+      <member refid="structfaiss_1_1IndexSVSVamana_1abed1972cbfcf22fe3dbb8b501343525e" prot="public" virt="non-virtual"><scope>faiss::IndexSVSVamanaLeanVec</scope><name>impl</name></member>
+      <member refid="structfaiss_1_1Index_1a21006538b84bd86d06ba8c22457c8db1" prot="public" virt="non-virtual"><scope>faiss::IndexSVSVamanaLeanVec</scope><name>Index</name></member>
       <member refid="structfaiss_1_1IndexSVSVamana_1a6de99d99ca3f28f0854274f53e1a32e6" prot="public" virt="non-virtual"><scope>faiss::IndexSVSVamanaLeanVec</scope><name>IndexSVSVamana</name></member>
-      <member refid="structfaiss_1_1IndexSVSVamana_1a2706df16183bfdf4598694b16904f7c2" prot="public" virt="non-virtual"><scope>faiss::IndexSVSVamanaLeanVec</scope><name>IndexSVSVamana</name></member>
+      <member refid="structfaiss_1_1IndexSVSVamana_1a3d84530889dcc0c369b17410087bc8d9" prot="public" virt="non-virtual"><scope>faiss::IndexSVSVamanaLeanVec</scope><name>IndexSVSVamana</name></member>
       <member refid="structfaiss_1_1IndexSVSVamanaLeanVec_1a87f4a2a1725365b765a2d2644867dae3" prot="public" virt="non-virtual"><scope>faiss::IndexSVSVamanaLeanVec</scope><name>IndexSVSVamanaLeanVec</name></member>
-      <member refid="structfaiss_1_1IndexSVSVamanaLeanVec_1a86f5b7d206c1681962063583673c7340" prot="public" virt="non-virtual"><scope>faiss::IndexSVSVamanaLeanVec</scope><name>IndexSVSVamanaLeanVec</name></member>
+      <member refid="structfaiss_1_1IndexSVSVamanaLeanVec_1a16aa77760fd174df87a9ac2a0eb484bf" prot="public" virt="non-virtual"><scope>faiss::IndexSVSVamanaLeanVec</scope><name>IndexSVSVamanaLeanVec</name></member>
       <member refid="structfaiss_1_1IndexSVSVamana_1a84ff47f9cd019211c4180ccc8d3a475b" prot="public" virt="non-virtual"><scope>faiss::IndexSVSVamanaLeanVec</scope><name>is_lvq_leanvec_enabled</name></member>
+      <member refid="structfaiss_1_1IndexSVSVamana_1ada826e4d618fb11e2fbedda558b94ea2" prot="public" virt="non-virtual"><scope>faiss::IndexSVSVamanaLeanVec</scope><name>is_static</name></member>
       <member refid="structfaiss_1_1Index_1a6e92732617c4dbe364e7678dd8773a7f" prot="public" virt="non-virtual"><scope>faiss::IndexSVSVamanaLeanVec</scope><name>is_trained</name></member>
       <member refid="structfaiss_1_1IndexSVSVamanaLeanVec_1a35ea21d9fc4b76d299f9958c4ba97596" prot="public" virt="non-virtual"><scope>faiss::IndexSVSVamanaLeanVec</scope><name>leanvec_d</name></member>
+      <member refid="structfaiss_1_1IndexSVSVamana_1a57980aa15ff2062fca057073f7713372" prot="public" virt="virtual"><scope>faiss::IndexSVSVamanaLeanVec</scope><name>map_to</name></member>
       <member refid="structfaiss_1_1IndexSVSVamana_1a4e97bcb1196c74bf479f79b8aa2bb59d" prot="public" virt="non-virtual"><scope>faiss::IndexSVSVamanaLeanVec</scope><name>max_candidate_pool_size</name></member>
       <member refid="structfaiss_1_1Index_1a989b8815705e95d61adcb87380660415" prot="public" virt="virtual"><scope>faiss::IndexSVSVamanaLeanVec</scope><name>merge_from</name></member>
       <member refid="structfaiss_1_1Index_1a6f60646d6877658ea4df05e0231ed232" prot="public" virt="non-virtual"><scope>faiss::IndexSVSVamanaLeanVec</scope><name>metric_arg</name></member>
       <member refid="structfaiss_1_1Index_1a8e18f641854b2bde83ecff0a2f9a6f4e" prot="public" virt="non-virtual"><scope>faiss::IndexSVSVamanaLeanVec</scope><name>metric_type</name></member>
+      <member refid="structfaiss_1_1IndexSVSVamana_1a3c8a5d7f840ed2fe1e6fa914e5b49707" prot="public" virt="non-virtual"><scope>faiss::IndexSVSVamanaLeanVec</scope><name>mmap_owner</name></member>
       <member refid="structfaiss_1_1Index_1a6970683faa021b7a6f1a0865c0d4eccd" prot="public" virt="non-virtual"><scope>faiss::IndexSVSVamanaLeanVec</scope><name>ntotal</name></member>
       <member refid="structfaiss_1_1IndexSVSVamana_1a7d869ca54cc04c99872e2f7efd59f8a3" prot="public" virt="non-virtual"><scope>faiss::IndexSVSVamanaLeanVec</scope><name>prune_to</name></member>
       <member refid="structfaiss_1_1IndexSVSVamana_1a9d9b2ff0114ac59965bcf990b09b844c" prot="public" virt="virtual"><scope>faiss::IndexSVSVamanaLeanVec</scope><name>range_search</name></member>
-      <member refid="structfaiss_1_1Index_1afaf9673009f9fe5a53ed6db522a5f69c" prot="public" virt="virtual"><scope>faiss::IndexSVSVamanaLeanVec</scope><name>reconstruct</name></member>
+      <member refid="structfaiss_1_1IndexSVSVamana_1a26fb705776df212640d3ed8a1202f80e" prot="public" virt="virtual"><scope>faiss::IndexSVSVamanaLeanVec</scope><name>reconstruct</name></member>
       <member refid="structfaiss_1_1Index_1a1dbf5eac7d05ca6271d2fd9bee568218" prot="public" virt="virtual"><scope>faiss::IndexSVSVamanaLeanVec</scope><name>reconstruct_batch</name></member>
       <member refid="structfaiss_1_1Index_1ae7c0b683e1fd5c8770ea2b3e1a82ce7f" prot="public" virt="virtual"><scope>faiss::IndexSVSVamanaLeanVec</scope><name>reconstruct_n</name></member>
       <member refid="structfaiss_1_1IndexSVSVamana_1a4ae46d56b2782329c2c46a9553b3ce5a" prot="public" virt="virtual"><scope>faiss::IndexSVSVamanaLeanVec</scope><name>remove_ids</name></member>
-      <member refid="structfaiss_1_1IndexSVSVamana_1a9d65b591efa1bf7b7095300fb175cd50" prot="public" virt="virtual"><scope>faiss::IndexSVSVamanaLeanVec</scope><name>reset</name></member>
+      <member refid="structfaiss_1_1IndexSVSVamanaLeanVec_1a3d9b0af6fd46386a1b83aea806bdcb1d" prot="public" virt="virtual"><scope>faiss::IndexSVSVamanaLeanVec</scope><name>reset</name></member>
       <member refid="structfaiss_1_1Index_1a5a050b805d4836afdf8f09251ad8b415" prot="public" virt="virtual"><scope>faiss::IndexSVSVamanaLeanVec</scope><name>sa_code_size</name></member>
       <member refid="structfaiss_1_1Index_1af39e4b00d097ac05dc9e31c52bfb9ed7" prot="public" virt="virtual"><scope>faiss::IndexSVSVamanaLeanVec</scope><name>sa_decode</name></member>
       <member refid="structfaiss_1_1Index_1a16770c0addc888b92deee089d6f97e7c" prot="public" virt="virtual"><scope>faiss::IndexSVSVamanaLeanVec</scope><name>sa_encode</name></member>
@@ -1981,9 +2117,12 @@
       <member refid="structfaiss_1_1IndexSVSVamana_1a12545dfde65b7439ad5100474b28dc17" prot="public" virt="non-virtual"><scope>faiss::IndexSVSVamanaLeanVec</scope><name>serialize_impl</name></member>
       <member refid="structfaiss_1_1IndexSVSVamanaLeanVec_1a07298f5256668319a9983fa215c37c66" prot="public" virt="non-virtual"><scope>faiss::IndexSVSVamanaLeanVec</scope><name>serialize_training_data</name></member>
       <member refid="structfaiss_1_1IndexSVSVamana_1a567013895533970f56fecadfab20484b" prot="public" virt="non-virtual"><scope>faiss::IndexSVSVamanaLeanVec</scope><name>storage_kind</name></member>
+      <member refid="structfaiss_1_1IndexSVSVamana_1a95c2268eb3f4091bbfe53040f6c8057c" prot="public" virt="non-virtual"><scope>faiss::IndexSVSVamanaLeanVec</scope><name>store_vectors</name></member>
+      <member refid="structfaiss_1_1IndexSVSVamana_1aeb7b6f7d87351e59e619257c208467b2" prot="public" virt="non-virtual"><scope>faiss::IndexSVSVamanaLeanVec</scope><name>stored_vectors</name></member>
+      <member refid="structfaiss_1_1IndexSVSVamana_1aa8b1c652e8b8d9e6aa530ccda7715e42" prot="public" virt="non-virtual"><scope>faiss::IndexSVSVamanaLeanVec</scope><name>stored_vectors_valid</name></member>
       <member refid="structfaiss_1_1IndexSVSVamanaLeanVec_1ae70030c46fe5bae48b84596069e670b0" prot="public" virt="virtual"><scope>faiss::IndexSVSVamanaLeanVec</scope><name>train</name></member>
-      <member refid="structfaiss_1_1IndexSVSVamanaLeanVec_1a0be9635c638cc74ca0285df76c690118" prot="public" virt="virtual"><scope>faiss::IndexSVSVamanaLeanVec</scope><name>train</name></member>
       <member refid="structfaiss_1_1Index_1af8f340497140cc8b091f4732c3460537" prot="public" virt="virtual"><scope>faiss::IndexSVSVamanaLeanVec</scope><name>train_ex</name></member>
+      <member refid="structfaiss_1_1IndexSVSVamanaLeanVec_1ae83c352204cc61df4adf2424e5bfe737" prot="public" virt="virtual"><scope>faiss::IndexSVSVamanaLeanVec</scope><name>train_with_queries</name></member>
       <member refid="structfaiss_1_1IndexSVSVamanaLeanVec_1ab344752de5f84659bd9f2a22e504852a" prot="public" virt="non-virtual"><scope>faiss::IndexSVSVamanaLeanVec</scope><name>training_data</name></member>
       <member refid="structfaiss_1_1IndexSVSVamana_1a462092757186a2e0a701555d4ca24a98" prot="public" virt="non-virtual"><scope>faiss::IndexSVSVamanaLeanVec</scope><name>use_full_search_history</name></member>
       <member refid="structfaiss_1_1Index_1a5590d847c5c2b958affd2a05e58a6f23" prot="public" virt="non-virtual"><scope>faiss::IndexSVSVamanaLeanVec</scope><name>verbose</name></member>

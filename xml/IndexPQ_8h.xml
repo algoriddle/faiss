@@ -13,13 +13,15 @@
     <includedby refid="IndexIVFPQ_8h" local="no">faiss/IndexIVFPQ.h</includedby>
     <includedby refid="IndexNSG_8h" local="no">faiss/IndexNSG.h</includedby>
     <includedby refid="IndexPQFastScan_8h" local="no">faiss/IndexPQFastScan.h</includedby>
+    <includedby refid="IndexPQ__impl_8h" local="no">faiss/impl/binary_hamming/IndexPQ_impl.h</includedby>
+    <includedby refid="PQDistanceComputer__impl_8h" local="no">faiss/impl/pq_code_distance/PQDistanceComputer_impl.h</includedby>
     <incdepgraph>
-      <node id="25">
+      <node id="26">
         <label>faiss/Clustering.h</label>
         <link refid="Clustering_8h_source"/>
         <childnode refid="5" relation="include">
         </childnode>
-        <childnode refid="26" relation="include">
+        <childnode refid="27" relation="include">
         </childnode>
         <childnode refid="3" relation="include">
         </childnode>
@@ -41,9 +43,9 @@
         </childnode>
         <childnode refid="5" relation="include">
         </childnode>
-        <childnode refid="18" relation="include">
-        </childnode>
         <childnode refid="19" relation="include">
+        </childnode>
+        <childnode refid="20" relation="include">
         </childnode>
       </node>
       <node id="1">
@@ -55,9 +57,9 @@
         </childnode>
         <childnode refid="4" relation="include">
         </childnode>
-        <childnode refid="23" relation="include">
-        </childnode>
         <childnode refid="24" relation="include">
+        </childnode>
+        <childnode refid="25" relation="include">
         </childnode>
         <childnode refid="15" relation="include">
         </childnode>
@@ -74,15 +76,15 @@
         <childnode refid="10" relation="include">
         </childnode>
       </node>
-      <node id="26">
+      <node id="27">
         <label>faiss/impl/ClusteringInitialization.h</label>
         <link refid="ClusteringInitialization_8h_source"/>
-        <childnode refid="20" relation="include">
+        <childnode refid="21" relation="include">
         </childnode>
         <childnode refid="7" relation="include">
         </childnode>
       </node>
-      <node id="18">
+      <node id="19">
         <label>faiss/impl/DistanceComputer.h</label>
         <link refid="DistanceComputer_8h_source"/>
         <childnode refid="5" relation="include">
@@ -95,7 +97,7 @@
         </childnode>
         <childnode refid="15" relation="include">
         </childnode>
-        <childnode refid="16" relation="include">
+        <childnode refid="17" relation="include">
         </childnode>
         <childnode refid="8" relation="include">
         </childnode>
@@ -103,7 +105,7 @@
         </childnode>
         <childnode refid="13" relation="include">
         </childnode>
-        <childnode refid="17" relation="include">
+        <childnode refid="18" relation="include">
         </childnode>
       </node>
       <node id="11">
@@ -118,50 +120,50 @@
         <childnode refid="3" relation="include">
         </childnode>
       </node>
-      <node id="23">
+      <node id="24">
         <label>faiss/impl/PolysemousTraining.h</label>
         <link refid="PolysemousTraining_8h_source"/>
-        <childnode refid="24" relation="include">
+        <childnode refid="25" relation="include">
         </childnode>
       </node>
-      <node id="33">
+      <node id="34">
         <label>faiss/impl/ProductQuantizer-inl.h</label>
         <link refid="ProductQuantizer-inl_8h_source"/>
       </node>
-      <node id="24">
+      <node id="25">
         <label>faiss/impl/ProductQuantizer.h</label>
         <link refid="ProductQuantizer_8h_source"/>
         <childnode refid="2" relation="include">
         </childnode>
         <childnode refid="3" relation="include">
         </childnode>
-        <childnode refid="25" relation="include">
-        </childnode>
-        <childnode refid="27" relation="include">
-        </childnode>
-        <childnode refid="15" relation="include">
+        <childnode refid="26" relation="include">
         </childnode>
         <childnode refid="28" relation="include">
         </childnode>
-        <childnode refid="33" relation="include">
+        <childnode refid="15" relation="include">
+        </childnode>
+        <childnode refid="29" relation="include">
+        </childnode>
+        <childnode refid="34" relation="include">
         </childnode>
       </node>
-      <node id="27">
+      <node id="28">
         <label>faiss/impl/Quantizer.h</label>
         <link refid="Quantizer_8h_source"/>
         <childnode refid="2" relation="include">
         </childnode>
       </node>
-      <node id="19">
+      <node id="20">
         <label>faiss/impl/maybe_owned_vector.h</label>
         <link refid="maybe__owned__vector_8h_source"/>
-        <childnode refid="20" relation="include">
+        <childnode refid="21" relation="include">
         </childnode>
         <childnode refid="7" relation="include">
         </childnode>
-        <childnode refid="21" relation="include">
-        </childnode>
         <childnode refid="22" relation="include">
+        </childnode>
+        <childnode refid="23" relation="include">
         </childnode>
         <childnode refid="3" relation="include">
         </childnode>
@@ -171,56 +173,61 @@
       <node id="15">
         <label>faiss/impl/platform_macros.h</label>
         <link refid="platform__macros_8h_source"/>
+        <childnode refid="16" relation="include">
+        </childnode>
         <childnode refid="7" relation="include">
         </childnode>
         <childnode refid="8" relation="include">
         </childnode>
       </node>
-      <node id="28">
+      <node id="29">
         <label>faiss/utils/Heap.h</label>
         <link refid="Heap_8h_source"/>
-        <childnode refid="29" relation="include">
-        </childnode>
         <childnode refid="30" relation="include">
-        </childnode>
-        <childnode refid="21" relation="include">
-        </childnode>
-        <childnode refid="2" relation="include">
         </childnode>
         <childnode refid="31" relation="include">
         </childnode>
-        <childnode refid="8" relation="include">
+        <childnode refid="22" relation="include">
         </childnode>
-        <childnode refid="17" relation="include">
-        </childnode>
-        <childnode refid="14" relation="include">
+        <childnode refid="2" relation="include">
         </childnode>
         <childnode refid="32" relation="include">
         </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+        <childnode refid="18" relation="include">
+        </childnode>
+        <childnode refid="14" relation="include">
+        </childnode>
+        <childnode refid="33" relation="include">
+        </childnode>
       </node>
-      <node id="32">
+      <node id="33">
         <label>faiss/utils/ordered_key_value.h</label>
         <link refid="ordered__key__value_8h_source"/>
-        <childnode refid="29" relation="include">
-        </childnode>
         <childnode refid="30" relation="include">
         </childnode>
-        <childnode refid="17" relation="include">
+        <childnode refid="31" relation="include">
+        </childnode>
+        <childnode refid="18" relation="include">
         </childnode>
       </node>
-      <node id="31">
+      <node id="16">
+        <label>atomic</label>
+      </node>
+      <node id="32">
         <label>cassert</label>
       </node>
-      <node id="16">
+      <node id="17">
         <label>cinttypes</label>
       </node>
-      <node id="29">
+      <node id="30">
         <label>climits</label>
       </node>
-      <node id="30">
+      <node id="31">
         <label>cmath</label>
       </node>
-      <node id="20">
+      <node id="21">
         <label>cstddef</label>
       </node>
       <node id="7">
@@ -232,16 +239,16 @@
       <node id="9">
         <label>cstdlib</label>
       </node>
-      <node id="21">
+      <node id="22">
         <label>cstring</label>
       </node>
       <node id="12">
         <label>exception</label>
       </node>
-      <node id="17">
+      <node id="18">
         <label>limits</label>
       </node>
-      <node id="22">
+      <node id="23">
         <label>memory</label>
       </node>
       <node id="2">
@@ -273,6 +280,12 @@
         </childnode>
         <childnode refid="6" relation="include">
         </childnode>
+        <childnode refid="7" relation="include">
+        </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+        <childnode refid="9" relation="include">
+        </childnode>
       </node>
       <node id="5">
         <label>faiss/IndexIVFPQFastScan.h</label>
@@ -282,7 +295,7 @@
         <label>faiss/IndexIVFPQR.h</label>
         <link refid="IndexIVFPQR_8h_source"/>
       </node>
-      <node id="7">
+      <node id="10">
         <label>faiss/IndexNSG.h</label>
         <link refid="IndexNSG_8h_source"/>
       </node>
@@ -295,14 +308,40 @@
         </childnode>
         <childnode refid="4" relation="include">
         </childnode>
-        <childnode refid="7" relation="include">
+        <childnode refid="10" relation="include">
         </childnode>
+        <childnode refid="11" relation="include">
+        </childnode>
+        <childnode refid="12" relation="include">
+        </childnode>
+        <childnode refid="13" relation="include">
+        </childnode>
+      </node>
+      <node id="11">
+        <label>faiss/IndexPQFastScan.h</label>
+        <link refid="IndexPQFastScan_8h_source"/>
+      </node>
+      <node id="7">
+        <label>faiss/gpu_metal/MetalIndexIVFPQ.h</label>
+        <link refid="MetalIndexIVFPQ_8h_source"/>
+      </node>
+      <node id="12">
+        <label>faiss/impl/binary_hamming/IndexPQ_impl.h</label>
+        <link refid="IndexPQ__impl_8h_source"/>
+      </node>
+      <node id="8">
+        <label>faiss/impl/pq_code_distance/IVFPQScanner_impl.h</label>
+        <link refid="IVFPQScanner__impl_8h_source"/>
+      </node>
+      <node id="9">
+        <label>faiss/impl/pq_code_distance/IVFPQ_QueryTables.h</label>
+        <link refid="IVFPQ__QueryTables_8h_source"/>
         <childnode refid="8" relation="include">
         </childnode>
       </node>
-      <node id="8">
-        <label>faiss/IndexPQFastScan.h</label>
-        <link refid="IndexPQFastScan_8h_source"/>
+      <node id="13">
+        <label>faiss/impl/pq_code_distance/PQDistanceComputer_impl.h</label>
+        <link refid="PQDistanceComputer__impl_8h_source"/>
       </node>
     </invincdepgraph>
     <innerclass refid="structfaiss_1_1IndexPQ" prot="public">faiss::IndexPQ</innerclass>
@@ -353,20 +392,20 @@
 <codeline lineno="35"><highlight class="normal"></highlight></codeline>
 <codeline lineno="36"><highlight class="normal"><sp/><sp/><sp/><sp/><ref refid="structfaiss_1_1IndexPQ" kindref="compound">IndexPQ</ref>();</highlight></codeline>
 <codeline lineno="37"><highlight class="normal"></highlight></codeline>
-<codeline lineno="38" refid="structfaiss_1_1IndexPQ_1a87898add5ab4d86ba901ca79778fc11e" refkind="member"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/><ref refid="structfaiss_1_1IndexPQ_1a87898add5ab4d86ba901ca79778fc11e" kindref="member">train</ref>(<ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref><sp/>n,<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal">*<sp/>x)<sp/></highlight><highlight class="keyword">override</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="38" refid="structfaiss_1_1IndexPQ_1a87898add5ab4d86ba901ca79778fc11e" refkind="member"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/><ref refid="structfaiss_1_1IndexPQ_1a87898add5ab4d86ba901ca79778fc11e" kindref="member">train</ref>(<ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref><sp/>n,<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal">*<sp/>x)<sp/></highlight><highlight class="keyword">override</highlight><highlight class="normal">;</highlight></codeline>
 <codeline lineno="39"><highlight class="normal"></highlight></codeline>
 <codeline lineno="40" refid="structfaiss_1_1IndexPQ_1a838c9186a476abd7321afc95d5412ab8" refkind="member"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/><ref refid="structfaiss_1_1IndexPQ_1a838c9186a476abd7321afc95d5412ab8" kindref="member">search</ref>(</highlight></codeline>
-<codeline lineno="41"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref><sp/>n,</highlight></codeline>
+<codeline lineno="41"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref><sp/>n,</highlight></codeline>
 <codeline lineno="42"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal">*<sp/>x,</highlight></codeline>
-<codeline lineno="43"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref><sp/>k,</highlight></codeline>
+<codeline lineno="43"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref><sp/>k,</highlight></codeline>
 <codeline lineno="44"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal">*<sp/>distances,</highlight></codeline>
-<codeline lineno="45"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref>*<sp/>labels,</highlight></codeline>
+<codeline lineno="45"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref>*<sp/>labels,</highlight></codeline>
 <codeline lineno="46"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/><ref refid="structfaiss_1_1SearchParameters" kindref="compound">SearchParameters</ref>*<sp/>params<sp/>=<sp/></highlight><highlight class="keyword">nullptr</highlight><highlight class="normal">)<sp/></highlight><highlight class="keyword">const<sp/>override</highlight><highlight class="normal">;</highlight></codeline>
 <codeline lineno="47"><highlight class="normal"></highlight></codeline>
 <codeline lineno="48"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="comment">/*<sp/>The<sp/>standalone<sp/>codec<sp/>interface<sp/>*/</highlight><highlight class="normal"></highlight></codeline>
-<codeline lineno="49" refid="structfaiss_1_1IndexPQ_1a438591a838aad52cd69e021c7b93110f" refkind="member"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/><ref refid="structfaiss_1_1IndexPQ_1a438591a838aad52cd69e021c7b93110f" kindref="member">sa_encode</ref>(<ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref><sp/>n,<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal">*<sp/>x,<sp/>uint8_t*<sp/>bytes)<sp/></highlight><highlight class="keyword">const<sp/>override</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="49" refid="structfaiss_1_1IndexPQ_1a438591a838aad52cd69e021c7b93110f" refkind="member"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/><ref refid="structfaiss_1_1IndexPQ_1a438591a838aad52cd69e021c7b93110f" kindref="member">sa_encode</ref>(<ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref><sp/>n,<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal">*<sp/>x,<sp/>uint8_t*<sp/>bytes)<sp/></highlight><highlight class="keyword">const<sp/>override</highlight><highlight class="normal">;</highlight></codeline>
 <codeline lineno="50"><highlight class="normal"></highlight></codeline>
-<codeline lineno="51" refid="structfaiss_1_1IndexPQ_1a104104a52149ebdcb8ab79dc01180b6e" refkind="member"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/><ref refid="structfaiss_1_1IndexPQ_1a104104a52149ebdcb8ab79dc01180b6e" kindref="member">sa_decode</ref>(<ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref><sp/>n,<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>uint8_t*<sp/>bytes,<sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal">*<sp/>x)<sp/></highlight><highlight class="keyword">const<sp/>override</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="51" refid="structfaiss_1_1IndexPQ_1a104104a52149ebdcb8ab79dc01180b6e" refkind="member"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/><ref refid="structfaiss_1_1IndexPQ_1a104104a52149ebdcb8ab79dc01180b6e" kindref="member">sa_decode</ref>(<ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref><sp/>n,<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>uint8_t*<sp/>bytes,<sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal">*<sp/>x)<sp/></highlight><highlight class="keyword">const<sp/>override</highlight><highlight class="normal">;</highlight></codeline>
 <codeline lineno="52"><highlight class="normal"></highlight></codeline>
 <codeline lineno="53" refid="structfaiss_1_1IndexPQ_1a85e6888092abc5f631913d4d8402ae35" refkind="member"><highlight class="normal"><sp/><sp/><sp/><sp/><ref refid="structfaiss_1_1FlatCodesDistanceComputer" kindref="compound">FlatCodesDistanceComputer</ref>*<sp/><ref refid="structfaiss_1_1IndexPQ_1a85e6888092abc5f631913d4d8402ae35" kindref="member">get_FlatCodesDistanceComputer</ref>()<sp/></highlight><highlight class="keyword">const<sp/>override</highlight><highlight class="normal">;</highlight></codeline>
 <codeline lineno="54"><highlight class="normal"></highlight></codeline>
@@ -399,11 +438,11 @@
 <codeline lineno="81"><highlight class="normal"></highlight></codeline>
 <codeline lineno="82"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>actual<sp/>polysemous<sp/>search</highlight><highlight class="normal"></highlight></codeline>
 <codeline lineno="83"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>search_core_polysemous(</highlight></codeline>
-<codeline lineno="84"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref><sp/>n,</highlight></codeline>
+<codeline lineno="84"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref><sp/>n,</highlight></codeline>
 <codeline lineno="85"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal">*<sp/>x,</highlight></codeline>
-<codeline lineno="86"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref><sp/>k,</highlight></codeline>
+<codeline lineno="86"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref><sp/>k,</highlight></codeline>
 <codeline lineno="87"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal">*<sp/>distances,</highlight></codeline>
-<codeline lineno="88"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref>*<sp/>labels,</highlight></codeline>
+<codeline lineno="88"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref>*<sp/>labels,</highlight></codeline>
 <codeline lineno="89"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/><ref refid="structfaiss_1_1IndexPQ_1aff455f2adff6064939494dad6e3017bc" kindref="member">polysemous_ht</ref>,</highlight></codeline>
 <codeline lineno="90"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">bool</highlight><highlight class="normal"><sp/>generalized_hamming)<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal">;</highlight></codeline>
 <codeline lineno="91"><highlight class="normal"></highlight><highlight class="comment"></highlight></codeline>
@@ -412,9 +451,9 @@
 <codeline lineno="94"><highlight class="comment"><sp/><sp/><sp/><sp/>///<sp/>distances.<sp/>May<sp/>be<sp/>computed<sp/>on<sp/>a<sp/>provided<sp/>dataset<sp/>if<sp/>xb<sp/>!=<sp/>NULL</highlight></codeline>
 <codeline lineno="95"><highlight class="comment"><sp/><sp/><sp/><sp/>///<sp/>@param<sp/>dist_histogram<sp/>(M<sp/>*<sp/>nbits<sp/>+<sp/>1)</highlight></codeline>
 <codeline lineno="96" refid="structfaiss_1_1IndexPQ_1a0560fe2b1bd291d868822e7b2754ecf0" refkind="member"><highlight class="comment"></highlight><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/><ref refid="structfaiss_1_1IndexPQ_1a0560fe2b1bd291d868822e7b2754ecf0" kindref="member">hamming_distance_histogram</ref>(</highlight></codeline>
-<codeline lineno="97"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref><sp/>n,</highlight></codeline>
+<codeline lineno="97"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref><sp/>n,</highlight></codeline>
 <codeline lineno="98"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal">*<sp/>x,</highlight></codeline>
-<codeline lineno="99"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref><sp/>nb,</highlight></codeline>
+<codeline lineno="99"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref><sp/>nb,</highlight></codeline>
 <codeline lineno="100"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal">*<sp/>xb,</highlight></codeline>
 <codeline lineno="101"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>int64_t*<sp/>dist_histogram);</highlight></codeline>
 <codeline lineno="102"><highlight class="normal"></highlight><highlight class="comment"></highlight></codeline>
@@ -424,7 +463,7 @@
 <codeline lineno="106"><highlight class="comment"><sp/><sp/><sp/><sp/><sp/>*<sp/>@param<sp/>x<sp/><sp/><sp/><sp/>query<sp/>vector,<sp/>size<sp/>n<sp/>*<sp/>d</highlight></codeline>
 <codeline lineno="107"><highlight class="comment"><sp/><sp/><sp/><sp/><sp/>*<sp/>@param<sp/>dis<sp/><sp/>output<sp/>distances,<sp/>size<sp/>n<sp/>*<sp/>ntotal</highlight></codeline>
 <codeline lineno="108"><highlight class="comment"><sp/><sp/><sp/><sp/><sp/>*/</highlight><highlight class="normal"></highlight></codeline>
-<codeline lineno="109" refid="structfaiss_1_1IndexPQ_1ac1c78cf420aada3a54e00bc65ba3eae6" refkind="member"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/><ref refid="structfaiss_1_1IndexPQ_1ac1c78cf420aada3a54e00bc65ba3eae6" kindref="member">hamming_distance_table</ref>(<ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref><sp/>n,<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal">*<sp/>x,<sp/>int32_t*<sp/>dis)<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="109" refid="structfaiss_1_1IndexPQ_1ac1c78cf420aada3a54e00bc65ba3eae6" refkind="member"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/><ref refid="structfaiss_1_1IndexPQ_1ac1c78cf420aada3a54e00bc65ba3eae6" kindref="member">hamming_distance_table</ref>(<ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref><sp/>n,<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal">*<sp/>x,<sp/>int32_t*<sp/>dis)<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal">;</highlight></codeline>
 <codeline lineno="110"><highlight class="normal">};</highlight></codeline>
 <codeline lineno="111"><highlight class="normal"></highlight><highlight class="comment"></highlight></codeline>
 <codeline lineno="112"><highlight class="comment">///<sp/>override<sp/>search<sp/>parameters<sp/>from<sp/>the<sp/>class</highlight></codeline>
@@ -439,78 +478,79 @@
 <codeline lineno="121"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">size_t</highlight><highlight class="normal"><sp/>nq;<sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>nb<sp/>of<sp/>queries<sp/>run</highlight><highlight class="normal"></highlight></codeline>
 <codeline lineno="122"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">size_t</highlight><highlight class="normal"><sp/>ncode;<sp/></highlight><highlight class="comment">//<sp/>nb<sp/>of<sp/>codes<sp/>visited</highlight><highlight class="normal"></highlight></codeline>
 <codeline lineno="123"><highlight class="normal"></highlight></codeline>
-<codeline lineno="124"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">size_t</highlight><highlight class="normal"><sp/>n_hamming_pass;<sp/></highlight><highlight class="comment">//<sp/>nb<sp/>of<sp/>passed<sp/>Hamming<sp/>distance<sp/>tests<sp/>(for<sp/>polysemy)</highlight><highlight class="normal"></highlight></codeline>
-<codeline lineno="125"><highlight class="normal"></highlight></codeline>
-<codeline lineno="126"><highlight class="normal"><sp/><sp/><sp/><sp/><ref refid="structfaiss_1_1IndexPQStats" kindref="compound">IndexPQStats</ref>()<sp/>{</highlight></codeline>
-<codeline lineno="127"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>reset();</highlight></codeline>
-<codeline lineno="128"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
-<codeline lineno="129"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>reset();</highlight></codeline>
-<codeline lineno="130"><highlight class="normal">};</highlight></codeline>
-<codeline lineno="131"><highlight class="normal"></highlight></codeline>
-<codeline lineno="132"><highlight class="normal">FAISS_API<sp/></highlight><highlight class="keyword">extern</highlight><highlight class="normal"><sp/><ref refid="structfaiss_1_1IndexPQStats" kindref="compound">IndexPQStats</ref><sp/>indexPQ_stats;</highlight></codeline>
-<codeline lineno="133"><highlight class="normal"></highlight><highlight class="comment"></highlight></codeline>
-<codeline lineno="134"><highlight class="comment">/**<sp/>Quantizer<sp/>where<sp/>centroids<sp/>are<sp/>virtual:<sp/>they<sp/>are<sp/>the<sp/>Cartesian</highlight></codeline>
-<codeline lineno="135"><highlight class="comment"><sp/>*<sp/><sp/>product<sp/>of<sp/>sub-centroids.<sp/>*/</highlight><highlight class="normal"></highlight></codeline>
-<codeline lineno="136" refid="structfaiss_1_1MultiIndexQuantizer" refkind="compound"><highlight class="normal"></highlight><highlight class="keyword">struct<sp/></highlight><highlight class="normal"><ref refid="structfaiss_1_1MultiIndexQuantizer" kindref="compound">MultiIndexQuantizer</ref><sp/>:<sp/><ref refid="structfaiss_1_1Index" kindref="compound">Index</ref><sp/>{</highlight></codeline>
-<codeline lineno="137"><highlight class="normal"><sp/><sp/><sp/><sp/><ref refid="structfaiss_1_1ProductQuantizer" kindref="compound">ProductQuantizer</ref><sp/>pq;</highlight></codeline>
-<codeline lineno="138"><highlight class="normal"></highlight></codeline>
-<codeline lineno="139" refid="structfaiss_1_1MultiIndexQuantizer_1a01a568055ebc1e841f7e4218722efa01" refkind="member"><highlight class="normal"><sp/><sp/><sp/><sp/><ref refid="structfaiss_1_1MultiIndexQuantizer_1a01a568055ebc1e841f7e4218722efa01" kindref="member">MultiIndexQuantizer</ref>(</highlight></codeline>
-<codeline lineno="140"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/><ref refid="structfaiss_1_1Index_1a2a002388d2c081c2dbab8508dcefe73d" kindref="member">d</ref>,<sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="comment">///&lt;<sp/>dimension<sp/>of<sp/>the<sp/>input<sp/>vectors</highlight><highlight class="normal"></highlight></codeline>
-<codeline lineno="141"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">size_t</highlight><highlight class="normal"><sp/>M,<sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="comment">///&lt;<sp/>number<sp/>of<sp/>subquantizers</highlight><highlight class="normal"></highlight></codeline>
-<codeline lineno="142"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">size_t</highlight><highlight class="normal"><sp/>nbits);<sp/></highlight><highlight class="comment">///&lt;<sp/>number<sp/>of<sp/>bit<sp/>per<sp/>subvector<sp/>index</highlight><highlight class="normal"></highlight></codeline>
-<codeline lineno="143"><highlight class="normal"></highlight></codeline>
-<codeline lineno="144" refid="structfaiss_1_1MultiIndexQuantizer_1a6fa1d1a295eb2d4377b8de5096ab3ef4" refkind="member"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/><ref refid="structfaiss_1_1MultiIndexQuantizer_1a6fa1d1a295eb2d4377b8de5096ab3ef4" kindref="member">train</ref>(<ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref><sp/>n,<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal">*<sp/>x)<sp/></highlight><highlight class="keyword">override</highlight><highlight class="normal">;</highlight></codeline>
-<codeline lineno="145"><highlight class="normal"></highlight></codeline>
-<codeline lineno="146" refid="structfaiss_1_1MultiIndexQuantizer_1a4a2572ad6f26343d40081c98faf18840" refkind="member"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/><ref refid="structfaiss_1_1MultiIndexQuantizer_1a4a2572ad6f26343d40081c98faf18840" kindref="member">search</ref>(</highlight></codeline>
-<codeline lineno="147"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref><sp/>n,</highlight></codeline>
-<codeline lineno="148"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal">*<sp/>x,</highlight></codeline>
-<codeline lineno="149"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref><sp/>k,</highlight></codeline>
-<codeline lineno="150"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal">*<sp/>distances,</highlight></codeline>
-<codeline lineno="151"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref>*<sp/>labels,</highlight></codeline>
-<codeline lineno="152"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/><ref refid="structfaiss_1_1SearchParameters" kindref="compound">SearchParameters</ref>*<sp/>params<sp/>=<sp/></highlight><highlight class="keyword">nullptr</highlight><highlight class="normal">)<sp/></highlight><highlight class="keyword">const<sp/>override</highlight><highlight class="normal">;</highlight></codeline>
-<codeline lineno="153"><highlight class="normal"></highlight><highlight class="comment"></highlight></codeline>
-<codeline lineno="154"><highlight class="comment"><sp/><sp/><sp/><sp/>///<sp/>add<sp/>and<sp/>reset<sp/>will<sp/>crash<sp/>at<sp/>runtime</highlight></codeline>
-<codeline lineno="155" refid="structfaiss_1_1MultiIndexQuantizer_1aa72640bcbe2e5d9029954c2fa6633453" refkind="member"><highlight class="comment"></highlight><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/><ref refid="structfaiss_1_1MultiIndexQuantizer_1aa72640bcbe2e5d9029954c2fa6633453" kindref="member">add</ref>(<ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref><sp/>n,<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal">*<sp/>x)<sp/></highlight><highlight class="keyword">override</highlight><highlight class="normal">;</highlight></codeline>
-<codeline lineno="156"><highlight class="normal"></highlight></codeline>
-<codeline lineno="157" refid="structfaiss_1_1MultiIndexQuantizer_1a4808ce22fcc95c7af902b97969f2a90d" refkind="member"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/><ref refid="structfaiss_1_1MultiIndexQuantizer_1a4808ce22fcc95c7af902b97969f2a90d" kindref="member">reset</ref>()<sp/></highlight><highlight class="keyword">override</highlight><highlight class="normal">;</highlight></codeline>
-<codeline lineno="158"><highlight class="normal"></highlight></codeline>
-<codeline lineno="159"><highlight class="normal"><sp/><sp/><sp/><sp/><ref refid="structfaiss_1_1MultiIndexQuantizer" kindref="compound">MultiIndexQuantizer</ref>()<sp/>{}</highlight></codeline>
-<codeline lineno="160"><highlight class="normal"></highlight></codeline>
-<codeline lineno="161" refid="structfaiss_1_1MultiIndexQuantizer_1aa5bd578560419955a4bf7035cf09a392" refkind="member"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/><ref refid="structfaiss_1_1MultiIndexQuantizer_1aa5bd578560419955a4bf7035cf09a392" kindref="member">reconstruct</ref>(<ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref><sp/>key,<sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal">*<sp/>recons)<sp/></highlight><highlight class="keyword">const<sp/>override</highlight><highlight class="normal">;</highlight></codeline>
-<codeline lineno="162"><highlight class="normal">};</highlight></codeline>
-<codeline lineno="163"><highlight class="normal"></highlight></codeline>
-<codeline lineno="164"><highlight class="normal"></highlight><highlight class="comment">//<sp/>block<sp/>size<sp/>used<sp/>in<sp/>MultiIndexQuantizer::search</highlight><highlight class="normal"></highlight></codeline>
-<codeline lineno="165"><highlight class="normal">FAISS_API<sp/></highlight><highlight class="keyword">extern</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/>multi_index_quantizer_search_bs;</highlight></codeline>
-<codeline lineno="166"><highlight class="normal"></highlight><highlight class="comment"></highlight></codeline>
-<codeline lineno="167"><highlight class="comment">/**<sp/>MultiIndexQuantizer<sp/>where<sp/>the<sp/>PQ<sp/>assignment<sp/>is<sp/>performed<sp/>by<sp/>sub-indexes</highlight></codeline>
-<codeline lineno="168"><highlight class="comment"><sp/>*/</highlight><highlight class="normal"></highlight></codeline>
-<codeline lineno="169" refid="structfaiss_1_1MultiIndexQuantizer2" refkind="compound"><highlight class="normal"></highlight><highlight class="keyword">struct<sp/></highlight><highlight class="normal"><ref refid="structfaiss_1_1MultiIndexQuantizer2" kindref="compound">MultiIndexQuantizer2</ref><sp/>:<sp/><ref refid="structfaiss_1_1MultiIndexQuantizer" kindref="compound">MultiIndexQuantizer</ref><sp/>{</highlight><highlight class="comment"></highlight></codeline>
-<codeline lineno="170"><highlight class="comment"><sp/><sp/><sp/><sp/>///<sp/>M<sp/>Indexes<sp/>on<sp/>d<sp/>/<sp/>M<sp/>dimensions</highlight></codeline>
-<codeline lineno="171" refid="structfaiss_1_1MultiIndexQuantizer2_1a7e5f4079fdca73aeab239d3c85c100da" refkind="member"><highlight class="comment"></highlight><highlight class="normal"><sp/><sp/><sp/><sp/>std::vector&lt;Index*&gt;<sp/><ref refid="structfaiss_1_1MultiIndexQuantizer2_1a7e5f4079fdca73aeab239d3c85c100da" kindref="member">assign_indexes</ref>;</highlight></codeline>
-<codeline lineno="172"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">bool</highlight><highlight class="normal"><sp/>own_fields;</highlight></codeline>
-<codeline lineno="173"><highlight class="normal"></highlight></codeline>
-<codeline lineno="174"><highlight class="normal"><sp/><sp/><sp/><sp/><ref refid="structfaiss_1_1MultiIndexQuantizer2" kindref="compound">MultiIndexQuantizer2</ref>(</highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/><ref refid="structfaiss_1_1Index_1a2a002388d2c081c2dbab8508dcefe73d" kindref="member">d</ref>,<sp/></highlight><highlight class="keywordtype">size_t</highlight><highlight class="normal"><sp/>M,<sp/></highlight><highlight class="keywordtype">size_t</highlight><highlight class="normal"><sp/>nbits,<sp/><ref refid="structfaiss_1_1Index" kindref="compound">Index</ref>**<sp/>indexes);</highlight></codeline>
-<codeline lineno="175"><highlight class="normal"></highlight></codeline>
-<codeline lineno="176"><highlight class="normal"><sp/><sp/><sp/><sp/><ref refid="structfaiss_1_1MultiIndexQuantizer2" kindref="compound">MultiIndexQuantizer2</ref>(</highlight></codeline>
-<codeline lineno="177"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/><ref refid="structfaiss_1_1Index_1a2a002388d2c081c2dbab8508dcefe73d" kindref="member">d</ref>,</highlight></codeline>
-<codeline lineno="178"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">size_t</highlight><highlight class="normal"><sp/>nbits,</highlight></codeline>
-<codeline lineno="179"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><ref refid="structfaiss_1_1Index" kindref="compound">Index</ref>*<sp/>assign_index_0,</highlight></codeline>
-<codeline lineno="180"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><ref refid="structfaiss_1_1Index" kindref="compound">Index</ref>*<sp/>assign_index_1);</highlight></codeline>
-<codeline lineno="181"><highlight class="normal"></highlight></codeline>
-<codeline lineno="182" refid="structfaiss_1_1MultiIndexQuantizer2_1a553b9a33e9be7f231ffdc0ac53c59e7c" refkind="member"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/><ref refid="structfaiss_1_1MultiIndexQuantizer2_1a553b9a33e9be7f231ffdc0ac53c59e7c" kindref="member">train</ref>(<ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref><sp/>n,<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal">*<sp/>x)<sp/></highlight><highlight class="keyword">override</highlight><highlight class="normal">;</highlight></codeline>
-<codeline lineno="183"><highlight class="normal"></highlight></codeline>
-<codeline lineno="184" refid="structfaiss_1_1MultiIndexQuantizer2_1a041895d9dbabf577e924f1a61681d3a9" refkind="member"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/><ref refid="structfaiss_1_1MultiIndexQuantizer2_1a041895d9dbabf577e924f1a61681d3a9" kindref="member">search</ref>(</highlight></codeline>
-<codeline lineno="185"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref><sp/>n,</highlight></codeline>
-<codeline lineno="186"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal">*<sp/>x,</highlight></codeline>
-<codeline lineno="187"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref><sp/>k,</highlight></codeline>
-<codeline lineno="188"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal">*<sp/>distances,</highlight></codeline>
-<codeline lineno="189"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref>*<sp/>labels,</highlight></codeline>
-<codeline lineno="190"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/><ref refid="structfaiss_1_1SearchParameters" kindref="compound">SearchParameters</ref>*<sp/>params<sp/>=<sp/></highlight><highlight class="keyword">nullptr</highlight><highlight class="normal">)<sp/></highlight><highlight class="keyword">const<sp/>override</highlight><highlight class="normal">;</highlight></codeline>
-<codeline lineno="191"><highlight class="normal">};</highlight></codeline>
-<codeline lineno="192"><highlight class="normal"></highlight></codeline>
-<codeline lineno="193"><highlight class="normal">}<sp/></highlight><highlight class="comment">//<sp/>namespace<sp/>faiss</highlight><highlight class="normal"></highlight></codeline>
-<codeline lineno="194"><highlight class="normal"></highlight></codeline>
-<codeline lineno="195"><highlight class="normal"></highlight><highlight class="preprocessor">#endif</highlight></codeline>
+<codeline lineno="124"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">size_t</highlight><highlight class="normal"><sp/>n_hamming_pass<sp/>=<sp/>0;<sp/></highlight><highlight class="comment">//<sp/>nb<sp/>of<sp/>passed<sp/>Hamming<sp/>distance<sp/>tests<sp/>(for</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="125"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>polysemy)</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="126"><highlight class="normal"></highlight></codeline>
+<codeline lineno="127"><highlight class="normal"><sp/><sp/><sp/><sp/><ref refid="structfaiss_1_1IndexPQStats" kindref="compound">IndexPQStats</ref>()<sp/>{</highlight></codeline>
+<codeline lineno="128"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>reset();</highlight></codeline>
+<codeline lineno="129"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="130"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>reset();</highlight></codeline>
+<codeline lineno="131"><highlight class="normal">};</highlight></codeline>
+<codeline lineno="132"><highlight class="normal"></highlight></codeline>
+<codeline lineno="133"><highlight class="normal">FAISS_API<sp/></highlight><highlight class="keyword">extern</highlight><highlight class="normal"><sp/><ref refid="structfaiss_1_1IndexPQStats" kindref="compound">IndexPQStats</ref><sp/>indexPQ_stats;</highlight></codeline>
+<codeline lineno="134"><highlight class="normal"></highlight><highlight class="comment"></highlight></codeline>
+<codeline lineno="135"><highlight class="comment">/**<sp/>Quantizer<sp/>where<sp/>centroids<sp/>are<sp/>virtual:<sp/>they<sp/>are<sp/>the<sp/>Cartesian</highlight></codeline>
+<codeline lineno="136"><highlight class="comment"><sp/>*<sp/><sp/>product<sp/>of<sp/>sub-centroids.<sp/>*/</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="137" refid="structfaiss_1_1MultiIndexQuantizer" refkind="compound"><highlight class="normal"></highlight><highlight class="keyword">struct<sp/></highlight><highlight class="normal"><ref refid="structfaiss_1_1MultiIndexQuantizer" kindref="compound">MultiIndexQuantizer</ref><sp/>:<sp/><ref refid="structfaiss_1_1Index" kindref="compound">Index</ref><sp/>{</highlight></codeline>
+<codeline lineno="138"><highlight class="normal"><sp/><sp/><sp/><sp/><ref refid="structfaiss_1_1ProductQuantizer" kindref="compound">ProductQuantizer</ref><sp/>pq;</highlight></codeline>
+<codeline lineno="139"><highlight class="normal"></highlight></codeline>
+<codeline lineno="140" refid="structfaiss_1_1MultiIndexQuantizer_1a01a568055ebc1e841f7e4218722efa01" refkind="member"><highlight class="normal"><sp/><sp/><sp/><sp/><ref refid="structfaiss_1_1MultiIndexQuantizer_1a01a568055ebc1e841f7e4218722efa01" kindref="member">MultiIndexQuantizer</ref>(</highlight></codeline>
+<codeline lineno="141"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/><ref refid="structfaiss_1_1Index_1a2a002388d2c081c2dbab8508dcefe73d" kindref="member">d</ref>,<sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="comment">///&lt;<sp/>dimension<sp/>of<sp/>the<sp/>input<sp/>vectors</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="142"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">size_t</highlight><highlight class="normal"><sp/>M,<sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="comment">///&lt;<sp/>number<sp/>of<sp/>subquantizers</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="143"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">size_t</highlight><highlight class="normal"><sp/>nbits);<sp/></highlight><highlight class="comment">///&lt;<sp/>number<sp/>of<sp/>bit<sp/>per<sp/>subvector<sp/>index</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="144"><highlight class="normal"></highlight></codeline>
+<codeline lineno="145" refid="structfaiss_1_1MultiIndexQuantizer_1a6fa1d1a295eb2d4377b8de5096ab3ef4" refkind="member"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/><ref refid="structfaiss_1_1MultiIndexQuantizer_1a6fa1d1a295eb2d4377b8de5096ab3ef4" kindref="member">train</ref>(<ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref><sp/>n,<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal">*<sp/>x)<sp/></highlight><highlight class="keyword">override</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="146"><highlight class="normal"></highlight></codeline>
+<codeline lineno="147" refid="structfaiss_1_1MultiIndexQuantizer_1a4a2572ad6f26343d40081c98faf18840" refkind="member"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/><ref refid="structfaiss_1_1MultiIndexQuantizer_1a4a2572ad6f26343d40081c98faf18840" kindref="member">search</ref>(</highlight></codeline>
+<codeline lineno="148"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref><sp/>n,</highlight></codeline>
+<codeline lineno="149"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal">*<sp/>x,</highlight></codeline>
+<codeline lineno="150"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref><sp/>k,</highlight></codeline>
+<codeline lineno="151"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal">*<sp/>distances,</highlight></codeline>
+<codeline lineno="152"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref>*<sp/>labels,</highlight></codeline>
+<codeline lineno="153"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/><ref refid="structfaiss_1_1SearchParameters" kindref="compound">SearchParameters</ref>*<sp/>params<sp/>=<sp/></highlight><highlight class="keyword">nullptr</highlight><highlight class="normal">)<sp/></highlight><highlight class="keyword">const<sp/>override</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="154"><highlight class="normal"></highlight><highlight class="comment"></highlight></codeline>
+<codeline lineno="155"><highlight class="comment"><sp/><sp/><sp/><sp/>///<sp/>add<sp/>and<sp/>reset<sp/>will<sp/>crash<sp/>at<sp/>runtime</highlight></codeline>
+<codeline lineno="156" refid="structfaiss_1_1MultiIndexQuantizer_1aa72640bcbe2e5d9029954c2fa6633453" refkind="member"><highlight class="comment"></highlight><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/><ref refid="structfaiss_1_1MultiIndexQuantizer_1aa72640bcbe2e5d9029954c2fa6633453" kindref="member">add</ref>(<ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref><sp/>n,<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal">*<sp/>x)<sp/></highlight><highlight class="keyword">override</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="157"><highlight class="normal"></highlight></codeline>
+<codeline lineno="158" refid="structfaiss_1_1MultiIndexQuantizer_1a4808ce22fcc95c7af902b97969f2a90d" refkind="member"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/><ref refid="structfaiss_1_1MultiIndexQuantizer_1a4808ce22fcc95c7af902b97969f2a90d" kindref="member">reset</ref>()<sp/></highlight><highlight class="keyword">override</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="159"><highlight class="normal"></highlight></codeline>
+<codeline lineno="160"><highlight class="normal"><sp/><sp/><sp/><sp/><ref refid="structfaiss_1_1MultiIndexQuantizer" kindref="compound">MultiIndexQuantizer</ref>()<sp/>{}</highlight></codeline>
+<codeline lineno="161"><highlight class="normal"></highlight></codeline>
+<codeline lineno="162" refid="structfaiss_1_1MultiIndexQuantizer_1aa5bd578560419955a4bf7035cf09a392" refkind="member"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/><ref refid="structfaiss_1_1MultiIndexQuantizer_1aa5bd578560419955a4bf7035cf09a392" kindref="member">reconstruct</ref>(<ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref><sp/>key,<sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal">*<sp/>recons)<sp/></highlight><highlight class="keyword">const<sp/>override</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="163"><highlight class="normal">};</highlight></codeline>
+<codeline lineno="164"><highlight class="normal"></highlight></codeline>
+<codeline lineno="165"><highlight class="normal"></highlight><highlight class="comment">//<sp/>block<sp/>size<sp/>used<sp/>in<sp/>MultiIndexQuantizer::search</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="166"><highlight class="normal">FAISS_API<sp/></highlight><highlight class="keyword">extern</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/>multi_index_quantizer_search_bs;</highlight></codeline>
+<codeline lineno="167"><highlight class="normal"></highlight><highlight class="comment"></highlight></codeline>
+<codeline lineno="168"><highlight class="comment">/**<sp/>MultiIndexQuantizer<sp/>where<sp/>the<sp/>PQ<sp/>assignment<sp/>is<sp/>performed<sp/>by<sp/>sub-indexes</highlight></codeline>
+<codeline lineno="169"><highlight class="comment"><sp/>*/</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="170" refid="structfaiss_1_1MultiIndexQuantizer2" refkind="compound"><highlight class="normal"></highlight><highlight class="keyword">struct<sp/></highlight><highlight class="normal"><ref refid="structfaiss_1_1MultiIndexQuantizer2" kindref="compound">MultiIndexQuantizer2</ref><sp/>:<sp/><ref refid="structfaiss_1_1MultiIndexQuantizer" kindref="compound">MultiIndexQuantizer</ref><sp/>{</highlight><highlight class="comment"></highlight></codeline>
+<codeline lineno="171"><highlight class="comment"><sp/><sp/><sp/><sp/>///<sp/>M<sp/>Indexes<sp/>on<sp/>d<sp/>/<sp/>M<sp/>dimensions</highlight></codeline>
+<codeline lineno="172" refid="structfaiss_1_1MultiIndexQuantizer2_1a7e5f4079fdca73aeab239d3c85c100da" refkind="member"><highlight class="comment"></highlight><highlight class="normal"><sp/><sp/><sp/><sp/>std::vector&lt;Index*&gt;<sp/><ref refid="structfaiss_1_1MultiIndexQuantizer2_1a7e5f4079fdca73aeab239d3c85c100da" kindref="member">assign_indexes</ref>;</highlight></codeline>
+<codeline lineno="173"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">bool</highlight><highlight class="normal"><sp/>own_fields<sp/>=<sp/></highlight><highlight class="keyword">false</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="174"><highlight class="normal"></highlight></codeline>
+<codeline lineno="175"><highlight class="normal"><sp/><sp/><sp/><sp/><ref refid="structfaiss_1_1MultiIndexQuantizer2" kindref="compound">MultiIndexQuantizer2</ref>(</highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/><ref refid="structfaiss_1_1Index_1a2a002388d2c081c2dbab8508dcefe73d" kindref="member">d</ref>,<sp/></highlight><highlight class="keywordtype">size_t</highlight><highlight class="normal"><sp/>M,<sp/></highlight><highlight class="keywordtype">size_t</highlight><highlight class="normal"><sp/>nbits,<sp/><ref refid="structfaiss_1_1Index" kindref="compound">Index</ref>**<sp/>indexes);</highlight></codeline>
+<codeline lineno="176"><highlight class="normal"></highlight></codeline>
+<codeline lineno="177"><highlight class="normal"><sp/><sp/><sp/><sp/><ref refid="structfaiss_1_1MultiIndexQuantizer2" kindref="compound">MultiIndexQuantizer2</ref>(</highlight></codeline>
+<codeline lineno="178"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/><ref refid="structfaiss_1_1Index_1a2a002388d2c081c2dbab8508dcefe73d" kindref="member">d</ref>,</highlight></codeline>
+<codeline lineno="179"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">size_t</highlight><highlight class="normal"><sp/>nbits,</highlight></codeline>
+<codeline lineno="180"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><ref refid="structfaiss_1_1Index" kindref="compound">Index</ref>*<sp/>assign_index_0,</highlight></codeline>
+<codeline lineno="181"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><ref refid="structfaiss_1_1Index" kindref="compound">Index</ref>*<sp/>assign_index_1);</highlight></codeline>
+<codeline lineno="182"><highlight class="normal"></highlight></codeline>
+<codeline lineno="183" refid="structfaiss_1_1MultiIndexQuantizer2_1a553b9a33e9be7f231ffdc0ac53c59e7c" refkind="member"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/><ref refid="structfaiss_1_1MultiIndexQuantizer2_1a553b9a33e9be7f231ffdc0ac53c59e7c" kindref="member">train</ref>(<ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref><sp/>n,<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal">*<sp/>x)<sp/></highlight><highlight class="keyword">override</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="184"><highlight class="normal"></highlight></codeline>
+<codeline lineno="185" refid="structfaiss_1_1MultiIndexQuantizer2_1a041895d9dbabf577e924f1a61681d3a9" refkind="member"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/><ref refid="structfaiss_1_1MultiIndexQuantizer2_1a041895d9dbabf577e924f1a61681d3a9" kindref="member">search</ref>(</highlight></codeline>
+<codeline lineno="186"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref><sp/>n,</highlight></codeline>
+<codeline lineno="187"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal">*<sp/>x,</highlight></codeline>
+<codeline lineno="188"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref><sp/>k,</highlight></codeline>
+<codeline lineno="189"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal">*<sp/>distances,</highlight></codeline>
+<codeline lineno="190"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref>*<sp/>labels,</highlight></codeline>
+<codeline lineno="191"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/><ref refid="structfaiss_1_1SearchParameters" kindref="compound">SearchParameters</ref>*<sp/>params<sp/>=<sp/></highlight><highlight class="keyword">nullptr</highlight><highlight class="normal">)<sp/></highlight><highlight class="keyword">const<sp/>override</highlight><highlight class="normal">;</highlight></codeline>
+<codeline lineno="192"><highlight class="normal">};</highlight></codeline>
+<codeline lineno="193"><highlight class="normal"></highlight></codeline>
+<codeline lineno="194"><highlight class="normal">}<sp/></highlight><highlight class="comment">//<sp/>namespace<sp/>faiss</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="195"><highlight class="normal"></highlight></codeline>
+<codeline lineno="196"><highlight class="normal"></highlight><highlight class="preprocessor">#endif</highlight></codeline>
     </programlisting>
     <location file="faiss/IndexPQ.h"/>
   </compounddef>

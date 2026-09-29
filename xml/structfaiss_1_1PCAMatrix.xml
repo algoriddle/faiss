@@ -19,7 +19,7 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/VectorTransform.h" line="161" column="11" bodyfile="faiss/VectorTransform.h" bodystart="161" bodyend="-1"/>
+        <location file="faiss/VectorTransform.h" line="164" column="11" bodyfile="faiss/VectorTransform.h" bodystart="164" bodyend="-1"/>
       </memberdef>
       <memberdef kind="variable" id="structfaiss_1_1PCAMatrix_1a0c2483343aeff1c43c10f66a136a7f37" prot="public" static="no" mutable="no">
         <type>float</type>
@@ -34,7 +34,7 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/VectorTransform.h" line="164" column="11" bodyfile="faiss/VectorTransform.h" bodystart="164" bodyend="-1"/>
+        <location file="faiss/VectorTransform.h" line="167" column="11" bodyfile="faiss/VectorTransform.h" bodystart="167" bodyend="-1"/>
       </memberdef>
       <memberdef kind="variable" id="structfaiss_1_1PCAMatrix_1af111f055b7571703a3aa270d89e99321" prot="public" static="no" mutable="no">
         <type>bool</type>
@@ -49,7 +49,7 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/VectorTransform.h" line="167" column="10" bodyfile="faiss/VectorTransform.h" bodystart="167" bodyend="-1"/>
+        <location file="faiss/VectorTransform.h" line="170" column="10" bodyfile="faiss/VectorTransform.h" bodystart="170" bodyend="-1"/>
       </memberdef>
       <memberdef kind="variable" id="structfaiss_1_1PCAMatrix_1abdce90f57a3c4401f5230f03da901e0d" prot="public" static="no" mutable="no">
         <type>size_t</type>
@@ -64,7 +64,7 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/VectorTransform.h" line="170" column="12" bodyfile="faiss/VectorTransform.h" bodystart="170" bodyend="-1"/>
+        <location file="faiss/VectorTransform.h" line="173" column="12" bodyfile="faiss/VectorTransform.h" bodystart="173" bodyend="-1"/>
       </memberdef>
       <memberdef kind="variable" id="structfaiss_1_1PCAMatrix_1ac9a4c97b5861081dfd8ca5881bb1a677" prot="public" static="no" mutable="no">
         <type>int</type>
@@ -79,7 +79,7 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/VectorTransform.h" line="173" column="9" bodyfile="faiss/VectorTransform.h" bodystart="173" bodyend="-1"/>
+        <location file="faiss/VectorTransform.h" line="176" column="9" bodyfile="faiss/VectorTransform.h" bodystart="176" bodyend="-1"/>
       </memberdef>
       <memberdef kind="variable" id="structfaiss_1_1PCAMatrix_1a721c338c1df5c99471db82e6d3dc8f93" prot="public" static="no" mutable="no">
         <type>std::vector&lt; float &gt;</type>
@@ -94,7 +94,7 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/VectorTransform.h" line="176" column="17" bodyfile="faiss/VectorTransform.h" bodystart="176" bodyend="-1"/>
+        <location file="faiss/VectorTransform.h" line="179" column="17" bodyfile="faiss/VectorTransform.h" bodystart="179" bodyend="-1"/>
       </memberdef>
       <memberdef kind="variable" id="structfaiss_1_1PCAMatrix_1ae80e130c0667b66cea608c4926d7d561" prot="public" static="no" mutable="no">
         <type>std::vector&lt; float &gt;</type>
@@ -109,7 +109,7 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/VectorTransform.h" line="179" column="17" bodyfile="faiss/VectorTransform.h" bodystart="179" bodyend="-1"/>
+        <location file="faiss/VectorTransform.h" line="182" column="17" bodyfile="faiss/VectorTransform.h" bodystart="182" bodyend="-1"/>
       </memberdef>
       <memberdef kind="variable" id="structfaiss_1_1PCAMatrix_1aef5c130774e5d4f697a3e1c82647bfd3" prot="public" static="no" mutable="no">
         <type>std::vector&lt; float &gt;</type>
@@ -124,7 +124,7 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/VectorTransform.h" line="182" column="17" bodyfile="faiss/VectorTransform.h" bodystart="182" bodyend="-1"/>
+        <location file="faiss/VectorTransform.h" line="185" column="17" bodyfile="faiss/VectorTransform.h" bodystart="185" bodyend="-1"/>
       </memberdef>
       <memberdef kind="variable" id="structfaiss_1_1LinearTransform_1a322401ba80cb96ac1e7846401f2bef24" prot="public" static="no" mutable="no">
         <type>bool</type>
@@ -246,30 +246,30 @@
       </memberdef>
     </sectiondef>
     <sectiondef kind="public-func">
-      <memberdef kind="function" id="structfaiss_1_1PCAMatrix_1aacc73b1e114a0331172236745a8f1e25" prot="public" static="no" const="no" explicit="yes" inline="no" virt="non-virtual">
+      <memberdef kind="function" id="structfaiss_1_1PCAMatrix_1a0dd226eb8218a1081efbbe77b3b2cba2" prot="public" static="no" const="no" explicit="yes" inline="no" virt="non-virtual">
         <type></type>
         <definition>faiss::PCAMatrix::PCAMatrix</definition>
-        <argsstring>(int d_in=0, int d_out=0, float eigen_power=0, bool random_rotation=false)</argsstring>
+        <argsstring>(int din=0, int dout=0, float eigen_power_in=0, bool random_rotation_in=false)</argsstring>
         <name>PCAMatrix</name>
         <qualifiedname>faiss::PCAMatrix::PCAMatrix</qualifiedname>
         <param>
           <type>int</type>
-          <declname>d_in</declname>
+          <declname>din</declname>
           <defval>0</defval>
         </param>
         <param>
           <type>int</type>
-          <declname>d_out</declname>
+          <declname>dout</declname>
           <defval>0</defval>
         </param>
         <param>
           <type>float</type>
-          <declname>eigen_power</declname>
+          <declname>eigen_power_in</declname>
           <defval>0</defval>
         </param>
         <param>
           <type>bool</type>
-          <declname>random_rotation</declname>
+          <declname>random_rotation_in</declname>
           <defval>false</defval>
         </param>
         <briefdescription>
@@ -278,7 +278,7 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/VectorTransform.h" line="185" column="14"/>
+        <location file="faiss/VectorTransform.h" line="188" column="14"/>
       </memberdef>
       <memberdef kind="function" id="structfaiss_1_1PCAMatrix_1a42f2fefbabe122868c59ea35b4ff080b" prot="public" static="no" const="no" explicit="no" inline="no" virt="virtual">
         <type>void</type>
@@ -288,7 +288,7 @@
         <qualifiedname>faiss::PCAMatrix::train</qualifiedname>
         <reimplements refid="structfaiss_1_1VectorTransform_1ab781e04a6c8afe04689b3fc64be512d5">train</reimplements>
         <param>
-          <type><ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref></type>
+          <type><ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref></type>
           <declname>n</declname>
         </param>
         <param>
@@ -302,7 +302,7 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/VectorTransform.h" line="193" column="10"/>
+        <location file="faiss/VectorTransform.h" line="196" column="10"/>
       </memberdef>
       <memberdef kind="function" id="structfaiss_1_1PCAMatrix_1a5eeb75861ade62cf606d003da398a09f" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
         <type>void</type>
@@ -321,7 +321,7 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/VectorTransform.h" line="196" column="10"/>
+        <location file="faiss/VectorTransform.h" line="199" column="10"/>
       </memberdef>
       <memberdef kind="function" id="structfaiss_1_1PCAMatrix_1ac13555c4d9007ae338d3392882b8e0db" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
         <type>void</type>
@@ -336,7 +336,7 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/VectorTransform.h" line="199" column="10"/>
+        <location file="faiss/VectorTransform.h" line="202" column="10"/>
       </memberdef>
       <memberdef kind="function" id="structfaiss_1_1LinearTransform_1aefb0ae9416652e408a96604f18a78d7d" prot="public" static="no" const="yes" explicit="no" inline="no" virt="virtual">
         <type>void</type>
@@ -346,7 +346,7 @@
         <qualifiedname>faiss::LinearTransform::apply_noalloc</qualifiedname>
         <reimplements refid="structfaiss_1_1VectorTransform_1a90f1a218c224c049f1bd8b77a78d6aa0">apply_noalloc</reimplements>
         <param>
-          <type><ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref></type>
+          <type><ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref></type>
           <declname>n</declname>
         </param>
         <param>
@@ -373,7 +373,7 @@
         <name>transform_transpose</name>
         <qualifiedname>faiss::LinearTransform::transform_transpose</qualifiedname>
         <param>
-          <type><ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref></type>
+          <type><ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref></type>
           <declname>n</declname>
         </param>
         <param>
@@ -401,7 +401,7 @@
         <qualifiedname>faiss::LinearTransform::reverse_transform</qualifiedname>
         <reimplements refid="structfaiss_1_1VectorTransform_1a0913e3b521a6d34f523c291508e82adb">reverse_transform</reimplements>
         <param>
-          <type><ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref></type>
+          <type><ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref></type>
           <declname>n</declname>
         </param>
         <param>
@@ -492,7 +492,7 @@
         <name>apply</name>
         <qualifiedname>faiss::VectorTransform::apply</qualifiedname>
         <param>
-          <type><ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref></type>
+          <type><ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref></type>
           <declname>n</declname>
         </param>
         <param>
@@ -569,7 +569,7 @@
         <link refid="structfaiss_1_1VectorTransform"/>
       </node>
     </collaborationgraph>
-    <location file="faiss/VectorTransform.h" line="154" column="1" bodyfile="faiss/VectorTransform.h" bodystart="154" bodyend="200"/>
+    <location file="faiss/VectorTransform.h" line="157" column="1" bodyfile="faiss/VectorTransform.h" bodystart="157" bodyend="203"/>
     <listofallmembers>
       <member refid="structfaiss_1_1LinearTransform_1aa40e156ef57fe206cd5f3a58ec0660da" prot="public" virt="non-virtual"><scope>faiss::PCAMatrix</scope><name>A</name></member>
       <member refid="structfaiss_1_1VectorTransform_1a99fb80aeff049dc92300d2ed79d30883" prot="public" virt="non-virtual"><scope>faiss::PCAMatrix</scope><name>apply</name></member>
@@ -586,11 +586,11 @@
       <member refid="structfaiss_1_1LinearTransform_1a322401ba80cb96ac1e7846401f2bef24" prot="public" virt="non-virtual"><scope>faiss::PCAMatrix</scope><name>have_bias</name></member>
       <member refid="structfaiss_1_1LinearTransform_1a8a67a0178eab513cf87545f5d12d9569" prot="public" virt="non-virtual"><scope>faiss::PCAMatrix</scope><name>is_orthonormal</name></member>
       <member refid="structfaiss_1_1VectorTransform_1ab511f1ddf608c00204555881ca28cb02" prot="public" virt="non-virtual"><scope>faiss::PCAMatrix</scope><name>is_trained</name></member>
-      <member refid="structfaiss_1_1LinearTransform_1a7bf766de1abac428d18b8817208fcab0" prot="public" virt="non-virtual"><scope>faiss::PCAMatrix</scope><name>LinearTransform</name></member>
+      <member refid="structfaiss_1_1LinearTransform_1a831cb91657f004b6891f98727c8b612b" prot="public" virt="non-virtual"><scope>faiss::PCAMatrix</scope><name>LinearTransform</name></member>
       <member refid="structfaiss_1_1PCAMatrix_1abdce90f57a3c4401f5230f03da901e0d" prot="public" virt="non-virtual"><scope>faiss::PCAMatrix</scope><name>max_points_per_d</name></member>
       <member refid="structfaiss_1_1PCAMatrix_1a721c338c1df5c99471db82e6d3dc8f93" prot="public" virt="non-virtual"><scope>faiss::PCAMatrix</scope><name>mean</name></member>
       <member refid="structfaiss_1_1PCAMatrix_1aef5c130774e5d4f697a3e1c82647bfd3" prot="public" virt="non-virtual"><scope>faiss::PCAMatrix</scope><name>PCAMat</name></member>
-      <member refid="structfaiss_1_1PCAMatrix_1aacc73b1e114a0331172236745a8f1e25" prot="public" virt="non-virtual"><scope>faiss::PCAMatrix</scope><name>PCAMatrix</name></member>
+      <member refid="structfaiss_1_1PCAMatrix_1a0dd226eb8218a1081efbbe77b3b2cba2" prot="public" virt="non-virtual"><scope>faiss::PCAMatrix</scope><name>PCAMatrix</name></member>
       <member refid="structfaiss_1_1PCAMatrix_1ac13555c4d9007ae338d3392882b8e0db" prot="public" virt="non-virtual"><scope>faiss::PCAMatrix</scope><name>prepare_Ab</name></member>
       <member refid="structfaiss_1_1LinearTransform_1aeca6faf0c5beb67a66b7a22182422bc5" prot="public" virt="non-virtual"><scope>faiss::PCAMatrix</scope><name>print_if_verbose</name></member>
       <member refid="structfaiss_1_1PCAMatrix_1af111f055b7571703a3aa270d89e99321" prot="public" virt="non-virtual"><scope>faiss::PCAMatrix</scope><name>random_rotation</name></member>
@@ -598,7 +598,7 @@
       <member refid="structfaiss_1_1LinearTransform_1a1f75b8a58b9f452eb08fd8e54c134fe0" prot="public" virt="non-virtual"><scope>faiss::PCAMatrix</scope><name>set_is_orthonormal</name></member>
       <member refid="structfaiss_1_1PCAMatrix_1a42f2fefbabe122868c59ea35b4ff080b" prot="public" virt="virtual"><scope>faiss::PCAMatrix</scope><name>train</name></member>
       <member refid="structfaiss_1_1LinearTransform_1a29af2cf35a13b538eb327aa64b07e474" prot="public" virt="non-virtual"><scope>faiss::PCAMatrix</scope><name>transform_transpose</name></member>
-      <member refid="structfaiss_1_1VectorTransform_1a137f48bab695736f0b1d79a50cddc858" prot="public" virt="non-virtual"><scope>faiss::PCAMatrix</scope><name>VectorTransform</name></member>
+      <member refid="structfaiss_1_1VectorTransform_1a6af0c21e5b727f2202ab2e2fedea5034" prot="public" virt="non-virtual"><scope>faiss::PCAMatrix</scope><name>VectorTransform</name></member>
       <member refid="structfaiss_1_1LinearTransform_1ae351ccd1155b71ac9d2fbd8d11b7082a" prot="public" virt="non-virtual"><scope>faiss::PCAMatrix</scope><name>verbose</name></member>
       <member refid="structfaiss_1_1LinearTransform_1a87a85f77d0b49d85f8d2d181b7835a04" prot="public" virt="non-virtual"><scope>faiss::PCAMatrix</scope><name>~LinearTransform</name></member>
       <member refid="structfaiss_1_1VectorTransform_1a6e003e61f6f88afb18e65f1493b904a8" prot="public" virt="virtual"><scope>faiss::PCAMatrix</scope><name>~VectorTransform</name></member>

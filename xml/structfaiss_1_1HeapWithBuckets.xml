@@ -21,7 +21,7 @@
     </briefdescription>
     <detaileddescription>
     </detaileddescription>
-    <location file="faiss/utils/approx_topk/avx2-inl.h" line="20" column="1" bodyfile="faiss/utils/approx_topk/avx2-inl.h" bodystart="20" bodyend="22"/>
+    <location file="faiss/impl/approx_topk/approx_topk.h" line="182" column="1" bodyfile="faiss/impl/approx_topk/approx_topk.h" bodystart="182" bodyend="186"/>
     <listofallmembers>
     </listofallmembers>
   </compounddef>

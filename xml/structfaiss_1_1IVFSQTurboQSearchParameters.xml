@@ -1,0 +1,236 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.8" xml:lang="en-US">
+  <compounddef id="structfaiss_1_1IVFSQTurboQSearchParameters" kind="struct" language="C++" prot="public">
+    <compoundname>faiss::IVFSQTurboQSearchParameters</compoundname>
+    <basecompoundref refid="structfaiss_1_1SearchParametersIVF" prot="public" virt="non-virtual">faiss::SearchParametersIVF</basecompoundref>
+    <includes refid="IndexScalarQuantizer_8h" local="no">IndexScalarQuantizer.h</includes>
+    <sectiondef kind="public-attrib">
+      <memberdef kind="variable" id="structfaiss_1_1IVFSQTurboQSearchParameters_1af1acbd32f7eb81887a899f36f592ee03" prot="public" static="no" mutable="no">
+        <type>uint8_t</type>
+        <definition>uint8_t faiss::IVFSQTurboQSearchParameters::qb</definition>
+        <argsstring></argsstring>
+        <name>qb</name>
+        <qualifiedname>faiss::IVFSQTurboQSearchParameters::qb</qualifiedname>
+        <initializer>= 0</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+<para>Query quantization bits for integer MSE pre-screening. 0 = float path (default), 1-8 = integer popcount path. </para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="faiss/IndexScalarQuantizer.h" line="70" column="13" bodyfile="faiss/IndexScalarQuantizer.h" bodystart="70" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structfaiss_1_1IVFSQTurboQSearchParameters_1ae99e5f8c1d214c618af7f79cabb9f087" prot="public" static="no" mutable="no">
+        <type>bool</type>
+        <definition>bool faiss::IVFSQTurboQSearchParameters::int_qjl</definition>
+        <argsstring></argsstring>
+        <name>int_qjl</name>
+        <qualifiedname>faiss::IVFSQTurboQSearchParameters::int_qjl</qualifiedname>
+        <initializer>= false</initializer>
+        <briefdescription>
+<para>Also use integer popcount for QJL stage (requires qb &gt; 0). </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="faiss/IndexScalarQuantizer.h" line="73" column="10" bodyfile="faiss/IndexScalarQuantizer.h" bodystart="73" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structfaiss_1_1SearchParametersIVF_1a8367077ad30dca0bf5cc4daa6ee195e7" prot="public" static="no" mutable="no">
+        <type>size_t</type>
+        <definition>size_t faiss::SearchParametersIVF::nprobe</definition>
+        <argsstring></argsstring>
+        <name>nprobe</name>
+        <qualifiedname>faiss::SearchParametersIVF::nprobe</qualifiedname>
+        <initializer>= 1</initializer>
+        <briefdescription>
+<para>number of probes at query time </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="faiss/IndexIVF.h" line="69" column="12" bodyfile="faiss/IndexIVF.h" bodystart="69" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structfaiss_1_1SearchParametersIVF_1a788469f3fe0e143365f6d5637e249a1b" prot="public" static="no" mutable="no">
+        <type>size_t</type>
+        <definition>size_t faiss::SearchParametersIVF::max_codes</definition>
+        <argsstring></argsstring>
+        <name>max_codes</name>
+        <qualifiedname>faiss::SearchParametersIVF::max_codes</qualifiedname>
+        <initializer>= 0</initializer>
+        <briefdescription>
+<para>max nb of codes to visit to do a query </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="faiss/IndexIVF.h" line="70" column="12" bodyfile="faiss/IndexIVF.h" bodystart="70" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structfaiss_1_1SearchParametersIVF_1a9792e2394117a6602cf576cbbfc889e0" prot="public" static="no" mutable="no">
+        <type>size_t</type>
+        <definition>size_t faiss::SearchParametersIVF::max_lists_num</definition>
+        <argsstring></argsstring>
+        <name>max_lists_num</name>
+        <qualifiedname>faiss::SearchParametersIVF::max_lists_num</qualifiedname>
+        <initializer>= 0</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+<para>FastScan k-NN only: maximum number of inverted lists to visit. 0 means unlimited, i.e. bounded only by nprobe. When set together with max_codes, either budget may stop the scan. With ensure_topk_full, this limit is treated as at least k lists. </para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="faiss/IndexIVF.h" line="76" column="12" bodyfile="faiss/IndexIVF.h" bodystart="76" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structfaiss_1_1SearchParametersIVF_1a04fdb1d7439e158e3ae1696a6e38e355" prot="public" static="no" mutable="no">
+        <type>bool</type>
+        <definition>bool faiss::SearchParametersIVF::ensure_topk_full</definition>
+        <argsstring></argsstring>
+        <name>ensure_topk_full</name>
+        <qualifiedname>faiss::SearchParametersIVF::ensure_topk_full</qualifiedname>
+        <initializer>= false</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+<para>For k-NN search, make small early-stop budgets less aggressive: max_codes is treated as at least k post-IDSelector scans. Supported by generic IVF in parallel_mode 0 and 3, and by FastScan k-NN implementations 10 and 11. </para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="faiss/IndexIVF.h" line="82" column="10" bodyfile="faiss/IndexIVF.h" bodystart="82" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structfaiss_1_1SearchParametersIVF_1a893b527d1d6a4cee0159684e1d6a7aa7" prot="public" static="no" mutable="no">
+        <type>size_t</type>
+        <definition>size_t faiss::SearchParametersIVF::max_empty_result_buckets</definition>
+        <argsstring></argsstring>
+        <name>max_empty_result_buckets</name>
+        <qualifiedname>faiss::SearchParametersIVF::max_empty_result_buckets</qualifiedname>
+        <initializer>= 0</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+<para>Range-search only: stop after this many consecutive probed lists add no in-radius results. 0 disables the heuristic. This trades recall for less work. Supported in parallel_mode 0; FastScan range search uses implementation 10 for this option. </para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="faiss/IndexIVF.h" line="88" column="12" bodyfile="faiss/IndexIVF.h" bodystart="88" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structfaiss_1_1SearchParametersIVF_1aa2506404e1b9a40cd3f76dd4c903c922" prot="public" static="no" mutable="no">
+        <type><ref refid="structfaiss_1_1SearchParameters" kindref="compound">SearchParameters</ref> *</type>
+        <definition>SearchParameters* faiss::SearchParametersIVF::quantizer_params</definition>
+        <argsstring></argsstring>
+        <name>quantizer_params</name>
+        <qualifiedname>faiss::SearchParametersIVF::quantizer_params</qualifiedname>
+        <initializer>= nullptr</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="faiss/IndexIVF.h" line="90" column="22" bodyfile="faiss/IndexIVF.h" bodystart="90" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structfaiss_1_1SearchParametersIVF_1af9194acd1c6c94c1d2edaf26ce54a9d8" prot="public" static="no" mutable="no">
+        <type>void *</type>
+        <definition>void* faiss::SearchParametersIVF::inverted_list_context</definition>
+        <argsstring></argsstring>
+        <name>inverted_list_context</name>
+        <qualifiedname>faiss::SearchParametersIVF::inverted_list_context</qualifiedname>
+        <initializer>= nullptr</initializer>
+        <briefdescription>
+<para>context object to pass to <ref refid="structfaiss_1_1InvertedLists" kindref="compound">InvertedLists</ref> </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="faiss/IndexIVF.h" line="92" column="10" bodyfile="faiss/IndexIVF.h" bodystart="92" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structfaiss_1_1SearchParameters_1a85e6514f1599673eb1cf3d0276f00e3a" prot="public" static="no" mutable="no">
+        <type><ref refid="structfaiss_1_1IDSelector" kindref="compound">IDSelector</ref> *</type>
+        <definition>IDSelector* faiss::SearchParameters::sel</definition>
+        <argsstring></argsstring>
+        <name>sel</name>
+        <qualifiedname>faiss::SearchParameters::sel</qualifiedname>
+        <initializer>= nullptr</initializer>
+        <briefdescription>
+<para>if non-null, only these IDs will be considered during search. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="faiss/Index.h" line="90" column="16" bodyfile="faiss/Index.h" bodystart="90" bodyend="-1"/>
+      </memberdef>
+    </sectiondef>
+    <briefdescription>
+<para>Search parameters for TurboQuant full types (QT_*_tq). </para>
+    </briefdescription>
+    <detaileddescription>
+<para>An IVF implementation where the components of the residuals are encoded with a scalar quantizer. All distance computations are asymmetric, so the encoded vectors are decoded and approximate distances are computed. </para>
+    </detaileddescription>
+    <inheritancegraph>
+      <node id="2">
+        <label>IVFSearchParameters</label>
+        <link refid="structfaiss_1_1SearchParametersIVF"/>
+        <childnode refid="3" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="1">
+        <label>faiss::IVFSQTurboQSearchParameters</label>
+        <link refid="structfaiss_1_1IVFSQTurboQSearchParameters"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="3">
+        <label>faiss::SearchParameters</label>
+        <link refid="structfaiss_1_1SearchParameters"/>
+      </node>
+    </inheritancegraph>
+    <collaborationgraph>
+      <node id="2">
+        <label>IVFSearchParameters</label>
+        <link refid="structfaiss_1_1SearchParametersIVF"/>
+        <childnode refid="3" relation="public-inheritance">
+        </childnode>
+        <childnode refid="3" relation="usage">
+          <edgelabel>quantizer_params</edgelabel>
+        </childnode>
+      </node>
+      <node id="4">
+        <label>faiss::IDSelector</label>
+        <link refid="structfaiss_1_1IDSelector"/>
+      </node>
+      <node id="1">
+        <label>faiss::IVFSQTurboQSearchParameters</label>
+        <link refid="structfaiss_1_1IVFSQTurboQSearchParameters"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="3">
+        <label>faiss::SearchParameters</label>
+        <link refid="structfaiss_1_1SearchParameters"/>
+        <childnode refid="4" relation="usage">
+          <edgelabel>sel</edgelabel>
+        </childnode>
+      </node>
+    </collaborationgraph>
+    <location file="faiss/IndexScalarQuantizer.h" line="67" column="1" bodyfile="faiss/IndexScalarQuantizer.h" bodystart="67" bodyend="74"/>
+    <listofallmembers>
+      <member refid="structfaiss_1_1SearchParametersIVF_1a04fdb1d7439e158e3ae1696a6e38e355" prot="public" virt="non-virtual"><scope>faiss::IVFSQTurboQSearchParameters</scope><name>ensure_topk_full</name></member>
+      <member refid="structfaiss_1_1IVFSQTurboQSearchParameters_1ae99e5f8c1d214c618af7f79cabb9f087" prot="public" virt="non-virtual"><scope>faiss::IVFSQTurboQSearchParameters</scope><name>int_qjl</name></member>
+      <member refid="structfaiss_1_1SearchParametersIVF_1af9194acd1c6c94c1d2edaf26ce54a9d8" prot="public" virt="non-virtual"><scope>faiss::IVFSQTurboQSearchParameters</scope><name>inverted_list_context</name></member>
+      <member refid="structfaiss_1_1SearchParametersIVF_1a788469f3fe0e143365f6d5637e249a1b" prot="public" virt="non-virtual"><scope>faiss::IVFSQTurboQSearchParameters</scope><name>max_codes</name></member>
+      <member refid="structfaiss_1_1SearchParametersIVF_1a893b527d1d6a4cee0159684e1d6a7aa7" prot="public" virt="non-virtual"><scope>faiss::IVFSQTurboQSearchParameters</scope><name>max_empty_result_buckets</name></member>
+      <member refid="structfaiss_1_1SearchParametersIVF_1a9792e2394117a6602cf576cbbfc889e0" prot="public" virt="non-virtual"><scope>faiss::IVFSQTurboQSearchParameters</scope><name>max_lists_num</name></member>
+      <member refid="structfaiss_1_1SearchParametersIVF_1a8367077ad30dca0bf5cc4daa6ee195e7" prot="public" virt="non-virtual"><scope>faiss::IVFSQTurboQSearchParameters</scope><name>nprobe</name></member>
+      <member refid="structfaiss_1_1IVFSQTurboQSearchParameters_1af1acbd32f7eb81887a899f36f592ee03" prot="public" virt="non-virtual"><scope>faiss::IVFSQTurboQSearchParameters</scope><name>qb</name></member>
+      <member refid="structfaiss_1_1SearchParametersIVF_1aa2506404e1b9a40cd3f76dd4c903c922" prot="public" virt="non-virtual"><scope>faiss::IVFSQTurboQSearchParameters</scope><name>quantizer_params</name></member>
+      <member refid="structfaiss_1_1SearchParameters_1a85e6514f1599673eb1cf3d0276f00e3a" prot="public" virt="non-virtual"><scope>faiss::IVFSQTurboQSearchParameters</scope><name>sel</name></member>
+      <member refid="structfaiss_1_1SearchParameters_1a8642013315dc5f9e4e6dd603c89b29ae" prot="public" virt="virtual"><scope>faiss::IVFSQTurboQSearchParameters</scope><name>~SearchParameters</name></member>
+      <member refid="structfaiss_1_1SearchParametersIVF_1ab03d390a3bbb120e23304fe3794c04df" prot="public" virt="virtual"><scope>faiss::IVFSQTurboQSearchParameters</scope><name>~SearchParametersIVF</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

@@ -17,7 +17,7 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/VectorTransform.h" line="212" column="9" bodyfile="faiss/VectorTransform.h" bodystart="212" bodyend="-1"/>
+        <location file="faiss/VectorTransform.h" line="215" column="9" bodyfile="faiss/VectorTransform.h" bodystart="215" bodyend="-1"/>
       </memberdef>
       <memberdef kind="variable" id="structfaiss_1_1ITQMatrix_1aad8bf31090ef0414326e42286f164a3a" prot="public" static="no" mutable="no">
         <type>int</type>
@@ -31,7 +31,7 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/VectorTransform.h" line="213" column="9" bodyfile="faiss/VectorTransform.h" bodystart="213" bodyend="-1"/>
+        <location file="faiss/VectorTransform.h" line="216" column="9" bodyfile="faiss/VectorTransform.h" bodystart="216" bodyend="-1"/>
       </memberdef>
       <memberdef kind="variable" id="structfaiss_1_1ITQMatrix_1a2460c1d755c391cb02a41be8328a97d4" prot="public" static="no" mutable="no">
         <type>std::vector&lt; double &gt;</type>
@@ -45,7 +45,7 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/VectorTransform.h" line="216" column="17" bodyfile="faiss/VectorTransform.h" bodystart="216" bodyend="-1"/>
+        <location file="faiss/VectorTransform.h" line="219" column="17" bodyfile="faiss/VectorTransform.h" bodystart="219" bodyend="-1"/>
       </memberdef>
       <memberdef kind="variable" id="structfaiss_1_1LinearTransform_1a322401ba80cb96ac1e7846401f2bef24" prot="public" static="no" mutable="no">
         <type>bool</type>
@@ -184,7 +184,7 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/VectorTransform.h" line="218" column="14"/>
+        <location file="faiss/VectorTransform.h" line="221" column="14"/>
       </memberdef>
       <memberdef kind="function" id="structfaiss_1_1ITQMatrix_1abac7b3a00aa622c1590ea11f01abf073" prot="public" static="no" const="no" explicit="no" inline="no" virt="virtual">
         <type>void</type>
@@ -194,7 +194,7 @@
         <qualifiedname>faiss::ITQMatrix::train</qualifiedname>
         <reimplements refid="structfaiss_1_1VectorTransform_1ab781e04a6c8afe04689b3fc64be512d5">train</reimplements>
         <param>
-          <type><ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref></type>
+          <type><ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref></type>
           <declname>n</declname>
         </param>
         <param>
@@ -226,7 +226,7 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/VectorTransform.h" line="220" column="10"/>
+        <location file="faiss/VectorTransform.h" line="223" column="10"/>
       </memberdef>
       <memberdef kind="function" id="structfaiss_1_1LinearTransform_1aefb0ae9416652e408a96604f18a78d7d" prot="public" static="no" const="yes" explicit="no" inline="no" virt="virtual">
         <type>void</type>
@@ -236,7 +236,7 @@
         <qualifiedname>faiss::LinearTransform::apply_noalloc</qualifiedname>
         <reimplements refid="structfaiss_1_1VectorTransform_1a90f1a218c224c049f1bd8b77a78d6aa0">apply_noalloc</reimplements>
         <param>
-          <type><ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref></type>
+          <type><ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref></type>
           <declname>n</declname>
         </param>
         <param>
@@ -263,7 +263,7 @@
         <name>transform_transpose</name>
         <qualifiedname>faiss::LinearTransform::transform_transpose</qualifiedname>
         <param>
-          <type><ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref></type>
+          <type><ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref></type>
           <declname>n</declname>
         </param>
         <param>
@@ -291,7 +291,7 @@
         <qualifiedname>faiss::LinearTransform::reverse_transform</qualifiedname>
         <reimplements refid="structfaiss_1_1VectorTransform_1a0913e3b521a6d34f523c291508e82adb">reverse_transform</reimplements>
         <param>
-          <type><ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref></type>
+          <type><ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref></type>
           <declname>n</declname>
         </param>
         <param>
@@ -382,7 +382,7 @@
         <name>apply</name>
         <qualifiedname>faiss::VectorTransform::apply</qualifiedname>
         <param>
-          <type><ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref></type>
+          <type><ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref></type>
           <declname>n</declname>
         </param>
         <param>
@@ -461,7 +461,7 @@
         <link refid="structfaiss_1_1VectorTransform"/>
       </node>
     </collaborationgraph>
-    <location file="faiss/VectorTransform.h" line="211" column="1" bodyfile="faiss/VectorTransform.h" bodystart="211" bodyend="221"/>
+    <location file="faiss/VectorTransform.h" line="214" column="1" bodyfile="faiss/VectorTransform.h" bodystart="214" bodyend="224"/>
     <listofallmembers>
       <member refid="structfaiss_1_1LinearTransform_1aa40e156ef57fe206cd5f3a58ec0660da" prot="public" virt="non-virtual"><scope>faiss::ITQMatrix</scope><name>A</name></member>
       <member refid="structfaiss_1_1VectorTransform_1a99fb80aeff049dc92300d2ed79d30883" prot="public" virt="non-virtual"><scope>faiss::ITQMatrix</scope><name>apply</name></member>
@@ -475,7 +475,7 @@
       <member refid="structfaiss_1_1LinearTransform_1a8a67a0178eab513cf87545f5d12d9569" prot="public" virt="non-virtual"><scope>faiss::ITQMatrix</scope><name>is_orthonormal</name></member>
       <member refid="structfaiss_1_1VectorTransform_1ab511f1ddf608c00204555881ca28cb02" prot="public" virt="non-virtual"><scope>faiss::ITQMatrix</scope><name>is_trained</name></member>
       <member refid="structfaiss_1_1ITQMatrix_1a32b1f714c2f82373aba3988e10dd1cc2" prot="public" virt="non-virtual"><scope>faiss::ITQMatrix</scope><name>ITQMatrix</name></member>
-      <member refid="structfaiss_1_1LinearTransform_1a7bf766de1abac428d18b8817208fcab0" prot="public" virt="non-virtual"><scope>faiss::ITQMatrix</scope><name>LinearTransform</name></member>
+      <member refid="structfaiss_1_1LinearTransform_1a831cb91657f004b6891f98727c8b612b" prot="public" virt="non-virtual"><scope>faiss::ITQMatrix</scope><name>LinearTransform</name></member>
       <member refid="structfaiss_1_1ITQMatrix_1a31407547017869e82b462f462d29dac7" prot="public" virt="non-virtual"><scope>faiss::ITQMatrix</scope><name>max_iter</name></member>
       <member refid="structfaiss_1_1LinearTransform_1aeca6faf0c5beb67a66b7a22182422bc5" prot="public" virt="non-virtual"><scope>faiss::ITQMatrix</scope><name>print_if_verbose</name></member>
       <member refid="structfaiss_1_1LinearTransform_1aabcea47432734c860fdf6fcc3a998563" prot="public" virt="virtual"><scope>faiss::ITQMatrix</scope><name>reverse_transform</name></member>
@@ -483,7 +483,7 @@
       <member refid="structfaiss_1_1LinearTransform_1a1f75b8a58b9f452eb08fd8e54c134fe0" prot="public" virt="non-virtual"><scope>faiss::ITQMatrix</scope><name>set_is_orthonormal</name></member>
       <member refid="structfaiss_1_1ITQMatrix_1abac7b3a00aa622c1590ea11f01abf073" prot="public" virt="virtual"><scope>faiss::ITQMatrix</scope><name>train</name></member>
       <member refid="structfaiss_1_1LinearTransform_1a29af2cf35a13b538eb327aa64b07e474" prot="public" virt="non-virtual"><scope>faiss::ITQMatrix</scope><name>transform_transpose</name></member>
-      <member refid="structfaiss_1_1VectorTransform_1a137f48bab695736f0b1d79a50cddc858" prot="public" virt="non-virtual"><scope>faiss::ITQMatrix</scope><name>VectorTransform</name></member>
+      <member refid="structfaiss_1_1VectorTransform_1a6af0c21e5b727f2202ab2e2fedea5034" prot="public" virt="non-virtual"><scope>faiss::ITQMatrix</scope><name>VectorTransform</name></member>
       <member refid="structfaiss_1_1LinearTransform_1ae351ccd1155b71ac9d2fbd8d11b7082a" prot="public" virt="non-virtual"><scope>faiss::ITQMatrix</scope><name>verbose</name></member>
       <member refid="structfaiss_1_1LinearTransform_1a87a85f77d0b49d85f8d2d181b7835a04" prot="public" virt="non-virtual"><scope>faiss::ITQMatrix</scope><name>~LinearTransform</name></member>
       <member refid="structfaiss_1_1VectorTransform_1a6e003e61f6f88afb18e65f1493b904a8" prot="public" virt="virtual"><scope>faiss::ITQMatrix</scope><name>~VectorTransform</name></member>

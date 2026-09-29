@@ -76,7 +76,7 @@
         <name>IndexReplicasTemplate</name>
         <qualifiedname>faiss::IndexReplicasTemplate::IndexReplicasTemplate</qualifiedname>
         <param>
-          <type><ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref></type>
+          <type><ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref></type>
           <declname>d</declname>
         </param>
         <param>
@@ -179,7 +179,7 @@
         <name>train</name>
         <qualifiedname>faiss::IndexReplicasTemplate::train</qualifiedname>
         <param>
-          <type><ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref></type>
+          <type><ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref></type>
           <declname>n</declname>
         </param>
         <param>
@@ -202,7 +202,7 @@
         <name>add</name>
         <qualifiedname>faiss::IndexReplicasTemplate::add</qualifiedname>
         <param>
-          <type><ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref></type>
+          <type><ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref></type>
           <declname>n</declname>
         </param>
         <param>
@@ -225,7 +225,7 @@
         <name>search</name>
         <qualifiedname>faiss::IndexReplicasTemplate::search</qualifiedname>
         <param>
-          <type><ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref></type>
+          <type><ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref></type>
           <declname>n</declname>
         </param>
         <param>
@@ -233,7 +233,7 @@
           <declname>x</declname>
         </param>
         <param>
-          <type><ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref></type>
+          <type><ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref></type>
           <declname>k</declname>
         </param>
         <param>
@@ -241,7 +241,7 @@
           <declname>distances</declname>
         </param>
         <param>
-          <type><ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref> *</type>
+          <type><ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref> *</type>
           <declname>labels</declname>
         </param>
         <param>
@@ -265,7 +265,7 @@
         <name>reconstruct</name>
         <qualifiedname>faiss::IndexReplicasTemplate::reconstruct</qualifiedname>
         <param>
-          <type><ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref></type>
+          <type><ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref></type>
         </param>
         <param>
           <type>component_t *</type>
@@ -350,7 +350,7 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/impl/ThreadedIndex.h" line="42" column="10" bodyfile="faiss/impl/ThreadedIndex-inl.h" bodystart="121" bodyend="150"/>
+        <location file="faiss/impl/ThreadedIndex.h" line="42" column="10" bodyfile="faiss/impl/ThreadedIndex-inl.h" bodystart="121" bodyend="152"/>
       </memberdef>
       <memberdef kind="function" id="classfaiss_1_1ThreadedIndex_1af5188782bc9e776800b96d1610b3f22b" prot="public" static="no" const="yes" explicit="no" inline="no" virt="non-virtual">
         <type>void</type>
@@ -368,7 +368,7 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/impl/ThreadedIndex.h" line="43" column="10" bodyfile="faiss/impl/ThreadedIndex-inl.h" bodystart="153" bodyend="157"/>
+        <location file="faiss/impl/ThreadedIndex.h" line="43" column="10" bodyfile="faiss/impl/ThreadedIndex-inl.h" bodystart="155" bodyend="159"/>
       </memberdef>
       <memberdef kind="function" id="classfaiss_1_1ThreadedIndex_1a4536f6e7a8cce1f79bebc420ae1e909b" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
         <type>void</type>
@@ -383,7 +383,7 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/impl/ThreadedIndex.h" line="47" column="10" bodyfile="faiss/impl/ThreadedIndex-inl.h" bodystart="160" bodyend="164"/>
+        <location file="faiss/impl/ThreadedIndex.h" line="47" column="10" bodyfile="faiss/impl/ThreadedIndex-inl.h" bodystart="162" bodyend="166"/>
       </memberdef>
       <memberdef kind="function" id="classfaiss_1_1ThreadedIndex_1a2f9cadbcb9335c0833f61259230429a7" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
         <type>int</type>
@@ -548,7 +548,7 @@
         </detaileddescription>
         <inbodydescription>
         </inbodydescription>
-        <location file="faiss/impl/ThreadedIndex.h" line="75" column="17" bodyfile="faiss/impl/ThreadedIndex-inl.h" bodystart="173" bodyend="191"/>
+        <location file="faiss/impl/ThreadedIndex.h" line="75" column="17" bodyfile="faiss/impl/ThreadedIndex-inl.h" bodystart="175" bodyend="194"/>
       </memberdef>
     </sectiondef>
     <briefdescription>

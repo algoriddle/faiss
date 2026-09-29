@@ -42,7 +42,7 @@
         </childnode>
         <childnode refid="17" relation="include">
         </childnode>
-        <childnode refid="18" relation="include">
+        <childnode refid="19" relation="include">
         </childnode>
         <childnode refid="10" relation="include">
         </childnode>
@@ -50,7 +50,7 @@
         </childnode>
         <childnode refid="15" relation="include">
         </childnode>
-        <childnode refid="19" relation="include">
+        <childnode refid="20" relation="include">
         </childnode>
       </node>
       <node id="13">
@@ -82,24 +82,24 @@
         </childnode>
         <childnode refid="12" relation="include">
         </childnode>
-        <childnode refid="20" relation="include">
+        <childnode refid="21" relation="include">
         </childnode>
-        <childnode refid="27" relation="include">
+        <childnode refid="28" relation="include">
         </childnode>
       </node>
       <node id="17">
         <label>faiss/impl/platform_macros.h</label>
         <link refid="platform__macros_8h_source"/>
+        <childnode refid="18" relation="include">
+        </childnode>
         <childnode refid="9" relation="include">
         </childnode>
         <childnode refid="10" relation="include">
         </childnode>
       </node>
-      <node id="20">
+      <node id="21">
         <label>faiss/utils/Heap.h</label>
         <link refid="Heap_8h_source"/>
-        <childnode refid="21" relation="include">
-        </childnode>
         <childnode refid="22" relation="include">
         </childnode>
         <childnode refid="23" relation="include">
@@ -108,43 +108,48 @@
         </childnode>
         <childnode refid="25" relation="include">
         </childnode>
+        <childnode refid="26" relation="include">
+        </childnode>
         <childnode refid="10" relation="include">
         </childnode>
-        <childnode refid="19" relation="include">
+        <childnode refid="20" relation="include">
         </childnode>
         <childnode refid="16" relation="include">
         </childnode>
-        <childnode refid="26" relation="include">
-        </childnode>
-      </node>
-      <node id="26">
-        <label>faiss/utils/ordered_key_value.h</label>
-        <link refid="ordered__key__value_8h_source"/>
-        <childnode refid="21" relation="include">
-        </childnode>
-        <childnode refid="22" relation="include">
-        </childnode>
-        <childnode refid="19" relation="include">
+        <childnode refid="27" relation="include">
         </childnode>
       </node>
       <node id="27">
+        <label>faiss/utils/ordered_key_value.h</label>
+        <link refid="ordered__key__value_8h_source"/>
+        <childnode refid="22" relation="include">
+        </childnode>
+        <childnode refid="23" relation="include">
+        </childnode>
+        <childnode refid="20" relation="include">
+        </childnode>
+      </node>
+      <node id="28">
         <label>faiss/utils/random.h</label>
         <link refid="random_8h_source"/>
-        <childnode refid="24" relation="include">
+        <childnode refid="25" relation="include">
         </childnode>
-        <childnode refid="28" relation="include">
+        <childnode refid="29" relation="include">
         </childnode>
-      </node>
-      <node id="25">
-        <label>cassert</label>
       </node>
       <node id="18">
+        <label>atomic</label>
+      </node>
+      <node id="26">
+        <label>cassert</label>
+      </node>
+      <node id="19">
         <label>cinttypes</label>
       </node>
-      <node id="21">
+      <node id="22">
         <label>climits</label>
       </node>
-      <node id="22">
+      <node id="23">
         <label>cmath</label>
       </node>
       <node id="9">
@@ -156,13 +161,13 @@
       <node id="11">
         <label>cstdlib</label>
       </node>
-      <node id="23">
+      <node id="24">
         <label>cstring</label>
       </node>
       <node id="14">
         <label>exception</label>
       </node>
-      <node id="19">
+      <node id="20">
         <label>limits</label>
       </node>
       <node id="2">
@@ -177,10 +182,10 @@
       <node id="4">
         <label>optional</label>
       </node>
-      <node id="28">
+      <node id="29">
         <label>random</label>
       </node>
-      <node id="24">
+      <node id="25">
         <label>stdint.h</label>
       </node>
       <node id="15">
@@ -276,14 +281,14 @@
 <codeline lineno="60" refid="structfaiss_1_1nsg_1_1Graph_1ad4bb864fec6c287da45f18a82f9cf90e" refkind="member"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">bool</highlight><highlight class="normal"><sp/><ref refid="structfaiss_1_1nsg_1_1Graph_1ad4bb864fec6c287da45f18a82f9cf90e" kindref="member">own_fields</ref>;<sp/></highlight><highlight class="comment">///&lt;<sp/>the<sp/>underlying<sp/>data<sp/>owned<sp/>by<sp/>itself<sp/>or<sp/>not</highlight><highlight class="normal"></highlight></codeline>
 <codeline lineno="61"><highlight class="normal"></highlight></codeline>
 <codeline lineno="62"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>construct<sp/>from<sp/>a<sp/>known<sp/>graph</highlight><highlight class="normal"></highlight></codeline>
-<codeline lineno="63"><highlight class="normal"><sp/><sp/><sp/><sp/><ref refid="structfaiss_1_1nsg_1_1Graph" kindref="compound">Graph</ref>(node_t*<sp/><ref refid="structfaiss_1_1nsg_1_1Graph_1abfbc843aa65ecd60bcf11b4bf525420c" kindref="member">data</ref>,<sp/></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/><ref refid="structfaiss_1_1nsg_1_1Graph_1a79631a07e12278115cc43a5be78d49cd" kindref="member">N</ref>,<sp/></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/><ref refid="structfaiss_1_1nsg_1_1Graph_1abf3cc6fa5ff06bd1813ac47511ff0096" kindref="member">K</ref>)</highlight></codeline>
-<codeline lineno="64"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>:<sp/><ref refid="structfaiss_1_1nsg_1_1Graph_1abfbc843aa65ecd60bcf11b4bf525420c" kindref="member">data</ref>(<ref refid="structfaiss_1_1nsg_1_1Graph_1abfbc843aa65ecd60bcf11b4bf525420c" kindref="member">data</ref>),<sp/><ref refid="structfaiss_1_1nsg_1_1Graph_1abf3cc6fa5ff06bd1813ac47511ff0096" kindref="member">K</ref>(<ref refid="structfaiss_1_1nsg_1_1Graph_1abf3cc6fa5ff06bd1813ac47511ff0096" kindref="member">K</ref>),<sp/><ref refid="structfaiss_1_1nsg_1_1Graph_1a79631a07e12278115cc43a5be78d49cd" kindref="member">N</ref>(<ref refid="structfaiss_1_1nsg_1_1Graph_1a79631a07e12278115cc43a5be78d49cd" kindref="member">N</ref>),<sp/><ref refid="structfaiss_1_1nsg_1_1Graph_1ad4bb864fec6c287da45f18a82f9cf90e" kindref="member">own_fields</ref>(false)<sp/>{}</highlight></codeline>
+<codeline lineno="63"><highlight class="normal"><sp/><sp/><sp/><sp/><ref refid="structfaiss_1_1nsg_1_1Graph" kindref="compound">Graph</ref>(node_t*<sp/>data_in,<sp/></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/>N_in,<sp/></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/>K_in)</highlight></codeline>
+<codeline lineno="64"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>:<sp/><ref refid="structfaiss_1_1nsg_1_1Graph_1abfbc843aa65ecd60bcf11b4bf525420c" kindref="member">data</ref>(data_in),<sp/><ref refid="structfaiss_1_1nsg_1_1Graph_1abf3cc6fa5ff06bd1813ac47511ff0096" kindref="member">K</ref>(K_in),<sp/><ref refid="structfaiss_1_1nsg_1_1Graph_1a79631a07e12278115cc43a5be78d49cd" kindref="member">N</ref>(N_in),<sp/><ref refid="structfaiss_1_1nsg_1_1Graph_1ad4bb864fec6c287da45f18a82f9cf90e" kindref="member">own_fields</ref>(false)<sp/>{}</highlight></codeline>
 <codeline lineno="65"><highlight class="normal"></highlight></codeline>
 <codeline lineno="66"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>construct<sp/>an<sp/>empty<sp/>graph</highlight><highlight class="normal"></highlight></codeline>
 <codeline lineno="67"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>NOTE:<sp/>the<sp/>newly<sp/>allocated<sp/>data<sp/>needs<sp/>to<sp/>be<sp/>destroyed<sp/>at<sp/>destruction<sp/>time</highlight><highlight class="normal"></highlight></codeline>
-<codeline lineno="68"><highlight class="normal"><sp/><sp/><sp/><sp/><ref refid="structfaiss_1_1nsg_1_1Graph" kindref="compound">Graph</ref>(</highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/><ref refid="structfaiss_1_1nsg_1_1Graph_1a79631a07e12278115cc43a5be78d49cd" kindref="member">N</ref>,<sp/></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/><ref refid="structfaiss_1_1nsg_1_1Graph_1abf3cc6fa5ff06bd1813ac47511ff0096" kindref="member">K</ref>)<sp/>:<sp/><ref refid="structfaiss_1_1nsg_1_1Graph_1abf3cc6fa5ff06bd1813ac47511ff0096" kindref="member">K</ref>(<ref refid="structfaiss_1_1nsg_1_1Graph_1abf3cc6fa5ff06bd1813ac47511ff0096" kindref="member">K</ref>),<sp/><ref refid="structfaiss_1_1nsg_1_1Graph_1a79631a07e12278115cc43a5be78d49cd" kindref="member">N</ref>(<ref refid="structfaiss_1_1nsg_1_1Graph_1a79631a07e12278115cc43a5be78d49cd" kindref="member">N</ref>),<sp/><ref refid="structfaiss_1_1nsg_1_1Graph_1ad4bb864fec6c287da45f18a82f9cf90e" kindref="member">own_fields</ref>(true)<sp/>{</highlight></codeline>
+<codeline lineno="68"><highlight class="normal"><sp/><sp/><sp/><sp/><ref refid="structfaiss_1_1nsg_1_1Graph" kindref="compound">Graph</ref>(</highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/>N_in,<sp/></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/>K_in)<sp/>:<sp/><ref refid="structfaiss_1_1nsg_1_1Graph_1abf3cc6fa5ff06bd1813ac47511ff0096" kindref="member">K</ref>(K_in),<sp/><ref refid="structfaiss_1_1nsg_1_1Graph_1a79631a07e12278115cc43a5be78d49cd" kindref="member">N</ref>(N_in),<sp/><ref refid="structfaiss_1_1nsg_1_1Graph_1ad4bb864fec6c287da45f18a82f9cf90e" kindref="member">own_fields</ref>(true)<sp/>{</highlight></codeline>
 <codeline lineno="69"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">size_t</highlight><highlight class="normal"><sp/>total<sp/>=<sp/><ref refid="namespacefaiss_1aa8b83b549454ccc5c41f385976136eb4" kindref="member">faiss::mul_no_overflow</ref>(</highlight></codeline>
-<codeline lineno="70"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>(</highlight><highlight class="keywordtype">size_t</highlight><highlight class="normal">)<ref refid="structfaiss_1_1nsg_1_1Graph_1a79631a07e12278115cc43a5be78d49cd" kindref="member">N</ref>,<sp/>(</highlight><highlight class="keywordtype">size_t</highlight><highlight class="normal">)<ref refid="structfaiss_1_1nsg_1_1Graph_1abf3cc6fa5ff06bd1813ac47511ff0096" kindref="member">K</ref>,<sp/></highlight><highlight class="stringliteral">&quot;Graph<sp/>allocation&quot;</highlight><highlight class="normal">);</highlight></codeline>
+<codeline lineno="70"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>(</highlight><highlight class="keywordtype">size_t</highlight><highlight class="normal">)N_in,<sp/>(</highlight><highlight class="keywordtype">size_t</highlight><highlight class="normal">)K_in,<sp/></highlight><highlight class="stringliteral">&quot;Graph<sp/>allocation&quot;</highlight><highlight class="normal">);</highlight></codeline>
 <codeline lineno="71"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><ref refid="structfaiss_1_1nsg_1_1Graph_1abfbc843aa65ecd60bcf11b4bf525420c" kindref="member">data</ref><sp/>=<sp/></highlight><highlight class="keyword">new</highlight><highlight class="normal"><sp/>node_t[total];</highlight></codeline>
 <codeline lineno="72"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
 <codeline lineno="73"><highlight class="normal"></highlight></codeline>
@@ -361,7 +366,7 @@
 <codeline lineno="145"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>build<sp/>NSG<sp/>from<sp/>a<sp/>KNN<sp/>graph</highlight><highlight class="normal"></highlight></codeline>
 <codeline lineno="146"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>build(</highlight></codeline>
 <codeline lineno="147"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><ref refid="structfaiss_1_1Index" kindref="compound">Index</ref>*<sp/>storage,</highlight></codeline>
-<codeline lineno="148"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref><sp/>n,</highlight></codeline>
+<codeline lineno="148"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref><sp/>n,</highlight></codeline>
 <codeline lineno="149"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/><ref refid="structfaiss_1_1nsg_1_1Graph" kindref="compound">nsg::Graph&lt;idx_t&gt;</ref>&amp;<sp/>knn_graph,</highlight></codeline>
 <codeline lineno="150"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">bool</highlight><highlight class="normal"><sp/>verbose);</highlight></codeline>
 <codeline lineno="151"><highlight class="normal"></highlight></codeline>
@@ -372,7 +377,7 @@
 <codeline lineno="156"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>search(</highlight></codeline>
 <codeline lineno="157"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><ref refid="structfaiss_1_1DistanceComputer" kindref="compound">DistanceComputer</ref>&amp;<sp/>dis,</highlight></codeline>
 <codeline lineno="158"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/>k,</highlight></codeline>
-<codeline lineno="159"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><ref refid="namespacefaiss_1ad63e84aa82f5bb0405ed924d58b20e2e" kindref="member">idx_t</ref>*<sp/>I,</highlight></codeline>
+<codeline lineno="159"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><ref refid="namespacefaiss_1ad95f6ecce1dcddede15df19a5b17adf6" kindref="member">idx_t</ref>*<sp/>I,</highlight></codeline>
 <codeline lineno="160"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">float</highlight><highlight class="normal">*<sp/>D,</highlight></codeline>
 <codeline lineno="161"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><ref refid="structfaiss_1_1VisitedTable" kindref="compound">VisitedTable</ref>&amp;<sp/>vt)<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal">;</highlight></codeline>
 <codeline lineno="162"><highlight class="normal"></highlight></codeline>

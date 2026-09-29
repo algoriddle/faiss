@@ -10,7 +10,7 @@
         <link refid="Clustering_8h_source"/>
         <childnode refid="6" relation="include">
         </childnode>
-        <childnode refid="19" relation="include">
+        <childnode refid="20" relation="include">
         </childnode>
         <childnode refid="4" relation="include">
         </childnode>
@@ -37,10 +37,10 @@
         <childnode refid="11" relation="include">
         </childnode>
       </node>
-      <node id="19">
+      <node id="20">
         <label>faiss/impl/ClusteringInitialization.h</label>
         <link refid="ClusteringInitialization_8h_source"/>
-        <childnode refid="20" relation="include">
+        <childnode refid="21" relation="include">
         </childnode>
         <childnode refid="8" relation="include">
         </childnode>
@@ -52,7 +52,7 @@
         </childnode>
         <childnode refid="16" relation="include">
         </childnode>
-        <childnode refid="17" relation="include">
+        <childnode refid="18" relation="include">
         </childnode>
         <childnode refid="9" relation="include">
         </childnode>
@@ -60,7 +60,7 @@
         </childnode>
         <childnode refid="14" relation="include">
         </childnode>
-        <childnode refid="18" relation="include">
+        <childnode refid="19" relation="include">
         </childnode>
       </node>
       <node id="12">
@@ -81,7 +81,7 @@
         <childnode refid="2" relation="include">
         </childnode>
       </node>
-      <node id="28">
+      <node id="29">
         <label>faiss/impl/ProductQuantizer-inl.h</label>
         <link refid="ProductQuantizer-inl_8h_source"/>
       </node>
@@ -94,16 +94,16 @@
         </childnode>
         <childnode refid="5" relation="include">
         </childnode>
-        <childnode refid="21" relation="include">
+        <childnode refid="22" relation="include">
         </childnode>
         <childnode refid="16" relation="include">
         </childnode>
-        <childnode refid="22" relation="include">
+        <childnode refid="23" relation="include">
         </childnode>
-        <childnode refid="28" relation="include">
+        <childnode refid="29" relation="include">
         </childnode>
       </node>
-      <node id="21">
+      <node id="22">
         <label>faiss/impl/Quantizer.h</label>
         <link refid="Quantizer_8h_source"/>
         <childnode refid="3" relation="include">
@@ -112,56 +112,61 @@
       <node id="16">
         <label>faiss/impl/platform_macros.h</label>
         <link refid="platform__macros_8h_source"/>
+        <childnode refid="17" relation="include">
+        </childnode>
         <childnode refid="8" relation="include">
         </childnode>
         <childnode refid="9" relation="include">
         </childnode>
       </node>
-      <node id="22">
+      <node id="23">
         <label>faiss/utils/Heap.h</label>
         <link refid="Heap_8h_source"/>
-        <childnode refid="23" relation="include">
-        </childnode>
         <childnode refid="24" relation="include">
         </childnode>
         <childnode refid="25" relation="include">
         </childnode>
-        <childnode refid="3" relation="include">
-        </childnode>
         <childnode refid="26" relation="include">
         </childnode>
-        <childnode refid="9" relation="include">
-        </childnode>
-        <childnode refid="18" relation="include">
-        </childnode>
-        <childnode refid="15" relation="include">
+        <childnode refid="3" relation="include">
         </childnode>
         <childnode refid="27" relation="include">
         </childnode>
+        <childnode refid="9" relation="include">
+        </childnode>
+        <childnode refid="19" relation="include">
+        </childnode>
+        <childnode refid="15" relation="include">
+        </childnode>
+        <childnode refid="28" relation="include">
+        </childnode>
       </node>
-      <node id="27">
+      <node id="28">
         <label>faiss/utils/ordered_key_value.h</label>
         <link refid="ordered__key__value_8h_source"/>
-        <childnode refid="23" relation="include">
-        </childnode>
         <childnode refid="24" relation="include">
         </childnode>
-        <childnode refid="18" relation="include">
+        <childnode refid="25" relation="include">
+        </childnode>
+        <childnode refid="19" relation="include">
         </childnode>
       </node>
-      <node id="26">
+      <node id="17">
+        <label>atomic</label>
+      </node>
+      <node id="27">
         <label>cassert</label>
       </node>
-      <node id="17">
+      <node id="18">
         <label>cinttypes</label>
       </node>
-      <node id="23">
+      <node id="24">
         <label>climits</label>
       </node>
-      <node id="24">
+      <node id="25">
         <label>cmath</label>
       </node>
-      <node id="20">
+      <node id="21">
         <label>cstddef</label>
       </node>
       <node id="8">
@@ -173,13 +178,13 @@
       <node id="10">
         <label>cstdlib</label>
       </node>
-      <node id="25">
+      <node id="26">
         <label>cstring</label>
       </node>
       <node id="13">
         <label>exception</label>
       </node>
-      <node id="18">
+      <node id="19">
         <label>limits</label>
       </node>
       <node id="3">
@@ -211,6 +216,12 @@
         </childnode>
         <childnode refid="7" relation="include">
         </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+        <childnode refid="9" relation="include">
+        </childnode>
+        <childnode refid="10" relation="include">
+        </childnode>
       </node>
       <node id="6">
         <label>faiss/IndexIVFPQFastScan.h</label>
@@ -220,7 +231,7 @@
         <label>faiss/IndexIVFPQR.h</label>
         <link refid="IndexIVFPQR_8h_source"/>
       </node>
-      <node id="8">
+      <node id="11">
         <label>faiss/IndexNSG.h</label>
         <link refid="IndexNSG_8h_source"/>
       </node>
@@ -233,20 +244,46 @@
         </childnode>
         <childnode refid="5" relation="include">
         </childnode>
-        <childnode refid="8" relation="include">
+        <childnode refid="11" relation="include">
         </childnode>
-        <childnode refid="9" relation="include">
+        <childnode refid="12" relation="include">
+        </childnode>
+        <childnode refid="13" relation="include">
+        </childnode>
+        <childnode refid="14" relation="include">
         </childnode>
       </node>
-      <node id="9">
+      <node id="12">
         <label>faiss/IndexPQFastScan.h</label>
         <link refid="IndexPQFastScan_8h_source"/>
+      </node>
+      <node id="8">
+        <label>faiss/gpu_metal/MetalIndexIVFPQ.h</label>
+        <link refid="MetalIndexIVFPQ_8h_source"/>
       </node>
       <node id="1">
         <label>faiss/impl/PolysemousTraining.h</label>
         <link refid="PolysemousTraining_8h"/>
         <childnode refid="2" relation="include">
         </childnode>
+      </node>
+      <node id="13">
+        <label>faiss/impl/binary_hamming/IndexPQ_impl.h</label>
+        <link refid="IndexPQ__impl_8h_source"/>
+      </node>
+      <node id="9">
+        <label>faiss/impl/pq_code_distance/IVFPQScanner_impl.h</label>
+        <link refid="IVFPQScanner__impl_8h_source"/>
+      </node>
+      <node id="10">
+        <label>faiss/impl/pq_code_distance/IVFPQ_QueryTables.h</label>
+        <link refid="IVFPQ__QueryTables_8h_source"/>
+        <childnode refid="9" relation="include">
+        </childnode>
+      </node>
+      <node id="14">
+        <label>faiss/impl/pq_code_distance/PQDistanceComputer_impl.h</label>
+        <link refid="PQDistanceComputer__impl_8h_source"/>
       </node>
     </invincdepgraph>
     <innerclass refid="structfaiss_1_1SimulatedAnnealingParameters" prot="public">faiss::SimulatedAnnealingParameters</innerclass>
@@ -332,10 +369,10 @@
 <codeline lineno="70"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">double</highlight><highlight class="normal"><sp/>cost_update(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">int</highlight><highlight class="normal">*<sp/>perm,<sp/></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/>iw,<sp/></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/>jw)<sp/></highlight><highlight class="keyword">const<sp/>override</highlight><highlight class="normal">;</highlight></codeline>
 <codeline lineno="71"><highlight class="normal"></highlight></codeline>
 <codeline lineno="72"><highlight class="normal"><sp/><sp/><sp/><sp/><ref refid="structfaiss_1_1ReproduceDistancesObjective" kindref="compound">ReproduceDistancesObjective</ref>(</highlight></codeline>
-<codeline lineno="73"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/>n,</highlight></codeline>
+<codeline lineno="73"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/>n_in,</highlight></codeline>
 <codeline lineno="74"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">double</highlight><highlight class="normal">*<sp/>source_dis_in,</highlight></codeline>
 <codeline lineno="75"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">double</highlight><highlight class="normal">*<sp/>target_dis_in,</highlight></codeline>
-<codeline lineno="76"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">double</highlight><highlight class="normal"><sp/>dis_weight_factor);</highlight></codeline>
+<codeline lineno="76"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">double</highlight><highlight class="normal"><sp/>dis_weight_factor_in);</highlight></codeline>
 <codeline lineno="77"><highlight class="normal"></highlight></codeline>
 <codeline lineno="78"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">static</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>compute_mean_stdev(</highlight></codeline>
 <codeline lineno="79"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">double</highlight><highlight class="normal">*<sp/>tab,</highlight></codeline>
@@ -356,8 +393,8 @@
 <codeline lineno="94" refid="structfaiss_1_1SimulatedAnnealingOptimizer_1a90edfc401372aa1a2a832b403e26bfd1" refkind="member"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/><ref refid="structfaiss_1_1SimulatedAnnealingOptimizer_1a90edfc401372aa1a2a832b403e26bfd1" kindref="member">n</ref>;<sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="comment">///&lt;<sp/>size<sp/>of<sp/>the<sp/>permutation</highlight><highlight class="normal"></highlight></codeline>
 <codeline lineno="95"><highlight class="normal"><sp/><sp/><sp/><sp/>FILE*<sp/>logfile;<sp/></highlight><highlight class="comment">///<sp/>logs<sp/>values<sp/>of<sp/>the<sp/>cost<sp/>function</highlight><highlight class="normal"></highlight></codeline>
 <codeline lineno="96"><highlight class="normal"></highlight></codeline>
-<codeline lineno="97" refid="structfaiss_1_1SimulatedAnnealingOptimizer_1ab258eaf892742e37dd2c3bfd3b1c39e1" refkind="member"><highlight class="normal"><sp/><sp/><sp/><sp/><ref refid="structfaiss_1_1SimulatedAnnealingOptimizer_1ab258eaf892742e37dd2c3bfd3b1c39e1" kindref="member">SimulatedAnnealingOptimizer</ref>(</highlight></codeline>
-<codeline lineno="98"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><ref refid="structfaiss_1_1PermutationObjective" kindref="compound">PermutationObjective</ref>*<sp/>obj,</highlight></codeline>
+<codeline lineno="97" refid="structfaiss_1_1SimulatedAnnealingOptimizer_1af04a2e3b3a335c3909004b8c2ce573a4" refkind="member"><highlight class="normal"><sp/><sp/><sp/><sp/><ref refid="structfaiss_1_1SimulatedAnnealingOptimizer_1af04a2e3b3a335c3909004b8c2ce573a4" kindref="member">SimulatedAnnealingOptimizer</ref>(</highlight></codeline>
+<codeline lineno="98"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><ref refid="structfaiss_1_1PermutationObjective" kindref="compound">PermutationObjective</ref>*<sp/>obj_in,</highlight></codeline>
 <codeline lineno="99"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/><ref refid="structfaiss_1_1SimulatedAnnealingParameters" kindref="compound">SimulatedAnnealingParameters</ref>&amp;<sp/>p);</highlight></codeline>
 <codeline lineno="100"><highlight class="normal"><sp/><sp/><sp/><sp/><ref refid="structfaiss_1_1RandomGenerator" kindref="compound">RandomGenerator</ref>*<sp/>rnd;</highlight></codeline>
 <codeline lineno="101"><highlight class="normal"></highlight><highlight class="comment"></highlight></codeline>
