@@ -68,6 +68,27 @@ Contains:
 
 - a 2-level clustering routine and a function that can apply it to train an IndexIVF
 
+### e_means.py
+
+Implements e-means, a mini-batch k-means algorithm that updates cluster counts
+and sums with exponential moving averages and revives underused clusters by
+splitting active ones. `Emeans` has a Faiss-style `train`/`assign` interface:
+
+```python
+from faiss.contrib.e_means import Emeans
+
+km = Emeans(d, k, niter=25)
+km.train(x)
+distances, labels = km.assign(x)
+```
+
+The default statistical batch size and EMA step are selected together; set
+`batch_size` and `alpha0` together to override them. NumPy input uses exact
+Faiss L2 assignment. PyTorch input stays on its CPU or CUDA device and does not
+call Faiss; PyTorch is optional. This reference implementation supports dense
+float32 Euclidean clustering and makes no speed claim. See
+`../demos/demo_e_means.py` for a DEEP1M example.
+
 ### big_batch_search.py
 
 Search IVF indexes with one centroid after another. Useful for large

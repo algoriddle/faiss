@@ -3,6 +3,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+Added
+- Add a reference implementation of e-means clustering for NumPy and PyTorch.
+
 ## [1.15.1] - 2026-09-15
 
 Added
