@@ -98,6 +98,14 @@ for each shape and dtype rather than runtime autotuning. The first use may
 compile kernels; later calls can reuse Triton's cache. Triton FP32 requests
 IEEE dot-product input precision.
 
+With `assignment_backend="triton"` and
+`assignment_precision="float8_e4m3fn"`, E-means fits an optional
+per-coordinate shift and one shared power-of-two scale, validates the full
+input, and rounds rows and centroids identically. Returned FP32 values are
+rescaled by `scale**-2` and represent squared distances between the decoded
+rounded operands in source coordinates; centroid state and statistics remain
+FP32.
+
 ### big_batch_search.py
 
 Search IVF indexes with one centroid after another. Useful for large

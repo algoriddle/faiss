@@ -200,14 +200,15 @@ def _synchronize(device):
         torch.cuda.synchronize(device)
 
 
-def _get_triton_assign_rows():
+def _get_triton_functions():
     try:
         from faiss.contrib.e_means_triton import assign_rows
+        from faiss.contrib.e_means_triton import prepare_fp8_centroids
     except ImportError as error:
         raise ImportError(
             "Triton assignment requires the triton package"
         ) from error
-    return assign_rows
+    return assign_rows, prepare_fp8_centroids
 
 
 class Emeans:
@@ -241,16 +242,23 @@ class Emeans:
     centroid_chunk_size : int, optional
         Maximum centroids examined at once by native PyTorch assignment.
         Triton streams centroids internally and ignores this option.
-    assignment_precision : {"float32", "float16", "bfloat16"}, optional
+    assignment_precision : {"float32", "float16", "bfloat16",
+            "float8_e4m3fn"}, optional
         Precision used to round PyTorch assignment operands. FP16 and BF16
         require an NVIDIA CUDA SM80-or-later GPU and PyTorch ``addmm`` support
         for FP32 output. Native FP32 follows PyTorch's global float32 matmul
         precision; Triton FP32 requests IEEE dot-product input precision.
-        Triton supports all three precisions. Row norms, centroid norms, and
+        Triton supports all listed precisions. Row norms, centroid norms, and
         dots use the same rounded operands. Scores, returned distances,
-        statistics, and centroid state remain FP32. FP16 inputs and centroids
-        must be finite with ``abs(value) <= 65504``. Reviving a centroid near
-        this limit may raise if its split exceeds the range.
+        statistics, and centroid state remain FP32. E4M3 is available only
+        with the Triton backend on qualified GPUs. It fits an optional
+        per-coordinate shift and one shared power-of-two scale and validates
+        the full input. Rows and centroids are rounded identically. Returned
+        FP32 values are rescaled by ``scale**-2`` and represent squared
+        distances between the decoded rounded operands in source coordinates.
+        FP16 inputs and centroids must be finite with ``abs(value) <= 65504``.
+        Reviving a centroid near this limit may raise if its split exceeds the
+        range.
     assignment_backend : {"native", "triton"}, optional
         PyTorch assignment implementation selected explicitly; native is the
         default. Triton requires a compatible installation and an NVIDIA CUDA
@@ -334,13 +342,18 @@ class Emeans:
             "float32",
             "float16",
             "bfloat16",
+            "float8_e4m3fn",
         ):
             raise ValueError(
                 "assignment_precision must be 'float32', 'float16', "
-                "or 'bfloat16'"
+                "'bfloat16', or 'float8_e4m3fn'"
             )
         if self.assignment_backend not in ("native", "triton"):
             raise ValueError("assignment_backend must be 'native' or 'triton'")
+        if self.assignment_precision == "float8_e4m3fn" and (
+            self.assignment_backend != "triton"
+        ):
+            raise ValueError("float8_e4m3fn assignment requires Triton")
         # Mirrors e_means_triton._MAX_K without importing optional Triton.
         if self.assignment_backend == "triton" and self.k > 2**31 - 256:
             raise ValueError("Triton assignment requires k <= 2**31 - 256")
@@ -363,6 +376,7 @@ class Emeans:
         self.n_splits = 0
         self._usage = None
         self._sums = None
+        self._assignment_transform = None
 
     def _get_assignment_chunk_size(self, is_torch):
         if self.assignment_chunk_size is not None:
@@ -381,7 +395,7 @@ class Emeans:
             else self.assignment_precision
         )
         if self.assignment_backend == "triton":
-            _get_triton_assign_rows()
+            _get_triton_functions()
         if not is_torch or x.device.type != "cuda":
             raise ValueError(
                 "%s assignment requires a PyTorch CUDA tensor" % name
@@ -389,17 +403,35 @@ class Emeans:
 
         import torch
 
-        if (
-            getattr(torch.version, "hip", None) is not None
-            or torch.cuda.get_device_capability(x.device) < (8, 0)
-        ):
-            raise RuntimeError(
-                "%s assignment requires an NVIDIA SM80-or-later GPU" % name
-            )
+        if self.assignment_precision == "float8_e4m3fn":
+            from faiss.contrib.e_means_fp8 import _check_fp8_support
 
-    def _prepare_torch_assignment(self, centroids):
+            _check_fp8_support(x.device)
+        else:
+            capability = torch.cuda.get_device_capability(x.device)
+            if (
+                getattr(torch.version, "hip", None) is not None
+                or capability < (8, 0)
+            ):
+                raise RuntimeError(
+                    "%s assignment requires an NVIDIA SM80-or-later GPU"
+                    % name
+                )
+
+    def _prepare_torch_assignment(self, centroids, peak_out=None):
         import torch
 
+        if self.assignment_precision == "float8_e4m3fn":
+            transform = self._assignment_transform
+            if transform is None:
+                raise RuntimeError("the E4M3 transform is not fitted")
+            _, prepare_centroids = _get_triton_functions()
+            return prepare_centroids(
+                centroids,
+                transform._bias,
+                transform.scale,
+                peak_out=peak_out,
+            )
         if self.assignment_precision != "float32":
             centroids = centroids.to(
                 getattr(torch, self.assignment_precision)
@@ -488,9 +520,16 @@ class Emeans:
     def _assign_rows(self, x, centroids, centroid_norm):
         if _is_torch_tensor(x):
             if self.assignment_backend == "triton":
-                return _get_triton_assign_rows()(
-                    x, centroids, centroid_norm
-                )
+                assign_rows, _ = _get_triton_functions()
+                if self.assignment_precision == "float8_e4m3fn":
+                    return assign_rows(
+                        x,
+                        centroids,
+                        centroid_norm,
+                        bias=self._assignment_transform._bias,
+                        scale=self._assignment_transform.scale,
+                    )
+                return assign_rows(x, centroids, centroid_norm)
 
             import torch
 
@@ -548,6 +587,10 @@ class Emeans:
         float
             Sum of assignment distances observed during the final pass.
         """
+        is_fp8 = self.assignment_precision == "float8_e4m3fn"
+        if is_fp8:
+            # A failed refit must not leave a transform from an older model.
+            self.reset()
         is_torch = _is_torch_tensor(x)
         if is_torch:
             import torch
@@ -589,7 +632,22 @@ class Emeans:
                 centroids = centroids.to(device)
             centroids = _clone(centroids)
 
-        self.reset()
+        if not is_fp8:
+            self.reset()
+        if is_fp8:
+            from faiss.contrib.e_means_fp8 import (
+                _check_fp8_range,
+                _update_fp8_peak,
+                fit,
+                validate_rows,
+            )
+
+            transform = fit(x)
+            validate_rows(x, transform, "x")
+            self._assignment_transform = transform
+            fp8_peak = torch.zeros((), device=device)
+        else:
+            fp8_peak = None
         batch_size, alpha0 = _resolve_recipe(
             n,
             self.k,
@@ -631,6 +689,8 @@ class Emeans:
                 device=str(device),
                 centroid_chunk_size=self.centroid_chunk_size,
             )
+        if self._assignment_transform is not None:
+            self.recipe.update(self._assignment_transform.recipe())
 
         if centroids is None:
             if n == self.k:
@@ -684,7 +744,7 @@ class Emeans:
                 centroids = self._read_centroids()
                 if is_torch:
                     centroids, centroid_norm = (
-                        self._prepare_torch_assignment(centroids)
+                        self._prepare_torch_assignment(centroids, fp8_peak)
                     )
                 else:
                     centroid_norm = None
@@ -742,9 +802,20 @@ class Emeans:
                     self._revive_unused(split_rng)
                 step += 1
 
+            if is_fp8:
+                _update_fp8_peak(
+                    self._read_centroids(), transform, fp8_peak
+                )
+                objective_and_peak = torch.stack(
+                    (objective, fp8_peak.to(dtype=objective.dtype))
+                )
             if is_torch:
                 _synchronize(device)
-            objective_value = objective.item()
+            if is_fp8:
+                objective_value, peak_value = objective_and_peak.tolist()
+                _check_fp8_range(peak_value, "centroids")
+            else:
+                objective_value = objective.item()
             imbalance = (
                 self.k
                 * np_or_torch.dot(pass_counts, pass_counts).item()
@@ -818,6 +889,14 @@ class Emeans:
             raise ValueError("x and centroids must be on the same device")
         if abs_bound is not None:
             _check_torch_abs_bound("centroids", abs_bound, centroids)
+        if self.assignment_precision == "float8_e4m3fn":
+            if self._assignment_transform is None:
+                raise RuntimeError(
+                    "the E4M3 assignment transform is not fitted"
+                )
+            from faiss.contrib.e_means_fp8 import validate_rows
+
+            validate_rows(x, self._assignment_transform, "x")
 
         if is_torch:
             distance = torch.empty(

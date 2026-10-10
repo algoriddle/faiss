@@ -22,6 +22,11 @@ _TRITON_CUDA = (
     _REDUCED_PRECISION_CUDA
     and importlib.util.find_spec("triton") is not None
 )
+_FP8_TRITON_CUDA = (
+    _TRITON_CUDA
+    and hasattr(torch, "float8_e4m3fn")
+    and torch.cuda.get_device_capability() in ((9, 0), (10, 0), (10, 3))
+)
 
 
 class TestTorchEmeans(unittest.TestCase):
@@ -41,6 +46,28 @@ class TestTorchEmeans(unittest.TestCase):
                 assignment_precision="bfloat16",
                 assignment_backend="triton",
             ).train(torch.zeros(2, 2))
+        with self.assertRaisesRegex(ValueError, "requires Triton"):
+            Emeans(2, 2, assignment_precision="float8_e4m3fn")
+
+    def test_fp8_support_contract(self):
+        from faiss.contrib.e_means_fp8 import _check_fp8_support
+
+        device = torch.device("cuda")
+        for capability in ((8, 0), (8, 9)):
+            with self.subTest(capability=capability), mock.patch.object(
+                torch.cuda, "get_device_capability", return_value=capability
+            ), self.assertRaisesRegex(RuntimeError, "SM90, SM100, or SM103"):
+                _check_fp8_support(device)
+        with mock.patch.object(
+            torch.version, "hip", "6.0"
+        ), mock.patch.object(
+            torch.cuda, "get_device_capability", return_value=(9, 0)
+        ), self.assertRaisesRegex(RuntimeError, "NVIDIA"):
+            _check_fp8_support(device)
+        with mock.patch.object(
+            torch, "float8_e4m3fn", None
+        ), self.assertRaisesRegex(RuntimeError, "does not provide"):
+            _check_fp8_support(device)
 
     def test_closing_mean_and_assign(self):
         x = torch.tensor(
@@ -299,6 +326,179 @@ class TestTorchEmeans(unittest.TestCase):
                     (km.centroids.dtype, distance.dtype, labels.dtype),
                     (torch.float32, torch.float32, torch.int64),
                 )
+
+    @unittest.skipUnless(_FP8_TRITON_CUDA, "Triton FP8 not available")
+    def test_triton_fp8_assignment(self):
+        x = torch.tensor([[0.0], [2.0], [10.0], [12.0]], device="cuda")
+        init = x[[0, 2]]
+        km = Emeans(
+            1,
+            2,
+            niter=1,
+            batch_size=4,
+            alpha0=0.5,
+            assignment_precision="float8_e4m3fn",
+            assignment_backend="triton",
+        )
+
+        objective = km.train(x, init_centroids=init)
+        distance, labels = km.assign(x)
+
+        self.assertEqual(objective, 8.0)
+        torch.testing.assert_close(
+            km.centroids, torch.tensor([[1.0], [11.0]], device="cuda")
+        )
+        torch.testing.assert_close(distance, torch.ones_like(distance))
+        torch.testing.assert_close(
+            labels, torch.tensor([0, 0, 1, 1], device="cuda")
+        )
+        self.assertEqual(km.recipe["assignment_transform_scale"], 8.0)
+        self.assertTrue(km.recipe["assignment_transform_centered"])
+        self.assertEqual(
+            km.recipe["assignment_transform_decision"],
+            "small_sample_centered",
+        )
+        self.assertEqual(
+            (km.centroids.dtype, distance.dtype, labels.dtype),
+            (torch.float32, torch.float32, torch.int64),
+        )
+
+        statistics_x = torch.tensor(
+            [[0.1], [2.2], [10.3], [12.4]], device="cuda"
+        )
+        km.train(statistics_x, init_centroids=statistics_x[[0, 2]])
+        transformed = km._assignment_transform.apply(statistics_x)
+        rounded = transformed.to(torch.float8_e4m3fn).float()
+        self.assertFalse(torch.equal(transformed, rounded))
+        torch.testing.assert_close(
+            km.centroids, torch.tensor([[1.15], [11.35]], device="cuda")
+        )
+
+        with self.assertRaisesRegex(ValueError, "representable range"):
+            km.assign(torch.tensor([[100.0]], device="cuda"))
+        km.centroids.fill_(100.0)
+        with self.assertRaisesRegex(ValueError, "representable range"):
+            km.assign(statistics_x[:1])
+
+        clamped_x = torch.full((2, 1), 1000.0, device="cuda")
+        clamped = Emeans(
+            1, 2, niter=3, batch_size=2, alpha0=0.5,
+            assignment_precision="float8_e4m3fn",
+            assignment_backend="triton",
+        )
+        # The untouched centroid crosses the E4M3 limit on pass 3.
+        with self.assertRaisesRegex(ValueError, "representable range"):
+            clamped.train(clamped_x, init_centroids=clamped_x.clone())
+
+        # Only the fifth-batch split exceeds E4M3, isolating pass validation.
+        revival_x = torch.full((10, 1), 1e7, device="cuda")
+        revival_init = torch.tensor(
+            [[1e7], [1e7 + 400]], device="cuda"
+        )
+        revival = Emeans(
+            1, 2, niter=1, batch_size=2, alpha0=0.05,
+            assignment_precision="float8_e4m3fn",
+            assignment_backend="triton",
+        )
+        with self.assertRaisesRegex(ValueError, "representable range"):
+            revival.train(revival_x, init_centroids=revival_init)
+        self.assertEqual(revival.n_splits, 1)
+
+        with self.assertRaisesRegex(ValueError, "CUDA tensor"):
+            km.train(x.cpu())
+        self.assertIsNone(km.centroids)
+        with self.assertRaisesRegex(RuntimeError, "train must be called"):
+            km.assign(x)
+
+    @unittest.skipUnless(_FP8_TRITON_CUDA, "Triton FP8 not available")
+    def test_triton_fp8_uses_matched_rounded_norms(self):
+        from faiss.contrib.e_means_triton import assign_rows
+        from faiss.contrib.e_means_triton import prepare_fp8_centroids
+
+        scale = 8.0
+        rows = torch.tensor(
+            [[-8.5485334, 0.5754005, 5.9468751]], device="cuda"
+        ) / scale
+        centroids = torch.tensor(
+            [
+                [1.3439447, -6.8812032, 5.9468989],
+                [1.6238794, -0.7164297, -0.9630429],
+            ],
+            device="cuda",
+        ) / scale
+        prepared, norm = prepare_fp8_centroids(centroids, None, scale)
+
+        distance, label = assign_rows(
+            rows, prepared, norm, scale=scale
+        )
+        mixed_norm = (centroids * scale).square().sum(dim=1)
+        _, mixed_label = assign_rows(
+            rows, prepared, mixed_norm, scale=scale
+        )
+
+        expected = (
+            (rows * scale).to(torch.float8_e4m3fn).float()
+            - prepared[label, : rows.shape[1]].float()
+        ).square().sum() / scale**2
+        torch.testing.assert_close(distance[0], expected)
+        self.assertEqual((label.item(), mixed_label.item()), (1, 0))
+
+    @unittest.skipUnless(_FP8_TRITON_CUDA, "Triton FP8 not available")
+    def test_triton_fp8_routes_and_ties(self):
+        full_x = torch.cat(
+            (
+                torch.zeros(512, 65, device="cuda"),
+                torch.ones(512, 65, device="cuda"),
+            )
+        )
+        full = Emeans(
+            65,
+            2,
+            niter=1,
+            batch_size=1024,
+            alpha0=0.5,
+            assignment_precision="float8_e4m3fn",
+            assignment_backend="triton",
+        )
+        full.train(x=full_x, init_centroids=full_x[[0, -1]])
+        full_distance, full_labels = full.assign(full_x)
+        torch.testing.assert_close(
+            full_distance, torch.zeros_like(full_distance)
+        )
+        torch.testing.assert_close(
+            full_labels,
+            torch.cat(
+                (
+                    torch.zeros(512, dtype=torch.int64, device="cuda"),
+                    torch.ones(512, dtype=torch.int64, device="cuda"),
+                )
+            ),
+        )
+        full.centroids.fill_(5.0)
+        tie_distance, tie_label = full.assign(
+            torch.full((1, 65), 5.0, device="cuda")
+        )
+        self.assertEqual((tie_distance.item(), tie_label.item()), (0.0, 0))
+
+        split_x = torch.zeros(8065, 1, device="cuda")
+        split = Emeans(
+            1,
+            8065,
+            niter=1,
+            batch_size=8065,
+            alpha0=0.5,
+            assignment_precision="float8_e4m3fn",
+            assignment_backend="triton",
+        )
+        split.train(split_x)
+        split_distance, split_label = split.assign(split_x[:1])
+        self.assertEqual(
+            (split_distance.item(), split_label.item()), (0.0, 0)
+        )
+        self.assertEqual(
+            split.recipe["assignment_transform_decision"],
+            "uncentered_near_parity",
+        )
 
     @unittest.skipUnless(_TRITON_CUDA, "Triton CUDA not available")
     def test_triton_full_dimension_assignment(self):
