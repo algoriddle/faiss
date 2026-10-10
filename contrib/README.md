@@ -106,6 +106,14 @@ rescaled by `scale**-2` and represent squared distances between the decoded
 rounded operands in source coordinates; centroid state and statistics remain
 FP32.
 
+With `assignment_backend="triton"` and `assignment_precision="int8"` on an
+NVIDIA SM80, SM90, or SM100 GPU, E-means accepts native INT8 or UINT8 corpora
+with `d <= 43919`. UINT8 values are translated exactly by subtracting 128, and
+ranking uses exact integer scores. Returned FP32 values are squared byte-lattice
+distances; training objectives sum those values in FP64. For floating corpora,
+`faiss.contrib.e_means_int8.Int8Quantizer` can train an explicit affine
+preprocessing transform and decode learned FP32 centroid state.
+
 ### big_batch_search.py
 
 Search IVF indexes with one centroid after another. Useful for large

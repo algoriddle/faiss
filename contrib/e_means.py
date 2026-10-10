@@ -148,16 +148,45 @@ def _as_float32_matrix(x, name, is_torch, abs_bound=None):
     return x
 
 
-def _check_torch_abs_bound(name, abs_bound, *tensors):
+def _torch_extrema(*tensors):
     import torch
 
-    extrema = torch.stack(
+    return torch.stack(
         [value for tensor in tensors for value in torch.aminmax(tensor)]
     )
+
+
+def _check_torch_abs_bound(name, abs_bound, *tensors):
+    extrema = _torch_extrema(*tensors)
     if not bool((extrema.abs() <= abs_bound).all()):
         raise ValueError(
             "%s must be finite with abs(value) <= %g" % (name, abs_bound)
         )
+
+
+def _check_torch_finite(name, *tensors):
+    if not bool(_torch_extrema(*tensors).isfinite().all()):
+        raise ValueError("%s must be finite" % name)
+
+
+def _as_int8_matrix(x, name):
+    """Validate an INT8 source matrix without widening native bytes."""
+    import torch
+
+    if not isinstance(x, torch.Tensor):
+        raise TypeError("%s must be a torch.Tensor" % name)
+    if x.layout != torch.strided:
+        raise ValueError("%s must be a dense strided tensor" % name)
+    if x.ndim != 2:
+        raise ValueError("%s must be a 2-D tensor" % name)
+    if x.shape[0] == 0 or x.shape[1] == 0:
+        raise ValueError("%s must not be empty" % name)
+    if x.device.type not in ("cpu", "cuda"):
+        raise ValueError("%s must be on a CPU or CUDA device" % name)
+    from faiss.contrib.e_means_int8 import representation
+
+    representation(x.dtype)
+    return x.detach().contiguous()
 
 
 def _numpy_unused_threshold(usage, k):
@@ -211,6 +240,17 @@ def _get_triton_functions():
     return assign_rows, prepare_fp8_centroids
 
 
+def _get_triton_int8_functions():
+    try:
+        from faiss.contrib.e_means_triton import assign_int8_rows
+        from faiss.contrib.e_means_triton import prepare_int8_centroids
+    except ImportError as error:
+        raise ImportError(
+            "Triton assignment requires the triton package"
+        ) from error
+    return assign_int8_rows, prepare_int8_centroids
+
+
 class Emeans:
     """Cluster vectors with mini-batch exponential moving averages.
 
@@ -243,7 +283,7 @@ class Emeans:
         Maximum centroids examined at once by native PyTorch assignment.
         Triton streams centroids internally and ignores this option.
     assignment_precision : {"float32", "float16", "bfloat16",
-            "float8_e4m3fn"}, optional
+            "float8_e4m3fn", "int8"}, optional
         Precision used to round PyTorch assignment operands. FP16 and BF16
         require an NVIDIA CUDA SM80-or-later GPU and PyTorch ``addmm`` support
         for FP32 output. Native FP32 follows PyTorch's global float32 matmul
@@ -256,6 +296,17 @@ class Emeans:
         the full input. Rows and centroids are rounded identically. Returned
         FP32 values are rescaled by ``scale**-2`` and represent squared
         distances between the decoded rounded operands in source coordinates.
+        INT8 is also Triton-only on NVIDIA SM80, SM90, or SM100 GPUs and
+        requires ``d <= 43919`` so integer ranking remains exact. It accepts
+        native INT8 or UINT8 input; UINT8 values are translated exactly by
+        subtracting 128. Centroid preparation rounds and clamps FP32 state to
+        the signed-byte lattice, and ranking uses exact integer scores.
+        Returned distances are FP32 squared byte-lattice values; training
+        objectives sum those values in FP64, and centroid state remains FP32
+        in source byte coordinates. With
+        ``faiss.contrib.e_means_int8.Int8Quantizer`` preprocessing, divide
+        distances by ``scale**2`` to obtain squared distances between the
+        decoded rounded operands.
         FP16 inputs and centroids must be finite with ``abs(value) <= 65504``.
         Reviving a centroid near this limit may raise if its split exceeds the
         range.
@@ -343,17 +394,22 @@ class Emeans:
             "float16",
             "bfloat16",
             "float8_e4m3fn",
+            "int8",
         ):
             raise ValueError(
                 "assignment_precision must be 'float32', 'float16', "
-                "'bfloat16', or 'float8_e4m3fn'"
+                "'bfloat16', 'float8_e4m3fn', or 'int8'"
             )
         if self.assignment_backend not in ("native", "triton"):
             raise ValueError("assignment_backend must be 'native' or 'triton'")
-        if self.assignment_precision == "float8_e4m3fn" and (
+        if self.assignment_precision in ("float8_e4m3fn", "int8") and (
             self.assignment_backend != "triton"
         ):
-            raise ValueError("float8_e4m3fn assignment requires Triton")
+            raise ValueError(
+                "%s assignment requires Triton" % self.assignment_precision
+            )
+        if self.assignment_precision == "int8" and self.d > 43919:
+            raise ValueError("INT8 assignment requires d <= 43919")
         # Mirrors e_means_triton._MAX_K without importing optional Triton.
         if self.assignment_backend == "triton" and self.k > 2**31 - 256:
             raise ValueError("Triton assignment requires k <= 2**31 - 256")
@@ -407,6 +463,10 @@ class Emeans:
             from faiss.contrib.e_means_fp8 import _check_fp8_support
 
             _check_fp8_support(x.device)
+        elif self.assignment_precision == "int8":
+            from faiss.contrib.e_means_int8 import _check_int8_support
+
+            _check_int8_support(x.device)
         else:
             capability = torch.cuda.get_device_capability(x.device)
             if (
@@ -418,9 +478,21 @@ class Emeans:
                     % name
                 )
 
-    def _prepare_torch_assignment(self, centroids, peak_out=None):
+    def _prepare_torch_assignment(
+        self, centroids, peak_out=None, validate_centroids=True
+    ):
         import torch
 
+        if self.assignment_precision == "int8":
+            transform = self._assignment_transform
+            if transform is None:
+                raise RuntimeError("the INT8 representation is not resolved")
+            _, prepare_centroids = _get_triton_int8_functions()
+            return prepare_centroids(
+                centroids,
+                transform.representation,
+                validate=validate_centroids,
+            )
         if self.assignment_precision == "float8_e4m3fn":
             transform = self._assignment_transform
             if transform is None:
@@ -508,6 +580,18 @@ class Emeans:
                 donor_centroids,
                 child_centroids,
             )
+        elif self.assignment_precision == "int8":
+            from faiss.contrib.e_means_int8 import separate_splits
+
+            # A finite centroid near the FP32 limit can overflow when split.
+            _check_torch_finite(
+                "revived centroids", donor_centroids, child_centroids
+            )
+            donor_centroids, child_centroids = separate_splits(
+                donor_centroids,
+                child_centroids,
+                self._assignment_transform,
+            )
         half_usage = self._usage[source] / 2.0
 
         self._usage[source] = half_usage
@@ -520,6 +604,15 @@ class Emeans:
     def _assign_rows(self, x, centroids, centroid_norm):
         if _is_torch_tensor(x):
             if self.assignment_backend == "triton":
+                if self.assignment_precision == "int8":
+                    assign_rows, _ = _get_triton_int8_functions()
+                    transform = self._assignment_transform
+                    return assign_rows(
+                        x,
+                        centroids,
+                        centroid_norm,
+                        representation=transform.representation,
+                    )
                 assign_rows, _ = _get_triton_functions()
                 if self.assignment_precision == "float8_e4m3fn":
                     return assign_rows(
@@ -580,7 +673,8 @@ class Emeans:
             Training vectors with shape ``(n, d)``.
         init_centroids : ndarray or Tensor, optional
             Initial centroids with shape ``(k, d)`` and the same array type as
-            ``x``. Torch centroids are moved to the device of ``x``.
+            ``x``. Torch centroids are moved to the device of ``x``. With INT8
+            assignment they may be FP32 or match the input dtype.
 
         Returns
         -------
@@ -588,8 +682,9 @@ class Emeans:
             Sum of assignment distances observed during the final pass.
         """
         is_fp8 = self.assignment_precision == "float8_e4m3fn"
-        if is_fp8:
-            # A failed refit must not leave a transform from an older model.
+        is_int8 = self.assignment_precision == "int8"
+        if is_fp8 or is_int8:
+            # A failed setup must not leave state from an older model.
             self.reset()
         is_torch = _is_torch_tensor(x)
         if is_torch:
@@ -601,7 +696,13 @@ class Emeans:
 
         precision = self.assignment_precision
         abs_bound = _FLOAT16_MAX if precision == "float16" else None
-        x = _as_float32_matrix(x, "x", is_torch, abs_bound=abs_bound)
+        x = (
+            _as_int8_matrix(x, "x")
+            if is_int8
+            else _as_float32_matrix(
+                x, "x", is_torch, abs_bound=abs_bound
+            )
+        )
         self._check_assignment_support(x, is_torch)
         device = x.device if is_torch else None
         assignment_chunk_size = self._get_assignment_chunk_size(is_torch)
@@ -617,6 +718,12 @@ class Emeans:
                 raise TypeError(
                     "x and init_centroids must use the same array type"
                 )
+            if is_int8:
+                if init_centroids.dtype not in (torch.float32, x.dtype):
+                    raise TypeError(
+                        "INT8 initial centroids must be FP32 or match the "
+                        "input dtype"
+                    )
             centroids = _as_float32_matrix(
                 init_centroids,
                 "init_centroids",
@@ -632,8 +739,9 @@ class Emeans:
                 centroids = centroids.to(device)
             centroids = _clone(centroids)
 
-        if not is_fp8:
+        if not is_fp8 and not is_int8:
             self.reset()
+        fp8_peak = None
         if is_fp8:
             from faiss.contrib.e_means_fp8 import (
                 _check_fp8_range,
@@ -646,8 +754,10 @@ class Emeans:
             validate_rows(x, transform, "x")
             self._assignment_transform = transform
             fp8_peak = torch.zeros((), device=device)
-        else:
-            fp8_peak = None
+        elif is_int8:
+            from faiss.contrib.e_means_int8 import resolve
+
+            self._assignment_transform = resolve(x.dtype)
         batch_size, alpha0 = _resolve_recipe(
             n,
             self.k,
@@ -698,6 +808,8 @@ class Emeans:
             else:
                 perm = _randperm(n, self.seed, is_torch, device)[: self.k]
                 centroids = _clone(x[perm])
+            if is_int8:
+                centroids = centroids.float()
 
         self._usage = np_or_torch.full_like(centroids[:, 0], _INIT_USAGE)
         if is_torch:
@@ -713,7 +825,7 @@ class Emeans:
             batch_stats = self._sums.new_empty((self.k, self.d + 1))
             batch_sums = batch_stats[:, :-1]
             batch_counts = batch_stats[:, -1]
-            count_column = x.new_ones((assignment_chunk_size, 1))
+            count_column = self._sums.new_ones((assignment_chunk_size, 1))
             _synchronize(device)
         else:
             batch_counts = np.empty_like(self._usage)
@@ -744,7 +856,11 @@ class Emeans:
                 centroids = self._read_centroids()
                 if is_torch:
                     centroids, centroid_norm = (
-                        self._prepare_torch_assignment(centroids, fp8_peak)
+                        self._prepare_torch_assignment(
+                            centroids,
+                            peak_out=fp8_peak,
+                            validate_centroids=not is_int8,
+                        )
                     )
                 else:
                     centroid_norm = None
@@ -761,8 +877,9 @@ class Emeans:
                     )
                     objective += distance.sum(dtype=np_or_torch.float64)
                     if is_torch:
+                        state_rows = rows.float() if is_int8 else rows
                         values = torch.cat(
-                            (rows, count_column[: len(rows)]), dim=1
+                            (state_rows, count_column[: len(rows)]), dim=1
                         )
                         batch_stats.index_add_(0, labels, values)
                     else:
@@ -877,7 +994,14 @@ class Emeans:
 
         precision = self.assignment_precision
         abs_bound = _FLOAT16_MAX if precision == "float16" else None
-        x = _as_float32_matrix(x, "x", is_torch, abs_bound=abs_bound)
+        is_int8 = precision == "int8"
+        x = (
+            _as_int8_matrix(x, "x")
+            if is_int8
+            else _as_float32_matrix(
+                x, "x", is_torch, abs_bound=abs_bound
+            )
+        )
         self._check_assignment_support(x, is_torch)
         centroids = self.centroids.detach() if is_torch else self.centroids
         assignment_chunk_size = self._get_assignment_chunk_size(is_torch)
@@ -889,7 +1013,21 @@ class Emeans:
             raise ValueError("x and centroids must be on the same device")
         if abs_bound is not None:
             _check_torch_abs_bound("centroids", abs_bound, centroids)
-        if self.assignment_precision == "float8_e4m3fn":
+        if is_int8:
+            if self._assignment_transform is None:
+                raise RuntimeError(
+                    "the INT8 representation is not resolved"
+                )
+            from faiss.contrib.e_means_int8 import representation
+
+            if representation(x.dtype) != (
+                self._assignment_transform.representation
+            ):
+                raise TypeError(
+                    "assignment input does not match the trained INT8 "
+                    "representation"
+                )
+        elif precision == "float8_e4m3fn":
             if self._assignment_transform is None:
                 raise RuntimeError(
                     "the E4M3 assignment transform is not fitted"

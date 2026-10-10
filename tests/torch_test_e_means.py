@@ -27,6 +27,10 @@ _FP8_TRITON_CUDA = (
     and hasattr(torch, "float8_e4m3fn")
     and torch.cuda.get_device_capability() in ((9, 0), (10, 0), (10, 3))
 )
+_INT8_TRITON_CUDA = (
+    _TRITON_CUDA
+    and torch.cuda.get_device_capability() in ((8, 0), (9, 0), (10, 0))
+)
 
 
 class TestTorchEmeans(unittest.TestCase):
@@ -40,14 +44,146 @@ class TestTorchEmeans(unittest.TestCase):
         self.assertNotIn("faiss.contrib.e_means_triton", sys.modules)
         with mock.patch.dict(
             sys.modules, {"faiss.contrib.e_means_triton": None}
-        ), self.assertRaisesRegex(ImportError, "requires the triton package"):
-            Emeans(
-                2, 2,
-                assignment_precision="bfloat16",
-                assignment_backend="triton",
-            ).train(torch.zeros(2, 2))
+        ):
+            for precision in ("bfloat16", "int8"):
+                with self.subTest(
+                    missing_triton=precision
+                ), self.assertRaisesRegex(
+                    ImportError, "requires the triton package"
+                ):
+                    x = torch.zeros(2, 2)
+                    if precision == "int8":
+                        x = x.to(torch.int8)
+                    Emeans(
+                        2,
+                        2,
+                        assignment_precision=precision,
+                        assignment_backend="triton",
+                    ).train(x)
         with self.assertRaisesRegex(ValueError, "requires Triton"):
             Emeans(2, 2, assignment_precision="float8_e4m3fn")
+        with self.assertRaisesRegex(ValueError, "requires Triton"):
+            Emeans(2, 2, assignment_precision="int8")
+
+    def test_int8_support_contract(self):
+        from faiss.contrib.e_means_int8 import _check_int8_support
+
+        device = torch.device("cuda")
+        for capability in ((8, 9), (10, 3)):
+            with self.subTest(capability=capability), mock.patch.object(
+                torch.cuda, "get_device_capability", return_value=capability
+            ), self.assertRaisesRegex(RuntimeError, "SM80, SM90, or SM100"):
+                _check_int8_support(device)
+        with mock.patch.object(
+            torch.version, "hip", "6.0"
+        ), mock.patch.object(
+            torch.cuda, "get_device_capability", return_value=(9, 0)
+        ), self.assertRaisesRegex(RuntimeError, "NVIDIA"):
+            _check_int8_support(device)
+        with self.assertRaisesRegex(ValueError, "d <= 43919"):
+            Emeans(
+                43920,
+                2,
+                assignment_precision="int8",
+                assignment_backend="triton",
+            )
+        with self.assertRaisesRegex(TypeError, "INT8 or UINT8 input"):
+            Emeans(
+                2,
+                2,
+                assignment_precision="int8",
+                assignment_backend="triton",
+            ).train(torch.zeros(2, 2))
+
+    def test_int8_quantizer(self):
+        from faiss.contrib.e_means_int8 import Int8Quantizer
+
+        x = torch.tensor(
+            [[10, 100], [12, 104], [14, 108], [16, 112]],
+            dtype=torch.float32,
+        )
+        for dtype in (torch.float32, torch.float16, torch.bfloat16):
+            with self.subTest(train_dtype=dtype):
+                trained = Int8Quantizer(2)
+                trained.train(x.to(dtype))
+                self.assertEqual((trained.d, trained.code_size), (2, 2))
+                self.assertTrue(trained.is_trained)
+                self.assertEqual(trained.scale, 16.0)
+                torch.testing.assert_close(
+                    trained.shift, torch.tensor([13.0, 106.0])
+                )
+
+        quantizer = Int8Quantizer(2)
+        with self.assertRaisesRegex(RuntimeError, "must be trained"):
+            quantizer.compute_codes(x)
+        with self.assertRaisesRegex(ValueError, "wrong dimension"):
+            Int8Quantizer(3).train(x)
+        quantizer.train(x)
+        expected = torch.tensor(
+            [[-48, -96], [-16, -32], [16, 32], [48, 96]],
+            dtype=torch.int8,
+        )
+        for dtype in (torch.float32, torch.float16, torch.bfloat16):
+            with self.subTest(compute_codes_dtype=dtype):
+                encoded = quantizer.compute_codes(x.to(dtype))
+                torch.testing.assert_close(encoded, expected)
+                torch.testing.assert_close(quantizer.decode(encoded), x)
+
+        state = expected.float().mean(dim=0, keepdim=True)
+        torch.testing.assert_close(
+            quantizer.decode(state), torch.tensor([[13.0, 106.0]])
+        )
+        with self.assertRaisesRegex(ValueError, "wrong dimension"):
+            quantizer.compute_codes(torch.zeros(1, 3))
+        with self.assertRaisesRegex(ValueError, "wrong dimension"):
+            quantizer.decode(torch.zeros(1, 3, dtype=torch.int8))
+        with self.assertRaisesRegex(ValueError, "must be finite"):
+            quantizer.decode(torch.tensor([[float("nan"), 0.0]]))
+        if torch.cuda.is_available():
+            with self.assertRaisesRegex(ValueError, "same device"):
+                quantizer.compute_codes(x.cuda())
+
+        failed = Int8Quantizer(2)
+        failed.train(x)
+        invalid = x.clone()
+        invalid[0, 0] = torch.nan
+        with self.assertRaisesRegex(ValueError, "sample must be finite"):
+            failed.train(invalid)
+        self.assertFalse(failed.is_trained)
+        self.assertEqual(
+            (failed.shift, failed.scale, failed._bias), (None,) * 3
+        )
+        with self.assertRaisesRegex(RuntimeError, "must be trained"):
+            failed.compute_codes(x)
+        with self.assertRaisesRegex(RuntimeError, "must be trained"):
+            failed.decode(torch.zeros(1, 2, dtype=torch.int8))
+
+    def test_int8_quantizer_codes_contract(self):
+        from faiss.contrib.e_means_int8 import Int8Quantizer
+
+        sample = torch.tensor(
+            [[10.0, 100.0], [12.0, 104.0], [14.0, 108.0], [16.0, 112.0]]
+        )
+        quantizer = Int8Quantizer(2)
+        quantizer.train(sample)
+
+        clipped = quantizer.compute_codes(torch.tensor([[1e6, -1e6]]))
+        torch.testing.assert_close(
+            clipped, torch.tensor([[127, -128]], dtype=torch.int8)
+        )
+        with self.assertRaisesRegex(ValueError, "finite"):
+            quantizer.compute_codes(torch.tensor([[float("nan"), 0.0]]))
+
+        points = torch.tensor([[13.02, 106.02], [13.98, 107.98]])
+        codes = quantizer.compute_codes(points)
+        byte_distance = (codes[0].int() - codes[1].int()).square().sum()
+        decoded = quantizer.decode(codes)
+        decoded_distance = (decoded[0] - decoded[1]).square().sum()
+        torch.testing.assert_close(
+            byte_distance / quantizer.scale**2, decoded_distance
+        )
+        original_distance = (points[0] - points[1]).square().sum()
+        self.assertFalse(torch.isclose(decoded_distance, original_distance))
 
     def test_fp8_support_contract(self):
         from faiss.contrib.e_means_fp8 import _check_fp8_support
@@ -499,6 +635,189 @@ class TestTorchEmeans(unittest.TestCase):
             split.recipe["assignment_transform_decision"],
             "uncentered_near_parity",
         )
+
+    @unittest.skipUnless(_INT8_TRITON_CUDA, "Triton INT8 not available")
+    def test_triton_int8_assignment(self):
+        base = torch.tensor([-4, -2, 4, 6], device="cuda")[:, None]
+        cases = (
+            (torch.int8, 0, "int8"),
+            (torch.uint8, 128, "uint8"),
+        )
+        for dtype, offset, representation in cases:
+            with self.subTest(dtype=dtype):
+                x = (base + offset).to(dtype)
+                km = Emeans(
+                    1,
+                    2,
+                    niter=1,
+                    batch_size=4,
+                    alpha0=0.5,
+                    assignment_precision="int8",
+                    assignment_backend="triton",
+                )
+
+                objective = km.train(x, init_centroids=x[[0, 2]])
+                distance, labels = km.assign(x)
+
+                self.assertEqual(objective, 8.0)
+                torch.testing.assert_close(
+                    km.centroids,
+                    torch.tensor(
+                        [[-3 + offset], [5 + offset]],
+                        dtype=torch.float32,
+                        device="cuda",
+                    ),
+                )
+                torch.testing.assert_close(
+                    distance, torch.ones(4, device="cuda")
+                )
+                torch.testing.assert_close(
+                    labels, torch.tensor([0, 0, 1, 1], device="cuda")
+                )
+                self.assertEqual(
+                    km.recipe["assignment_int8_representation"],
+                    representation,
+                )
+                self.assertEqual(
+                    (km.centroids.dtype, distance.dtype, labels.dtype),
+                    (torch.float32, torch.float32, torch.int64),
+                )
+                if dtype == torch.int8:
+                    with self.assertRaisesRegex(
+                        TypeError, "does not match"
+                    ):
+                        km.assign((base + 128).to(torch.uint8))
+                    km.centroids[0, 0] = torch.nan
+                    with self.assertRaisesRegex(ValueError, "must be finite"):
+                        km.assign(x)
+                    with self.assertRaisesRegex(
+                        TypeError, "INT8 or UINT8 input"
+                    ):
+                        km.train(base.float())
+                    self.assertIsNone(km.centroids)
+                    with self.assertRaisesRegex(
+                        RuntimeError, "train must be called"
+                    ):
+                        km.assign(x)
+
+        split = Emeans(
+            1,
+            2,
+            niter=1,
+            batch_size=2,
+            alpha0=0.5,
+            assignment_precision="int8",
+            assignment_backend="triton",
+        )
+        split.train(torch.zeros(10, 1, dtype=torch.int8, device="cuda"))
+        split_rows = split.centroids.round().clamp(-128, 127).to(torch.int8)
+        _, split_labels = split.assign(split_rows)
+        self.assertEqual(split.n_splits, 1)
+        torch.testing.assert_close(
+            split_labels, torch.tensor([0, 1], device="cuda")
+        )
+
+        from faiss.contrib.e_means_int8 import Int8Quantizer
+
+        source = base.float()
+        quantizer = Int8Quantizer(1)
+        quantizer.train(source)
+        encoded = quantizer.compute_codes(source)
+        preprocessed = Emeans(
+            1,
+            2,
+            niter=1,
+            batch_size=4,
+            alpha0=0.5,
+            assignment_precision="int8",
+            assignment_backend="triton",
+        )
+        preprocessed.train(encoded, init_centroids=encoded[[0, 2]])
+        torch.testing.assert_close(
+            quantizer.decode(preprocessed.centroids),
+            torch.tensor([[-3.0], [5.0]], device="cuda"),
+        )
+
+    @unittest.skipUnless(_INT8_TRITON_CUDA, "Triton INT8 not available")
+    def test_triton_int8_integer_oracle(self):
+        from faiss.contrib.e_means_triton import assign_int8_rows
+        from faiss.contrib.e_means_triton import prepare_int8_centroids
+
+        rows = torch.tensor(
+            [[3] * 17, [-2] * 17], dtype=torch.int8, device="cuda"
+        )
+        centroids = torch.tensor(
+            [[0] * 17, [4] * 17, [4] * 17],
+            dtype=torch.float32,
+            device="cuda",
+        )
+        prepared, norm = prepare_int8_centroids(centroids, "int8")
+        self.assertEqual(prepared.shape, (3, 32))
+        self.assertFalse(bool(prepared[:, 17:].any()))
+
+        distance, labels = assign_int8_rows(
+            rows, prepared, norm, "int8"
+        )
+
+        reference = (
+            rows.int()[:, None] - prepared[:, :17].int()
+        ).square().sum(2)
+        expected_distance, expected_labels = reference.min(dim=1)
+        torch.testing.assert_close(distance, expected_distance.float())
+        torch.testing.assert_close(labels, expected_labels)
+
+        short_storage = torch.empty(81, dtype=torch.int8, device="cuda")
+        short_backed = short_storage.as_strided((3, 17), (32, 1))
+        with self.assertRaisesRegex(ValueError, "shapes do not match"):
+            assign_int8_rows(
+                rows, short_backed, norm, "int8"
+            )
+
+        unsigned_rows = (rows.int() + 128).to(torch.uint8)
+        unsigned_distance, unsigned_labels = assign_int8_rows(
+            unsigned_rows, prepared, norm, "uint8"
+        )
+        torch.testing.assert_close(unsigned_distance, distance)
+        torch.testing.assert_close(unsigned_labels, labels)
+
+        rounded = torch.zeros(1, 257, dtype=torch.int8, device="cuda")
+        rounded[0, :6] = torch.tensor(
+            [-2, 0, 0, 2, 127, -128], dtype=torch.int8, device="cuda"
+        )
+        centroid = torch.zeros(1, 257, device="cuda")
+        centroid[0, :6] = torch.tensor(
+            [-1.5, -0.5, 0.5, 1.5, 200.0, -200.0], device="cuda"
+        )
+        for source, source_rows, source_centroid in (
+            ("int8", rounded, centroid),
+            ("uint8", (rounded.int() + 128).to(torch.uint8), centroid + 128),
+        ):
+            with self.subTest(ragged_staging=source):
+                prepared, norm = prepare_int8_centroids(
+                    source_centroid, source
+                )
+                self.assertEqual(prepared.shape, (1, 272))
+                self.assertFalse(bool(prepared[:, 257:].any()))
+                distance, labels = assign_int8_rows(
+                    source_rows, prepared, norm, source
+                )
+                self.assertEqual(
+                    (distance.item(), labels.item()), (0.0, 0)
+                )
+
+        with self.assertRaisesRegex(ValueError, "must be finite"):
+            prepare_int8_centroids(
+                torch.tensor([[float("inf")]], device="cuda"),
+                "int8",
+            )
+        if torch.cuda.device_count() > 1:
+            other = torch.device("cuda:1")
+            with torch.cuda.device(0):
+                prepared, norm = prepare_int8_centroids(
+                    torch.zeros(2, 1, device=other),
+                    "int8",
+                )
+            self.assertEqual((prepared.device, norm.device), (other, other))
 
     @unittest.skipUnless(_TRITON_CUDA, "Triton CUDA not available")
     def test_triton_full_dimension_assignment(self):
