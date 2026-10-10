@@ -200,6 +200,16 @@ def _synchronize(device):
         torch.cuda.synchronize(device)
 
 
+def _get_triton_assign_rows():
+    try:
+        from faiss.contrib.e_means_triton import assign_rows
+    except ImportError as error:
+        raise ImportError(
+            "Triton assignment requires the triton package"
+        ) from error
+    return assign_rows
+
+
 class Emeans:
     """Cluster vectors with mini-batch exponential moving averages.
 
@@ -229,15 +239,23 @@ class Emeans:
         assignment results if Faiss selects a different exact-search kernel
         for a different query size.
     centroid_chunk_size : int, optional
-        Maximum centroids examined at once by the PyTorch assignment path.
+        Maximum centroids examined at once by native PyTorch assignment.
+        Triton streams centroids internally and ignores this option.
     assignment_precision : {"float32", "float16", "bfloat16"}, optional
         Precision used to round PyTorch assignment operands. FP16 and BF16
         require an NVIDIA CUDA SM80-or-later GPU and PyTorch ``addmm`` support
-        for FP32 output. Row norms, centroid norms, and dots use the same
-        rounded operands. Scores, returned distances, statistics, and centroid
-        state remain FP32. FP16 inputs and centroids must be finite with
-        ``abs(value) <= 65504``. Reviving a centroid near this limit may raise
-        if its split exceeds the range.
+        for FP32 output. Native FP32 follows PyTorch's global float32 matmul
+        precision; Triton FP32 requests IEEE dot-product input precision.
+        Triton supports all three precisions. Row norms, centroid norms, and
+        dots use the same rounded operands. Scores, returned distances,
+        statistics, and centroid state remain FP32. FP16 inputs and centroids
+        must be finite with ``abs(value) <= 65504``. Reviving a centroid near
+        this limit may raise if its split exceeds the range.
+    assignment_backend : {"native", "triton"}, optional
+        PyTorch assignment implementation selected explicitly; native is the
+        default. Triton requires a compatible installation and an NVIDIA CUDA
+        SM80-or-later GPU. It uses fixed choices and does not benchmark at
+        runtime or fall back to native.
 
     Attributes
     ----------
@@ -284,6 +302,7 @@ class Emeans:
         assignment_chunk_size=None,
         centroid_chunk_size=4096,
         assignment_precision="float32",
+        assignment_backend="native",
     ):
         self.d = int(d)
         self.k = int(k)
@@ -300,6 +319,7 @@ class Emeans:
         )
         self.centroid_chunk_size = int(centroid_chunk_size)
         self.assignment_precision = assignment_precision
+        self.assignment_backend = assignment_backend
 
         _validate_params(
             self.d,
@@ -319,6 +339,11 @@ class Emeans:
                 "assignment_precision must be 'float32', 'float16', "
                 "or 'bfloat16'"
             )
+        if self.assignment_backend not in ("native", "triton"):
+            raise ValueError("assignment_backend must be 'native' or 'triton'")
+        # Mirrors e_means_triton._MAX_K without importing optional Triton.
+        if self.assignment_backend == "triton" and self.k > 2**31 - 256:
+            raise ValueError("Triton assignment requires k <= 2**31 - 256")
         if (
             self.assignment_chunk_size is not None
             and self.assignment_chunk_size < 1
@@ -345,12 +370,21 @@ class Emeans:
         return 8192 if is_torch else 65536
 
     def _check_assignment_support(self, x, is_torch):
-        if self.assignment_precision == "float32":
+        if (
+            self.assignment_backend == "native"
+            and self.assignment_precision == "float32"
+        ):
             return
+        name = (
+            "Triton"
+            if self.assignment_backend == "triton"
+            else self.assignment_precision
+        )
+        if self.assignment_backend == "triton":
+            _get_triton_assign_rows()
         if not is_torch or x.device.type != "cuda":
             raise ValueError(
-                "%s assignment requires a PyTorch CUDA tensor"
-                % self.assignment_precision
+                "%s assignment requires a PyTorch CUDA tensor" % name
             )
 
         import torch
@@ -360,8 +394,7 @@ class Emeans:
             or torch.cuda.get_device_capability(x.device) < (8, 0)
         ):
             raise RuntimeError(
-                "%s assignment requires an NVIDIA SM80-or-later GPU"
-                % self.assignment_precision
+                "%s assignment requires an NVIDIA SM80-or-later GPU" % name
             )
 
     def _prepare_torch_assignment(self, centroids):
@@ -454,6 +487,11 @@ class Emeans:
 
     def _assign_rows(self, x, centroids, centroid_norm):
         if _is_torch_tensor(x):
+            if self.assignment_backend == "triton":
+                return _get_triton_assign_rows()(
+                    x, centroids, centroid_norm
+                )
+
             import torch
 
             is_reduced = centroids.dtype != torch.float32
@@ -584,6 +622,7 @@ class Emeans:
             "readout_epsilon": _READOUT_EPSILON,
             "seed": self.seed,
             "backend": "torch" if is_torch else "faiss",
+            "assignment_backend": self.assignment_backend,
             "assignment_precision": self.assignment_precision,
             "assignment_chunk_size": assignment_chunk_size,
         }

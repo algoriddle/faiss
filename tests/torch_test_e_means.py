@@ -3,7 +3,10 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import importlib.util
+import sys
 import unittest
+from unittest import mock
 
 import torch
 
@@ -15,9 +18,30 @@ _REDUCED_PRECISION_CUDA = (
     and getattr(torch.version, "hip", None) is None
     and torch.cuda.get_device_capability() >= (8, 0)
 )
+_TRITON_CUDA = (
+    _REDUCED_PRECISION_CUDA
+    and importlib.util.find_spec("triton") is not None
+)
 
 
 class TestTorchEmeans(unittest.TestCase):
+    def test_assignment_backend_contract(self):
+        with self.assertRaisesRegex(ValueError, "assignment_backend"):
+            Emeans(2, 2, assignment_backend="other")
+
+        sys.modules.pop("faiss.contrib.e_means_triton", None)
+        model = Emeans(2, 2, niter=1, batch_size=2, alpha0=0.5)
+        model.train(torch.zeros(2, 2))
+        self.assertNotIn("faiss.contrib.e_means_triton", sys.modules)
+        with mock.patch.dict(
+            sys.modules, {"faiss.contrib.e_means_triton": None}
+        ), self.assertRaisesRegex(ImportError, "requires the triton package"):
+            Emeans(
+                2, 2,
+                assignment_precision="bfloat16",
+                assignment_backend="triton",
+            ).train(torch.zeros(2, 2))
+
     def test_closing_mean_and_assign(self):
         x = torch.tensor(
             [[0.0], [2.0], [10.0], [12.0]], requires_grad=True
@@ -241,6 +265,59 @@ class TestTorchEmeans(unittest.TestCase):
                     (km.centroids.dtype, distance.dtype, labels.dtype),
                     (torch.float32, torch.float32, torch.int64),
                 )
+
+    @unittest.skipUnless(_TRITON_CUDA, "Triton CUDA not available")
+    def test_triton_split_k_breaks_ties_by_index(self):
+        km = Emeans(
+            1, 8065, assignment_precision="bfloat16",
+            assignment_backend="triton",
+        )
+        km.centroids = torch.ones(8065, 1, device="cuda")
+        km.centroids[126:128] = 0
+        distance, labels = km.assign(torch.zeros(1, 1, device="cuda"))
+        self.assertEqual((distance.item(), labels.item()), (0.0, 126))
+
+    @unittest.skipUnless(_TRITON_CUDA, "Triton CUDA not available")
+    def test_triton_assignment(self):
+        x = torch.tensor(
+            [1.001, 1.002, 3.001, 3.002], device="cuda"
+        )[:, None]
+        init = x[[0, 2]]
+        for precision in ("float32", "float16", "bfloat16"):
+            with self.subTest(precision=precision):
+                km = Emeans(
+                    1, 2, niter=1, batch_size=4, alpha0=0.5,
+                    assignment_precision=precision,
+                    assignment_backend="triton",
+                )
+                km.train(x, init_centroids=init)
+                distance, labels = km.assign(x)
+
+                self.assertEqual(km.recipe["assignment_backend"], "triton")
+                self.assertEqual(labels.tolist(), [0, 0, 1, 1])
+                self.assertEqual(
+                    (km.centroids.dtype, distance.dtype, labels.dtype),
+                    (torch.float32, torch.float32, torch.int64),
+                )
+
+    @unittest.skipUnless(_TRITON_CUDA, "Triton CUDA not available")
+    def test_triton_full_dimension_assignment(self):
+        x = torch.ones(1024, 65, device="cuda")
+        centroids = torch.arange(
+            3, dtype=torch.float32, device="cuda"
+        )[:, None].expand(3, 65)
+        km = Emeans(
+            65,
+            3,
+            assignment_precision="bfloat16",
+            assignment_backend="triton",
+        )
+        km.centroids = centroids
+
+        distance, labels = km.assign(x)
+
+        torch.testing.assert_close(distance, torch.zeros_like(distance))
+        torch.testing.assert_close(labels, torch.ones_like(labels))
 
     @unittest.skipUnless(torch.cuda.is_available(), "CUDA not available")
     def test_cuda_smoke(self):

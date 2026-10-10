@@ -92,6 +92,12 @@ distances remain FP32. The precision is always selected explicitly. No
 performance claim is made here. See `../demos/demo_e_means.py` for a DEEP1M
 example.
 
+Set `assignment_backend="triton"` explicitly to use Triton; `"native"` is the
+default, and there is no automatic backend selection. Triton uses fixed choices
+for each shape and dtype rather than runtime autotuning. The first use may
+compile kernels; later calls can reuse Triton's cache. Triton FP32 requests
+IEEE dot-product input precision.
+
 ### big_batch_search.py
 
 Search IVF indexes with one centroid after another. Useful for large
