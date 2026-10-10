@@ -85,9 +85,12 @@ distances, labels = km.assign(x)
 The default statistical batch size and EMA step are selected together; set
 `batch_size` and `alpha0` together to override them. NumPy input uses exact
 Faiss L2 assignment. PyTorch input stays on its CPU or CUDA device and does not
-call Faiss; PyTorch is optional. This reference implementation supports dense
-float32 Euclidean clustering and makes no speed claim. See
-`../demos/demo_e_means.py` for a DEEP1M example.
+call Faiss; PyTorch is optional. PyTorch assignment uses FP32 by default. On
+supported CUDA devices, `assignment_precision` can round assignment operands
+to FP16 or BF16 while centroid state, statistics, scores, and returned
+distances remain FP32. The precision is always selected explicitly. No
+performance claim is made here. See `../demos/demo_e_means.py` for a DEEP1M
+example.
 
 ### big_batch_search.py
 

@@ -15,6 +15,7 @@ import faiss
 
 _ALPHA_MIN_FACTOR = 0.1
 _CHECK_UNUSED_EVERY = 5
+_FLOAT16_MAX = 65504.0
 _INIT_USAGE = 2.0**-16
 _READOUT_EPSILON = 1e-5
 _SPLIT_EPSILON = 1e-4
@@ -114,7 +115,7 @@ def _is_torch_tensor(x):
     return isinstance(x, torch.Tensor)
 
 
-def _as_float32_matrix(x, name, is_torch):
+def _as_float32_matrix(x, name, is_torch, abs_bound=None):
     if is_torch:
         import torch
 
@@ -129,8 +130,11 @@ def _as_float32_matrix(x, name, is_torch):
         if x.device.type not in ("cpu", "cuda"):
             raise ValueError("%s must be on a CPU or CUDA device" % name)
         x = x.detach().to(dtype=torch.float32).contiguous()
-        if not bool(torch.isfinite(x).all()):
-            raise ValueError("%s contains NaN or infinity" % name)
+        if abs_bound is None:
+            if not bool(torch.isfinite(x).all()):
+                raise ValueError("%s contains NaN or infinity" % name)
+        else:
+            _check_torch_abs_bound(name, abs_bound, x)
         return x
 
     x = np.asarray(x)
@@ -142,6 +146,18 @@ def _as_float32_matrix(x, name, is_torch):
     if not np.isfinite(x).all():
         raise ValueError("%s contains NaN or infinity" % name)
     return x
+
+
+def _check_torch_abs_bound(name, abs_bound, *tensors):
+    import torch
+
+    extrema = torch.stack(
+        [value for tensor in tensors for value in torch.aminmax(tensor)]
+    )
+    if not bool((extrema.abs() <= abs_bound).all()):
+        raise ValueError(
+            "%s must be finite with abs(value) <= %g" % (name, abs_bound)
+        )
 
 
 def _numpy_unused_threshold(usage, k):
@@ -214,6 +230,14 @@ class Emeans:
         for a different query size.
     centroid_chunk_size : int, optional
         Maximum centroids examined at once by the PyTorch assignment path.
+    assignment_precision : {"float32", "float16", "bfloat16"}, optional
+        Precision used to round PyTorch assignment operands. FP16 and BF16
+        require an NVIDIA CUDA SM80-or-later GPU and PyTorch ``addmm`` support
+        for FP32 output. Row norms, centroid norms, and dots use the same
+        rounded operands. Scores, returned distances, statistics, and centroid
+        state remain FP32. FP16 inputs and centroids must be finite with
+        ``abs(value) <= 65504``. Reviving a centroid near this limit may raise
+        if its split exceeds the range.
 
     Attributes
     ----------
@@ -259,6 +283,7 @@ class Emeans:
         verbose=False,
         assignment_chunk_size=None,
         centroid_chunk_size=4096,
+        assignment_precision="float32",
     ):
         self.d = int(d)
         self.k = int(k)
@@ -274,6 +299,7 @@ class Emeans:
             else int(assignment_chunk_size)
         )
         self.centroid_chunk_size = int(centroid_chunk_size)
+        self.assignment_precision = assignment_precision
 
         _validate_params(
             self.d,
@@ -284,6 +310,15 @@ class Emeans:
             self.alpha0,
             self.seed,
         )
+        if self.assignment_precision not in (
+            "float32",
+            "float16",
+            "bfloat16",
+        ):
+            raise ValueError(
+                "assignment_precision must be 'float32', 'float16', "
+                "or 'bfloat16'"
+            )
         if (
             self.assignment_chunk_size is not None
             and self.assignment_chunk_size < 1
@@ -308,6 +343,35 @@ class Emeans:
         if self.assignment_chunk_size is not None:
             return self.assignment_chunk_size
         return 8192 if is_torch else 65536
+
+    def _check_assignment_support(self, x, is_torch):
+        if self.assignment_precision == "float32":
+            return
+        if not is_torch or x.device.type != "cuda":
+            raise ValueError(
+                "%s assignment requires a PyTorch CUDA tensor"
+                % self.assignment_precision
+            )
+
+        import torch
+
+        if (
+            getattr(torch.version, "hip", None) is not None
+            or torch.cuda.get_device_capability(x.device) < (8, 0)
+        ):
+            raise RuntimeError(
+                "%s assignment requires an NVIDIA SM80-or-later GPU"
+                % self.assignment_precision
+            )
+
+    def _prepare_torch_assignment(self, centroids):
+        import torch
+
+        if self.assignment_precision != "float32":
+            centroids = centroids.to(
+                getattr(torch, self.assignment_precision)
+            )
+        return centroids, centroids.float().square().sum(dim=1)
 
     def _read_centroids(self):
         # This clamp is part of canonical_v1. It can shrink an untouched row
@@ -372,6 +436,13 @@ class Emeans:
         sign[1::2] = -1.0
         donor_centroids = centroids * (1.0 - _SPLIT_EPSILON * sign)
         child_centroids = centroids * (1.0 + _SPLIT_EPSILON * sign)
+        if self.assignment_precision == "float16":
+            _check_torch_abs_bound(
+                "revived centroids",
+                _FLOAT16_MAX,
+                donor_centroids,
+                child_centroids,
+            )
         half_usage = self._usage[source] / 2.0
 
         self._usage[source] = half_usage
@@ -381,36 +452,42 @@ class Emeans:
         self.n_splits += nsplit
         return nsplit
 
-    def _assign_rows(self, x, centroids, centroid_norm=None):
+    def _assign_rows(self, x, centroids, centroid_norm):
         if _is_torch_tensor(x):
             import torch
 
-            x_norm = (x * x).sum(dim=1)
+            is_reduced = centroids.dtype != torch.float32
+            if is_reduced:
+                x = x.to(centroids.dtype)
+            x_norm = x.float().square().sum(dim=1)
             best_score = torch.full(
-                (len(x),), float("inf"), dtype=x.dtype, device=x.device
+                (len(x),),
+                float("inf"),
+                dtype=torch.float32,
+                device=x.device,
             )
             labels = torch.zeros(
                 len(x), dtype=torch.int64, device=x.device
+            )
+            addmm_kwargs = (
+                {"out_dtype": torch.float32} if is_reduced else {}
             )
 
             for begin in range(0, self.k, self.centroid_chunk_size):
                 end = min(begin + self.centroid_chunk_size, self.k)
                 block = centroids[begin:end]
-                block_norm = (
-                    (block * block).sum(dim=1)
-                    if centroid_norm is None
-                    else centroid_norm[begin:end]
-                )
+                block_norm = centroid_norm[begin:end]
                 score = torch.addmm(
                     block_norm[None, :],
                     x,
                     block.t(),
                     alpha=-2.0,
+                    **addmm_kwargs,
                 )
                 block_score, block_label = score.min(dim=1)
                 better = block_score < best_score
-                best_score[better] = block_score[better]
-                labels[better] = block_label[better] + begin
+                best_score = torch.where(better, block_score, best_score)
+                labels = torch.where(better, block_label + begin, labels)
 
             return (best_score + x_norm).clamp_min(0), labels
 
@@ -441,7 +518,10 @@ class Emeans:
         else:
             np_or_torch = np
 
-        x = _as_float32_matrix(x, "x", is_torch)
+        precision = self.assignment_precision
+        abs_bound = _FLOAT16_MAX if precision == "float16" else None
+        x = _as_float32_matrix(x, "x", is_torch, abs_bound=abs_bound)
+        self._check_assignment_support(x, is_torch)
         device = x.device if is_torch else None
         assignment_chunk_size = self._get_assignment_chunk_size(is_torch)
         n, d = x.shape
@@ -457,7 +537,10 @@ class Emeans:
                     "x and init_centroids must use the same array type"
                 )
             centroids = _as_float32_matrix(
-                init_centroids, "init_centroids", is_torch
+                init_centroids,
+                "init_centroids",
+                is_torch,
+                abs_bound=abs_bound,
             )
             if centroids.shape != (self.k, self.d):
                 raise ValueError(
@@ -501,6 +584,7 @@ class Emeans:
             "readout_epsilon": _READOUT_EPSILON,
             "seed": self.seed,
             "backend": "torch" if is_torch else "faiss",
+            "assignment_precision": self.assignment_precision,
             "assignment_chunk_size": assignment_chunk_size,
         }
         if is_torch:
@@ -559,11 +643,12 @@ class Emeans:
                     batch_counts[:] = 0
                     batch_sums[:] = 0
                 centroids = self._read_centroids()
-                centroid_norm = (
-                    (centroids * centroids).sum(dim=1)
-                    if is_torch
-                    else None
-                )
+                if is_torch:
+                    centroids, centroid_norm = (
+                        self._prepare_torch_assignment(centroids)
+                    )
+                else:
+                    centroid_norm = None
 
                 for chunk_begin in range(
                     0, len(batch_index), assignment_chunk_size
@@ -669,7 +754,9 @@ class Emeans:
         return objective_value
 
     def assign(self, x):
-        """Return squared L2 distances and centroid indices."""
+        """Return squared L2 distances and centroid indices.
+
+        See ``assignment_precision`` for operand rounding."""
         if self.centroids is None:
             raise RuntimeError("train must be called before assign")
         is_torch = _is_torch_tensor(self.centroids)
@@ -678,7 +765,10 @@ class Emeans:
         if is_torch:
             import torch
 
-        x = _as_float32_matrix(x, "x", is_torch)
+        precision = self.assignment_precision
+        abs_bound = _FLOAT16_MAX if precision == "float16" else None
+        x = _as_float32_matrix(x, "x", is_torch, abs_bound=abs_bound)
+        self._check_assignment_support(x, is_torch)
         centroids = self.centroids.detach() if is_torch else self.centroids
         assignment_chunk_size = self._get_assignment_chunk_size(is_torch)
         if x.shape[1] != self.d:
@@ -687,6 +777,8 @@ class Emeans:
             )
         if is_torch and x.device != centroids.device:
             raise ValueError("x and centroids must be on the same device")
+        if abs_bound is not None:
+            _check_torch_abs_bound("centroids", abs_bound, centroids)
 
         if is_torch:
             distance = torch.empty(
@@ -695,7 +787,9 @@ class Emeans:
             labels = torch.empty(
                 len(x), dtype=torch.int64, device=x.device
             )
-            centroid_norm = (centroids * centroids).sum(dim=1)
+            centroids, centroid_norm = self._prepare_torch_assignment(
+                centroids
+            )
         else:
             distance = np.empty(len(x), dtype="float32")
             labels = np.empty(len(x), dtype="int64")

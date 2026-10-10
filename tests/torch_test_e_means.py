@@ -10,6 +10,13 @@ import torch
 from faiss.contrib.e_means import Emeans
 
 
+_REDUCED_PRECISION_CUDA = (
+    torch.cuda.is_available()
+    and getattr(torch.version, "hip", None) is None
+    and torch.cuda.get_device_capability() >= (8, 0)
+)
+
+
 class TestTorchEmeans(unittest.TestCase):
     def test_closing_mean_and_assign(self):
         x = torch.tensor(
@@ -133,6 +140,107 @@ class TestTorchEmeans(unittest.TestCase):
             km.train(x.numpy(), init_centroids=init)
         with self.assertRaises(TypeError):
             km.train(x, init_centroids=init.numpy())
+
+    @unittest.skipUnless(
+        _REDUCED_PRECISION_CUDA, "reduced-precision CUDA not available"
+    )
+    def test_float16_range_contract(self):
+        device = torch.device("cuda")
+        valid = torch.zeros((2, 1), device=device)
+        out_of_range = torch.tensor([[65505.0]], device=device)
+        km = Emeans(1, 1, assignment_precision="float16")
+
+        with self.subTest(value="train x"):
+            with self.assertRaisesRegex(ValueError, "65504"):
+                km.train(torch.cat((valid[:1], out_of_range)))
+
+        with self.subTest(value="NaN train x"):
+            nan = torch.tensor([[0.0], [float("nan")]], device=device)
+            with self.assertRaisesRegex(ValueError, "65504"):
+                km.train(nan)
+
+        with self.subTest(value="initial centroid"):
+            with self.assertRaisesRegex(ValueError, "65504"):
+                km.train(valid, init_centroids=out_of_range)
+
+        with self.subTest(value="assign x"):
+            km.centroids = valid[:1]
+            with self.assertRaisesRegex(ValueError, "65504"):
+                km.assign(out_of_range)
+
+        with self.subTest(value="installed centroid"):
+            km.centroids = out_of_range
+            with self.assertRaisesRegex(ValueError, "65504"):
+                km.assign(valid[:1])
+
+        with self.subTest(value="float16 limit"):
+            limit = torch.full((2, 1), 65504.0, device=device)
+            km = Emeans(
+                1, 1, niter=1, batch_size=2, alpha0=0.5,
+                assignment_precision="float16",
+            )
+            km.train(limit, init_centroids=limit[:1])
+            km.assign(limit[:1])
+            torch.testing.assert_close(km.centroids, limit[:1])
+
+        with self.subTest(value="bfloat16 above float16 limit"):
+            large = torch.full((2, 1), 70000.0, device=device)
+            km = Emeans(
+                1, 1, niter=1, batch_size=2, alpha0=0.5,
+                assignment_precision="bfloat16",
+            )
+            km.train(large, init_centroids=large[:1])
+            km.assign(large[:1])
+
+    @unittest.skipUnless(
+        _REDUCED_PRECISION_CUDA, "reduced-precision CUDA not available"
+    )
+    def test_float16_revival_checks_range_before_commit(self):
+        x = torch.full((10, 1), 65504.0, device="cuda")
+        init = x[:2].clone()
+        km = Emeans(
+            1, 2, niter=1, batch_size=2, alpha0=0.5,
+            assignment_precision="float16",
+        )
+
+        with self.assertRaisesRegex(ValueError, "65504"):
+            km.train(x, init_centroids=init)
+
+        self.assertEqual(km.n_splits, 0)
+
+    @unittest.skipUnless(
+        _REDUCED_PRECISION_CUDA, "reduced-precision CUDA not available"
+    )
+    def test_reduced_precision_assignment(self):
+        x = torch.tensor(
+            [[1.001], [1.002], [3.001], [3.002]], device="cuda"
+        )
+        init = torch.tensor([[1.0], [3.0]], device="cuda")
+        for precision in ("float16", "bfloat16"):
+            with self.subTest(precision=precision):
+                km = Emeans(
+                    1,
+                    2,
+                    niter=1,
+                    batch_size=len(x),
+                    alpha0=0.5,
+                    assignment_precision=precision,
+                )
+
+                km.train(x, init_centroids=init)
+                distance, labels = km.assign(x)
+
+                torch.testing.assert_close(
+                    km.centroids,
+                    torch.tensor([[1.0015], [3.0015]], device="cuda"),
+                )
+                self.assertEqual(
+                    km.recipe["assignment_precision"], precision
+                )
+                self.assertEqual(
+                    (km.centroids.dtype, distance.dtype, labels.dtype),
+                    (torch.float32, torch.float32, torch.int64),
+                )
 
     @unittest.skipUnless(torch.cuda.is_available(), "CUDA not available")
     def test_cuda_smoke(self):
