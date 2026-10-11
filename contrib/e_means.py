@@ -252,6 +252,16 @@ def _get_triton_int8_functions():
     return assign_int8_rows, prepare_int8_centroids
 
 
+def _get_cute_functions():
+    try:
+        from faiss.contrib import e_means_cute as cute
+    except ImportError as error:
+        raise ImportError(
+            "CuTe assignment requires its pinned optional dependencies"
+        ) from error
+    return cute._assign_rows, cute._prepare_centroids, cute._check_device
+
+
 class Emeans:
     """Cluster vectors with mini-batch exponential moving averages.
 
@@ -282,7 +292,7 @@ class Emeans:
         for a different query size.
     centroid_chunk_size : int, optional
         Maximum centroids examined at once by native PyTorch assignment.
-        Triton streams centroids internally and ignores this option.
+        Triton and CuTe stream centroids internally and ignore this option.
     assignment_precision : {"float32", "float16", "bfloat16",
             "float8_e4m3fn", "int8"}, optional
         Precision used to round PyTorch assignment operands. FP16 and BF16
@@ -311,11 +321,15 @@ class Emeans:
         FP16 inputs and centroids must be finite with ``abs(value) <= 65504``.
         Reviving a centroid near this limit may raise if its split exceeds the
         range.
-    assignment_backend : {"native", "triton"}, optional
+    assignment_backend : {"native", "triton", "cute"}, optional
         PyTorch assignment implementation selected explicitly; native is the
         default. Triton requires a compatible installation and an NVIDIA CUDA
         SM80-or-later GPU. It uses fixed choices and does not benchmark at
-        runtime or fall back to native.
+        runtime or fall back to native. CuTe requires BF16 on exactly SM90 plus
+        ``quack-kernels==0.6.5``, ``nvidia-cutlass-dsl==4.7.1``, and
+        ``cuda-python>=13,<14``; it never falls back. CuTe ranks native FP32
+        scores; bit-equal scores select lower ID. A float64-only tie need not
+        select the lowest ID.
 
     Attributes
     ----------
@@ -401,8 +415,15 @@ class Emeans:
                 "assignment_precision must be 'float32', 'float16', "
                 "'bfloat16', 'float8_e4m3fn', or 'int8'"
             )
-        if self.assignment_backend not in ("native", "triton"):
-            raise ValueError("assignment_backend must be 'native' or 'triton'")
+        if self.assignment_backend not in ("native", "triton", "cute"):
+            raise ValueError(
+                "assignment_backend must be native, triton, or cute"
+            )
+        if (
+            self.assignment_backend == "cute"
+            and self.assignment_precision != "bfloat16"
+        ):
+            raise ValueError("CuTe assignment requires bfloat16 precision")
         if self.assignment_precision in ("float8_e4m3fn", "int8") and (
             self.assignment_backend != "triton"
         ):
@@ -414,6 +435,8 @@ class Emeans:
         # Mirrors e_means_triton._MAX_K without importing optional Triton.
         if self.assignment_backend == "triton" and self.k > 2**31 - 256:
             raise ValueError("Triton assignment requires k <= 2**31 - 256")
+        if self.assignment_backend == "cute" and self.k > 2**31 - 128:
+            raise ValueError("CuTe padded centroid IDs must fit signed int32")
         if (
             self.assignment_chunk_size is not None
             and self.assignment_chunk_size < 1
@@ -434,6 +457,7 @@ class Emeans:
         self._usage = None
         self._sums = None
         self._assignment_transform = None
+        self._cute_assignment_cache = None
 
     def _get_assignment_chunk_size(self, is_torch):
         if self.assignment_chunk_size is not None:
@@ -445,6 +469,12 @@ class Emeans:
             self.assignment_backend == "native"
             and self.assignment_precision == "float32"
         ):
+            return
+        if self.assignment_backend == "cute":
+            _, _, check_device = _get_cute_functions()
+            if not is_torch or x.device.type != "cuda":
+                raise ValueError("CuTe requires a PyTorch CUDA tensor")
+            check_device(x.device)
             return
         name = (
             "Triton"
@@ -484,6 +514,12 @@ class Emeans:
     ):
         import torch
 
+        if self.assignment_backend == "cute":
+            _, prepare_centroids, _ = _get_cute_functions()
+            self._cute_assignment_cache = prepare_centroids(
+                centroids, self._cute_assignment_cache
+            )
+            return self._cute_assignment_cache, None
         if self.assignment_precision == "int8":
             transform = self._assignment_transform
             if transform is None:
@@ -604,6 +640,9 @@ class Emeans:
 
     def _assign_rows(self, x, centroids, centroid_norm):
         if _is_torch_tensor(x):
+            if self.assignment_backend == "cute":
+                assign_rows, _, _ = _get_cute_functions()
+                return assign_rows(x, centroids)
             if self.assignment_backend == "triton":
                 if self.assignment_precision == "int8":
                     assign_rows, _ = _get_triton_int8_functions()
@@ -1029,7 +1068,9 @@ class Emeans:
                 check_finite=not (is_fp8 and is_torch),
             )
         self._check_assignment_support(x, is_torch)
-        centroids = self.centroids.detach() if is_torch else self.centroids
+        centroids = self.centroids
+        if is_torch and self.assignment_backend != "cute":
+            centroids = centroids.detach()
         assignment_chunk_size = self._get_assignment_chunk_size(is_torch)
         if x.shape[1] != self.d:
             raise ValueError(

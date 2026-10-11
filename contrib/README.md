@@ -97,6 +97,13 @@ for each shape and dtype rather than runtime autotuning. The first use may
 compile kernels; later calls can reuse Triton's cache. Triton FP32 requests
 IEEE dot-product input precision.
 
+Set `assignment_backend="cute"` with `assignment_precision="bfloat16"` to use
+the optional CuTe backend on NVIDIA SM90. It requires `quack-kernels==0.6.5`,
+`nvidia-cutlass-dsl==4.7.1`, and `cuda-python>=13,<14`; the first use compiles
+kernels, and unsupported configurations never fall back to another backend.
+Bit-equal FP32 scores select the lower centroid ID; other mathematical ties
+may be backend-dependent.
+
 With `assignment_backend="triton"` and
 `assignment_precision="float8_e4m3fn"`, E-means fits an optional
 per-coordinate shift and one shared power-of-two scale, validates the full
