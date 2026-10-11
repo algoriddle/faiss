@@ -46,6 +46,13 @@ class TestEmeansRecipe(unittest.TestCase):
             Emeans(4, 3, batch_size=0, alpha0=0.2)
         with self.assertRaises(ValueError):
             Emeans(4, 3, batch_size=16, alpha0=0.0)
+        with self.assertRaises(ValueError):
+            Emeans(4, 3, assignment_precision="float64")
+        for precision in ("float16", "bfloat16"):
+            with self.assertRaises(ValueError):
+                Emeans(4, 3, assignment_precision=precision).train(
+                    np.zeros((4, 4), dtype="float32")
+                )
 
     def test_derived_recipe_metadata(self):
         x = np.arange(124, dtype="float32").reshape(31, 4)
