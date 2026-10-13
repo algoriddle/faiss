@@ -92,6 +92,11 @@ def _resolve_recipe(n, k, niter, operating_point, batch_size, alpha0):
     return batch_size, alpha0
 
 
+def _repeats_staging(n, batch_size, chunk_size, niter=1):
+    """Return whether one public operation prepares rows more than once."""
+    return niter > 1 or n > min(batch_size, chunk_size)
+
+
 def _epoch_seed(seed, iteration):
     """Derive one reproducible permutation seed without ambient RNG state."""
     return (seed * 1000003 + iteration) % 2**32
@@ -301,12 +306,13 @@ class Emeans:
         precision; Triton FP32 requests IEEE dot-product input precision.
         Triton supports all listed precisions. Row norms, centroid norms, and
         dots use the same rounded operands. Scores, returned distances,
-        statistics, and centroid state remain FP32. E4M3 is available only
-        with the Triton backend on qualified GPUs. It fits an optional
+        statistics, and centroid state remain FP32. E4M3 is available with
+        Triton or CuTe on qualified GPUs. It fits an optional
         per-coordinate shift and one shared power-of-two scale and validates
         the full input. Rows and centroids are rounded identically. Returned
-        FP32 values are rescaled by ``scale**-2`` and represent squared
-        distances between the decoded rounded operands in source coordinates.
+        Triton returns FP32 squared distances between the decoded rounded
+        operands in source coordinates. CuTe returns rescaled and clamped
+        native fast-accumulation approximations to those distances.
         INT8 is also Triton-only on NVIDIA SM80, SM90, or SM100 GPUs and
         requires ``d <= 43919`` so integer ranking remains exact. It accepts
         native INT8 or UINT8 input; UINT8 values are translated exactly by
@@ -325,11 +331,12 @@ class Emeans:
         PyTorch assignment implementation selected explicitly; native is the
         default. Triton requires a compatible installation and an NVIDIA CUDA
         SM80-or-later GPU. It uses fixed choices and does not benchmark at
-        runtime or fall back to native. CuTe requires BF16 on exactly SM90 plus
-        ``quack-kernels==0.6.5``, ``nvidia-cutlass-dsl==4.7.1``, and
-        ``cuda-python>=13,<14``; it never falls back. CuTe ranks native FP32
-        scores; bit-equal scores select lower ID. A float64-only tie need not
-        select the lowest ID.
+        runtime or fall back to native. CuTe requires BF16 or E4M3 on exactly
+        SM90 plus ``quack-kernels==0.6.5``, ``nvidia-cutlass-dsl==4.7.1``, and
+        ``cuda-python>=13,<14``; it never falls back. E4M3 uses fast tensor-core
+        accumulation with FP32 scores, not a strict FP32 reduction. CuTe ranks
+        native FP32 scores; bit-equal scores select lower ID. A float64-only
+        tie need not select the lowest ID.
 
     Attributes
     ----------
@@ -421,15 +428,20 @@ class Emeans:
             )
         if (
             self.assignment_backend == "cute"
-            and self.assignment_precision != "bfloat16"
+            and self.assignment_precision
+            not in ("bfloat16", "float8_e4m3fn")
         ):
-            raise ValueError("CuTe assignment requires bfloat16 precision")
-        if self.assignment_precision in ("float8_e4m3fn", "int8") and (
-            self.assignment_backend != "triton"
+            raise ValueError("CuTe assignment requires BF16 or E4M3")
+        if self.assignment_precision == "float8_e4m3fn" and (
+            self.assignment_backend not in ("triton", "cute")
         ):
             raise ValueError(
-                "%s assignment requires Triton" % self.assignment_precision
+                "float8_e4m3fn assignment requires Triton or CuTe"
             )
+        if self.assignment_precision == "int8" and (
+            self.assignment_backend != "triton"
+        ):
+            raise ValueError("int8 assignment requires Triton")
         if self.assignment_precision == "int8" and self.d > 43919:
             raise ValueError("INT8 assignment requires d <= 43919")
         # Mirrors e_means_triton._MAX_K without importing optional Triton.
@@ -475,6 +487,10 @@ class Emeans:
             if not is_torch or x.device.type != "cuda":
                 raise ValueError("CuTe requires a PyTorch CUDA tensor")
             check_device(x.device)
+            if self.assignment_precision == "float8_e4m3fn":
+                from faiss.contrib.e_means_fp8 import _check_fp8_support
+
+                _check_fp8_support(x.device)
             return
         name = (
             "Triton"
@@ -516,8 +532,16 @@ class Emeans:
 
         if self.assignment_backend == "cute":
             _, prepare_centroids, _ = _get_cute_functions()
+            transform = None
+            if self.assignment_precision == "float8_e4m3fn":
+                transform = self._assignment_transform
+                if transform is None:
+                    raise RuntimeError("the E4M3 transform is not fitted")
             self._cute_assignment_cache = prepare_centroids(
-                centroids, self._cute_assignment_cache
+                centroids,
+                self._cute_assignment_cache,
+                transform=transform,
+                peak_out=peak_out,
             )
             return self._cute_assignment_cache, None
         if self.assignment_precision == "int8":
@@ -638,11 +662,13 @@ class Emeans:
         self.n_splits += nsplit
         return nsplit
 
-    def _assign_rows(self, x, centroids, centroid_norm):
+    def _assign_rows(self, x, centroids, centroid_norm, validate=False,
+                     shared_stage_norm=False):
         if _is_torch_tensor(x):
             if self.assignment_backend == "cute":
                 assign_rows, _, _ = _get_cute_functions()
-                return assign_rows(x, centroids)
+                return assign_rows(x, centroids, validate=validate,
+                                   shared_stage_norm=shared_stage_norm)
             if self.assignment_backend == "triton":
                 if self.assignment_precision == "int8":
                     assign_rows, _ = _get_triton_int8_functions()
@@ -817,6 +843,14 @@ class Emeans:
         )
         steps_per_pass = (n + batch_size - 1) // batch_size
         total_steps = self.niter * steps_per_pass
+        repeated_staging = (
+            is_fp8
+            and is_torch
+            and self.assignment_backend == "cute"
+            and _repeats_staging(
+                n, batch_size, assignment_chunk_size, self.niter
+            )
+        )
         requested_batch_size = (
             None if self.batch_size is None else int(self.batch_size)
         )
@@ -931,7 +965,11 @@ class Emeans:
                     ]
                     rows = x[index]
                     distance, labels = self._assign_rows(
-                        rows, centroids, centroid_norm
+                        rows, centroids, centroid_norm,
+                        shared_stage_norm=(
+                            repeated_staging
+                            and len(rows) == assignment_chunk_size
+                        ),
                     )
                     objective += distance.sum(dtype=np_or_torch.float64)
                     if is_torch:
@@ -1072,6 +1110,14 @@ class Emeans:
         if is_torch and self.assignment_backend != "cute":
             centroids = centroids.detach()
         assignment_chunk_size = self._get_assignment_chunk_size(is_torch)
+        repeated_staging = (
+            is_fp8
+            and is_torch
+            and self.assignment_backend == "cute"
+            and _repeats_staging(
+                len(x), len(x), assignment_chunk_size
+            )
+        )
         if x.shape[1] != self.d:
             raise ValueError(
                 "x has dimension %d, expected %d" % (x.shape[1], self.d)
@@ -1080,6 +1126,7 @@ class Emeans:
             raise ValueError("x and centroids must be on the same device")
         if abs_bound is not None:
             _check_torch_abs_bound("centroids", abs_bound, centroids)
+        validate_cute_rows = False
         if is_int8:
             if self._assignment_transform is None:
                 raise RuntimeError(
@@ -1099,9 +1146,14 @@ class Emeans:
                 raise RuntimeError(
                     "the E4M3 assignment transform is not fitted"
                 )
-            from faiss.contrib.e_means_fp8 import validate_rows
+            validate_cute_rows = (
+                self.assignment_backend == "cute"
+                and len(x) <= assignment_chunk_size
+            )
+            if not validate_cute_rows:
+                from faiss.contrib.e_means_fp8 import validate_rows
 
-            validate_rows(x, self._assignment_transform, "x")
+                validate_rows(x, self._assignment_transform, "x")
 
         if is_torch:
             distance = torch.empty(
@@ -1121,6 +1173,13 @@ class Emeans:
         for begin in range(0, len(x), assignment_chunk_size):
             end = min(begin + assignment_chunk_size, len(x))
             distance[begin:end], labels[begin:end] = self._assign_rows(
-                x[begin:end], centroids, centroid_norm
+                x[begin:end],
+                centroids,
+                centroid_norm,
+                validate=validate_cute_rows,
+                shared_stage_norm=(
+                    repeated_staging
+                    and end - begin == assignment_chunk_size
+                ),
             )
         return distance, labels

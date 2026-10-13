@@ -59,7 +59,7 @@ class TestEmeansCute(unittest.TestCase):
         if hasattr(contrib, "e_means_cute"):
             delattr(contrib, "e_means_cute")
         try:
-            with self.assertRaisesRegex(ValueError, "bfloat16"):
+            with self.assertRaisesRegex(ValueError, "BF16 or E4M3"):
                 Emeans(8, 4, assignment_backend="cute")
             model = Emeans(
                 8,
@@ -68,6 +68,13 @@ class TestEmeansCute(unittest.TestCase):
                 assignment_precision="bfloat16",
             )
             self.assertEqual(model.assignment_backend, "cute")
+            fp8 = Emeans(
+                8,
+                4,
+                assignment_backend="cute",
+                assignment_precision="float8_e4m3fn",
+            )
+            self.assertEqual(fp8.assignment_precision, "float8_e4m3fn")
             self.assertNotIn(name, sys.modules)
         finally:
             if saved_module is not None:
@@ -183,6 +190,113 @@ class TestEmeansCute(unittest.TestCase):
             e_means_cute._check_padded_span("row", 2**28, 1)
 
     @unittest.skipUnless(_CUTE_SM90, _CUTE_REASON)
+    def test_fp8_train_and_assign_keep_fp32_state(self):
+        device = torch.device("cuda")
+        low = torch.full((5, 65), 0.1, device=device)
+        high = torch.full((5, 65), 2.3, device=device)
+        x = torch.cat((low, high))
+        init = torch.stack((low[0], high[0]))
+        model = Emeans(
+            65,
+            2,
+            niter=1,
+            batch_size=10,
+            alpha0=1.0,
+            assignment_chunk_size=10,
+            assignment_precision="float8_e4m3fn",
+            assignment_backend="cute",
+        )
+        model.train(x, init_centroids=init)
+        distances, labels = model.assign(x)
+
+        self.assertEqual(model.centroids.dtype, torch.float32)
+        self.assertEqual(distances.dtype, torch.float32)
+        self.assertEqual(labels.dtype, torch.int64)
+        self.assertEqual(labels.tolist(), [0] * 5 + [1] * 5)
+        torch.testing.assert_close(model.centroids[0], low[0])
+        torch.testing.assert_close(model.centroids[1], high[0])
+        torch.testing.assert_close(distances, torch.zeros_like(distances))
+        self.assertTrue(model.recipe["assignment_transform_centered"])
+
+        query = low[:1].clone()
+        query[0, 0] += 0.125
+        query_distance, query_label = model.assign(query)
+        self.assertEqual(query_label.item(), 0)
+        torch.testing.assert_close(
+            query_distance, query_distance.new_tensor([0.015625])
+        )
+
+    @unittest.skipUnless(_CUTE_SM90, _CUTE_REASON)
+    def test_fp8_single_chunk_fusion_matches_multi_chunk(self):
+        from faiss.contrib.e_means_fp8 import fit, validate_rows
+
+        # d=128 exposes differing FP32 row-norm reduction orders; the former
+        # 31x65 fixture did not detect the multi-chunk inconsistency.
+        generator = torch.Generator(device="cuda").manual_seed(31)
+        rows = torch.randn(
+            (256, 128), generator=generator, device="cuda"
+        ).mul_(0.25)
+        centroids = torch.randn(
+            (512, 128), generator=generator, device="cuda"
+        ).mul_(0.25)
+        model = Emeans(
+            128,
+            512,
+            assignment_chunk_size=len(rows),
+            assignment_precision="float8_e4m3fn",
+            assignment_backend="cute",
+        )
+        model.centroids = centroids
+        model._assignment_transform = fit(rows)
+
+        with mock.patch(
+            "faiss.contrib.e_means_fp8.validate_rows", wraps=validate_rows
+        ) as separate_validation:
+            observed = model.assign(rows)
+        separate_validation.assert_not_called()
+
+        model.assignment_chunk_size = 64
+        with mock.patch(
+            "faiss.contrib.e_means_fp8.validate_rows", wraps=validate_rows
+        ) as separate_validation:
+            expected = model.assign(rows)
+        separate_validation.assert_called_once()
+
+        self.assertTrue(torch.equal(observed[0], expected[0]))
+        self.assertTrue(torch.equal(observed[1], expected[1]))
+
+    @unittest.skipUnless(_CUTE_SM90, _CUTE_REASON)
+    def test_fp8_range_validation_precedes_assignment(self):
+        device = torch.device("cuda")
+        x = torch.arange(8, dtype=torch.float32, device=device)[:, None]
+        model = Emeans(
+            1, 2, niter=1, batch_size=8, alpha0=0.5,
+            assignment_chunk_size=2,
+            assignment_precision="float8_e4m3fn",
+            assignment_backend="cute",
+        )
+        model.train(x, init_centroids=x[[0, -1]])
+
+        cases = ((0, 1000.0), (3, 1000.0), (5, 1000.0),
+                 (2, float("nan")), (4, float("inf")),
+                 (1, float("-inf")))
+        for position, value in cases:
+            with self.subTest(position=position, value=value):
+                query = torch.zeros((6, 1), device=device)
+                query[position] = value
+                with mock.patch(
+                    "faiss.contrib.e_means_fp8.validate_rows"
+                ) as validate_rows, mock.patch(
+                    "faiss.contrib.e_means_cute_kernel.launch_tiled_gemm"
+                ) as launch_gemm, self.assertRaisesRegex(
+                    ValueError, "exceeds the E4M3 representable range"
+                ):
+                    model.assignment_chunk_size = len(query)
+                    model.assign(query)
+                validate_rows.assert_not_called()
+                launch_gemm.assert_not_called()
+
+    @unittest.skipUnless(_CUTE_SM90, _CUTE_REASON)
     def test_ragged_oracle_ties_and_determinism(self):
         device = torch.device("cuda")
         centroids = torch.full((193, 17), 10.0, device=device)
@@ -242,7 +356,9 @@ class TestEmeansCute(unittest.TestCase):
         )
 
     @unittest.skipUnless(_CUTE_SM90, _CUTE_REASON)
-    def test_bf16_large_batch_ties_and_planted_winners(self):
+    def test_large_batch_float_ties_and_planted_winners(self):
+        from faiss.contrib.e_means_fp8 import fit
+
         device = torch.device("cuda")
         batch, clusters, dim = 8192, 16384, 96
         centroids = torch.full((clusters, dim), 4.0, device=device)
@@ -255,29 +371,35 @@ class TestEmeansCute(unittest.TestCase):
         rows[1].fill_(1)
         rows[2].fill_(-1)
         rows[3].fill_(0.25)
-        model = Emeans(
-            dim,
-            clusters,
-            assignment_chunk_size=batch,
-            assignment_precision="bfloat16",
-            assignment_backend="cute",
-        )
-        model.centroids = centroids
+        for precision in ("bfloat16", "float8_e4m3fn"):
+            with self.subTest(precision=precision):
+                model = Emeans(
+                    dim,
+                    clusters,
+                    assignment_chunk_size=batch,
+                    assignment_precision=precision,
+                    assignment_backend="cute",
+                )
+                model.centroids = centroids
+                if precision == "float8_e4m3fn":
+                    model._assignment_transform = fit(rows[:4])
 
-        distances, labels = model.assign(rows)
+                distances, labels = model.assign(rows)
 
-        self.assertEqual(labels[:4].tolist(), [0, 777, clusters - 1, 0])
-        torch.testing.assert_close(
-            distances[:4],
-            torch.tensor([0.0, 0.0, 0.0, 6.0], device=device),
-            rtol=0,
-            atol=1e-5,
-        )
-        self.assertTrue(bool(torch.all(labels[4:] == 0)))
-        torch.testing.assert_close(
-            distances[4:], torch.zeros_like(distances[4:]),
-            rtol=0, atol=1e-5,
-        )
+                self.assertEqual(
+                    labels[:4].tolist(), [0, 777, clusters - 1, 0]
+                )
+                torch.testing.assert_close(
+                    distances[:4],
+                    torch.tensor([0.0, 0.0, 0.0, 6.0], device=device),
+                    rtol=0,
+                    atol=1e-5,
+                )
+                self.assertTrue(bool(torch.all(labels[4:] == 0)))
+                torch.testing.assert_close(
+                    distances[4:], torch.zeros_like(distances[4:]),
+                    rtol=0, atol=1e-5,
+                )
 
     @unittest.skipUnless(_CUTE_SM90, _CUTE_REASON)
     def test_prepared_refresh_reuses_compatible_storage(self):

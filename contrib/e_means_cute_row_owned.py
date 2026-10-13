@@ -6,7 +6,7 @@
 # Adapted from PR #280 cute_kmeans/cute/row_owned.py at
 # e8e288285e885064b477a882e237fcc47da8a9b2.
 
-"""Low-dimension SM90 BF16 row-owned assignment kernel.
+"""Low-dimension SM90 floating row-owned assignment kernel.
 
 The strict FP32 scan retains the first equal score visited. A compile-time
 layout proof establishes increasing centroid visitation order, and the
@@ -20,6 +20,7 @@ import cutlass
 import cutlass.cute as cute
 from cutlass import (
     BFloat16,
+    Float8E4M3FN,
     Float32,
     Int32,
     Int64,
@@ -101,12 +102,14 @@ class _RowOwnedAssignSm90:
 
     def __init__(
         self,
+        operand_type,
         tile_k,
         tile_m,
         stages,
         mma_warpgroups,
         overlap_wgmma,
     ):
+        self.operand_type = operand_type
         self.tile_k = tile_k
         self.tile_m = tile_m
         self.stages = stages
@@ -116,8 +119,8 @@ class _RowOwnedAssignSm90:
     @cute.jit
     def __call__(self, q, centroids, norms, values, labels, stream):
         tiled_mma = hopper_utils.make_trivial_tiled_mma(
-            BFloat16,
-            BFloat16,
+            self.operand_type,
+            self.operand_type,
             cute.nvgpu.OperandMajorMode.K,
             cute.nvgpu.OperandMajorMode.K,
             Float32,
@@ -129,13 +132,13 @@ class _RowOwnedAssignSm90:
         # sm90_utils.gemm below uses the same supported fast construction,
         # accumulating all K slices directly into this FP32 fragment.
         q_layout = sm90_utils.make_smem_layout(
-            BFloat16,
+            self.operand_type,
             LayoutEnum.ROW_MAJOR,
             (self.tile_m, self.tile_k),
             None,
         )
         c_layout = sm90_utils.make_smem_layout(
-            BFloat16,
+            self.operand_type,
             LayoutEnum.ROW_MAJOR,
             (TILE_N, self.tile_k),
             self.stages,
@@ -144,10 +147,10 @@ class _RowOwnedAssignSm90:
             (TILE_N, self.stages), stride=(1, TILE_N)
         )
         q_bytes = cute.size_in_bytes(
-            BFloat16, cute.select(q_layout, mode=[0, 1])
+            self.operand_type, cute.select(q_layout, mode=[0, 1])
         )
         c_bytes = cute.size_in_bytes(
-            BFloat16, cute.select(c_layout, mode=[0, 1])
+            self.operand_type, cute.select(c_layout, mode=[0, 1])
         )
         n_bytes = TILE_N * Float32.width // 8
         q_atom, q_tensor = cpasync.make_tiled_tma_atom(
@@ -170,12 +173,12 @@ class _RowOwnedAssignSm90:
             c_barriers: cute.struct.MemRange[cutlass.Int64, self.stages * 2]
             q: cute.struct.Align[
                 cute.struct.MemRange[
-                    BFloat16, cute.cosize(q_layout)
+                    self.operand_type, cute.cosize(q_layout)
                 ], 1024
             ]
             centroids: cute.struct.Align[
                 cute.struct.MemRange[
-                    BFloat16, cute.cosize(c_layout)
+                    self.operand_type, cute.cosize(c_layout)
                 ], 1024
             ]
             norms: cute.struct.Align[
@@ -612,13 +615,22 @@ def _required_smem(tile_k, tile_m, stages, element_bytes):
     )
 
 
-def row_owned_plan(batch, clusters, dim, device):
-    """Return the resource-legal BF16 plan at an admitted batch size.
+def _operand_type(dtype):
+    if dtype is torch.bfloat16:
+        return BFloat16
+    if dtype is torch.float8_e4m3fn:
+        return Float8E4M3FN
+    raise ValueError("row-owned operands must be BF16 or E4M3")
+
+
+def row_owned_plan(batch, clusters, dim, device, dtype):
+    """Return a resource-legal floating plan at an admitted batch size.
 
     The measured SM90 topology fixes tile 64 at B=8192 and tile 128 at
     B=16384. Other batches and an illegal three-stage plan fall back to tiled;
     there is deliberately no proxy, tile-256 candidate, or tile step-down.
     """
+    _operand_type(dtype)
     if not _row_owned_shape_legal(batch, clusters, dim):
         return None
     tile_m = {8192: 64, 16384: 128}.get(batch)
@@ -628,7 +640,9 @@ def row_owned_plan(batch, clusters, dim, device):
     smem = properties.shared_memory_per_block_optin
     tile_k = _row_owned_tile_k(dim)
     stages = 3
-    if _required_smem(tile_k, tile_m, stages, 2) > smem:
+    if _required_smem(
+        tile_k, tile_m, stages, dtype.itemsize
+    ) > smem:
         return None
     return tile_k, tile_m, stages
 
@@ -644,13 +658,8 @@ class PreparedRowOwned(NamedTuple):
 
 
 def _validate_operand(tensor, name, device):
-    require_tensor(
-        tensor,
-        name,
-        dtype=torch.bfloat16,
-        device=device,
-        contiguous=False,
-    )
+    require_tensor(tensor, name, device=device, contiguous=False)
+    _operand_type(tensor.dtype)
     if tensor.ndim != 2 or tensor.stride(1) != 1:
         raise ValueError("%s must be rank two with unit inner stride" % name)
     if (
@@ -671,15 +680,16 @@ def prepare_row_owned(
     *,
     overlap_wgmma=False,
 ):
-    """Compile and bind one BF16 row-owned assignment operation.
+    """Compile and bind one floating row-owned assignment operation.
 
-    It returns bare FP32 scores, matching the tiled BF16 contract.
+    It returns bare FP32 scores, matching the tiled floating contract.
     ``overlap_wgmma`` selects the faithful three-stage ping-pong schedule at
     the two admitted B=8192 K regions; it is serial elsewhere.
     """
     from faiss.contrib.e_means_cute import _require_stack
 
     centroids = prepared.centroids
+    operand_type = _operand_type(rows.dtype)
     if not isinstance(overlap_wgmma, bool):
         raise ValueError("overlap_wgmma must be a compile-time bool")
     _require_stack()
@@ -753,6 +763,7 @@ def prepare_row_owned(
     if compiled is None:
         compiled = cute.compile(
             _RowOwnedAssignSm90(
+                operand_type,
                 tile_k,
                 tile_m,
                 stages,

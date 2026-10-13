@@ -97,20 +97,22 @@ for each shape and dtype rather than runtime autotuning. The first use may
 compile kernels; later calls can reuse Triton's cache. Triton FP32 requests
 IEEE dot-product input precision.
 
-Set `assignment_backend="cute"` with `assignment_precision="bfloat16"` to use
-the optional CuTe backend on NVIDIA SM90. It requires `quack-kernels==0.6.5`,
-`nvidia-cutlass-dsl==4.7.1`, and `cuda-python>=13,<14`; the first use compiles
-kernels, and unsupported configurations never fall back to another backend.
-Bit-equal FP32 scores select the lower centroid ID; other mathematical ties
-may be backend-dependent.
+Set `assignment_backend="cute"` with `assignment_precision="bfloat16"` or
+`"float8_e4m3fn"` to use the optional CuTe backend on NVIDIA SM90. It requires
+`quack-kernels==0.6.5`, `nvidia-cutlass-dsl==4.7.1`, and
+`cuda-python>=13,<14`; the first use compiles kernels, and unsupported
+configurations never fall back to another backend. E4M3 uses fast tensor-core
+accumulation with FP32 scores, not a strict FP32 reduction. Bit-equal FP32
+scores select the lower centroid ID; other mathematical ties may be
+backend-dependent.
 
-With `assignment_backend="triton"` and
+With `assignment_backend="triton"` or `"cute"` and
 `assignment_precision="float8_e4m3fn"`, E-means fits an optional
 per-coordinate shift and one shared power-of-two scale, validates the full
-input, and rounds rows and centroids identically. Returned FP32 values are
-rescaled by `scale**-2` and represent squared distances between the decoded
-rounded operands in source coordinates; centroid state and statistics remain
-FP32.
+input, and rounds rows and centroids identically. Triton returns FP32 squared
+distances between the decoded rounded operands in source coordinates. CuTe
+returns rescaled and clamped native fast-accumulation approximations to those
+distances. Centroid state and statistics remain FP32.
 
 With `assignment_backend="triton"` and `assignment_precision="int8"` on an
 NVIDIA SM80, SM90, or SM100 GPU, E-means accepts native INT8 or UINT8 corpora

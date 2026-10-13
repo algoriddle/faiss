@@ -10,9 +10,9 @@ stream centroid tiles with bounded score workspaces instead of materializing
 the native backend's row-by-centroid score tensor.
 """
 
-import math
-
 import torch
+
+from faiss.contrib.e_means_fp8 import _transform_fp8
 
 try:
     import triton
@@ -726,57 +726,6 @@ def _launch_assignment(
         FP8=is_fp8,
         num_warps=4,
     )
-
-
-def _transform_fp8(x, bias, scale, validate=False, peak_out=None):
-    """Return the E4M3 mirror under one shared affine transform."""
-    from faiss.contrib.e_means_fp8 import (
-        _check_fp8_range,
-        _check_fp8_support,
-    )
-
-    _check_fp8_support(x.device)
-    if x.dtype != torch.float32:
-        raise TypeError("FP8 assignment preparation requires float32 input")
-    if scale is None:
-        raise ValueError("FP8 assignment requires a scale")
-    valid = math.isfinite(scale) and scale > 0.0
-    if not valid or not math.log2(scale).is_integer():
-        raise ValueError("FP8 assignment scale must be a power of two")
-    if scale > torch.finfo(torch.float32).max:
-        raise ValueError("FP8 assignment scale exceeds the FP32 range")
-    if bias is not None and (
-        bias.device != x.device
-        or bias.dtype != torch.float32
-        or bias.shape != (x.shape[1],)
-    ):
-        raise ValueError("FP8 assignment bias does not match the input")
-    transformed = (
-        x * scale if bias is None else torch.add(bias, x, alpha=scale)
-    )
-    if validate:
-        peak = transformed.detach().abs().max()
-        if peak_out is None:
-            _check_fp8_range(peak, "centroids")
-        else:
-            if (
-                peak_out.device != x.device
-                or peak_out.layout != torch.strided
-                or peak_out.shape != ()
-                or peak_out.dtype != torch.float32
-                or peak_out.requires_grad
-            ):
-                raise ValueError("FP8 peak accumulator does not match input")
-            peak_out.copy_(torch.maximum(peak_out, peak))
-    d = x.shape[1]
-    physical_d = (d + 63) // 64 * 64
-    if physical_d == d:
-        return transformed.to(_FLOAT8_E4M3FN)
-    padded = torch.zeros(
-        (len(x), physical_d), dtype=_FLOAT8_E4M3FN, device=x.device
-    )
-    padded[:, :d].copy_(transformed)
-    return padded
 
 
 def prepare_fp8_centroids(centroids, bias, scale, peak_out=None):

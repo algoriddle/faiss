@@ -3,11 +3,12 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-"""Host adapter for E-means BF16 CuTe assignment on SM90.
+"""Host adapter for E-means BF16 and E4M3 CuTe assignment on SM90.
 
 Optional CuTe dependencies are resolved only after an explicit ``cute``
 backend request. Assignment selects between the tiled kernel and an admitted
-low-dimension row-owned kernel; there is no fallback backend.
+low-dimension row-owned kernel; there is no fallback backend. E4M3 uses fast
+tensor-core accumulation with FP32 scores; it is not a strict FP32 reduction.
 """
 
 from collections import OrderedDict
@@ -125,8 +126,8 @@ def _check_extent(name, value):
         raise ValueError("CuTe assignment requires 0 < %s < 2**31" % name)
 
 
-def _check_padded_span(name, rows, dim):
-    pitch = _padded_extent(dim, 8)
+def _check_padded_span(name, rows, dim, element_size=2):
+    pitch = _padded_extent(dim, 16 // element_size)
     if rows * pitch >= 2**31:
         raise ValueError("CuTe padded %s storage must fit signed int32" % name)
     return pitch
@@ -140,13 +141,13 @@ def _tensor_version(tensor):
         return None
 
 
-def _aligned_bf16(rows, dim, device):
+def _aligned_operand(rows, dim, device, dtype):
     import torch
 
-    pitch = _padded_extent(dim, 8)
+    pitch = _padded_extent(dim, 16 // dtype.itemsize)
     if pitch == dim:
-        return torch.empty((rows, dim), dtype=torch.bfloat16, device=device)
-    return torch.zeros((rows, pitch), dtype=torch.bfloat16, device=device)[
+        return torch.empty((rows, dim), dtype=dtype, device=device)
+    return torch.zeros((rows, pitch), dtype=dtype, device=device)[
         :, :dim
     ]
 
@@ -155,6 +156,8 @@ def _aligned_bf16(rows, dim, device):
 class _PreparedCentroids:
     source_ref: object
     source_version: int
+    transform: object
+    transform_token: object
     centroids: object
     norms: object
     padded_norms: object
@@ -177,6 +180,10 @@ class _Binding:
     labels: object
     launcher: object
     kernel: object
+    peak: object
+    row_norms: object = None
+    prepared_row_norms: object = None
+    shared_stage_norm_profitable: bool = False
 
 
 def _can_refresh(cached, centroids):
@@ -187,16 +194,60 @@ def _can_refresh(cached, centroids):
     )
 
 
-def _refresh_prepared(cached, centroids, source_version):
-    cached.centroids.copy_(centroids.detach())
-    norms = cached.centroids.float().square().sum(dim=1)
-    cached.norms.copy_(norms)
+def _transform_token(transform):
+    if transform is None:
+        return None
+    # The prepared object retains transform, so its identity cannot be reused.
+    bias = transform._bias
+    return (
+        id(transform),
+        transform.scale,
+        None
+        if bias is None
+        else (bias.data_ptr(), _tensor_version(bias), bias.device),
+    )
+
+
+def _refresh_prepared(
+    cached, centroids, source_version, transform, peak_out
+):
+    import torch
+
+    if transform is None:
+        cached.centroids.copy_(centroids.detach())
+        cached.norms.copy_(
+            cached.centroids.float().square().sum(dim=1)
+        )
+    else:
+        from faiss.contrib.e_means_cute_argmin import affine_cast
+        from faiss.contrib.e_means_fp8 import _check_fp8_range
+
+        local_peak = peak_out
+        if local_peak is None:
+            local_peak = centroids.new_zeros(())
+        affine_cast(
+            centroids.detach(),
+            transform._bias,
+            transform.scale,
+            cached.centroids,
+            local_peak,
+        )
+        wide = cached.centroids.float()
+        wide.square_()
+        torch.sum(wide, dim=1, out=cached.norms)
+        del wide
+        if peak_out is None:
+            _check_fp8_range(local_peak, "centroids")
     cached.source_ref = weakref.ref(centroids)
     cached.source_version = source_version
+    cached.transform = transform
+    cached.transform_token = _transform_token(transform)
     return cached
 
 
-def _prepare_centroids(centroids, cached=None):
+def _prepare_centroids(
+    centroids, cached=None, transform=None, peak_out=None
+):
     """Round one FP32 centroid state and compute norms from that mirror.
 
     Repeated public assignment reuses an unchanged installed centroid tensor.
@@ -220,23 +271,30 @@ def _prepare_centroids(centroids, cached=None):
     k, dim = centroids.shape
     _check_extent("K", k)
     _check_extent("d", dim)
-    _check_padded_span("centroid", k, dim)
+    dtype = (
+        torch.bfloat16 if transform is None else torch.float8_e4m3fn
+    )
+    _check_padded_span("centroid", k, dim, dtype.itemsize)
     padded_k = _padded_extent(k, _TILE_N)
     if padded_k >= 2**31:
         raise ValueError("CuTe padded centroid IDs must fit signed int32")
     source_version = _tensor_version(centroids)
+    transform_token = _transform_token(transform)
     if (
         isinstance(cached, _PreparedCentroids)
         and cached.source_ref() is centroids
         and source_version is not None
         and cached.source_version == source_version
+        and cached.transform_token == transform_token
     ):
         return cached
 
     with torch.cuda.device(centroids.device):
-        if _can_refresh(cached, centroids):
-            return _refresh_prepared(cached, centroids, source_version)
-        mirror = _aligned_bf16(k, dim, centroids.device)
+        if _can_refresh(cached, centroids) and cached.centroids.dtype is dtype:
+            return _refresh_prepared(
+                cached, centroids, source_version, transform, peak_out
+            )
+        mirror = _aligned_operand(k, dim, centroids.device, dtype)
         storage = torch.empty(
             padded_k, dtype=torch.float32, device=centroids.device
         )
@@ -245,23 +303,39 @@ def _prepare_centroids(centroids, cached=None):
         prepared = _PreparedCentroids(
             None,
             None,
+            None,
+            None,
             mirror,
             storage[:k],
             storage.view(1, padded_k),
         )
-        return _refresh_prepared(prepared, centroids, source_version)
-
-
-def _bf16_row_owned_admitted(batch, clusters, pitch_bytes, plan):
-    """Apply the measured SM90 BF16 admission law to a legal plan."""
-    if plan is None:
-        return False
-    if batch == 8192:
-        return (
-            clusters in (16384, 65536, 262144)
-            and pitch_bytes % 32 == 0
+        return _refresh_prepared(
+            prepared, centroids, source_version, transform, peak_out
         )
+
+
+def _float_row_owned_region(batch, clusters):
+    """Return whether B/K lies in a measured floating region."""
+    if batch == 8192:
+        return clusters in (16384, 65536, 262144)
     return batch == 16384 and clusters <= 16384
+
+
+def _float_row_owned_resources(
+    dtype, batch, clusters, pitch_bytes, plan
+):
+    """Apply dtype-specific legality after B/K admission."""
+    import torch
+
+    if plan is None or not _float_row_owned_region(batch, clusters):
+        return False
+    if batch == 16384:
+        return True
+    if dtype is torch.bfloat16:
+        return pitch_bytes % 32 == 0
+    # One-byte operands were insensitive to pitch at K=16384. Above that,
+    # admit either the small K tile or a 32-byte-aligned row pitch.
+    return clusters == 16384 or plan[0] <= 128 or pitch_bytes % 32 == 0
 
 
 def _float_row_owned_overlap(batch, clusters):
@@ -271,6 +345,25 @@ def _float_row_owned_overlap(batch, clusters):
     win. It is not needed by the broader serial row-owned gains.
     """
     return batch == 8192 and clusters in (16384, 65536)
+
+
+def _shared_stage_norm_pressure_bytes(batch, dim, clusters):
+    """Return the selector's FP32-temporary plus E4M3-mirror scale."""
+    padded_dim = (dim + 15) // 16 * 16
+    return 4 * batch * dim + clusters * padded_dim
+
+
+def _shared_stage_norm_profitable(batch, dim, clusters, l2_cache_size):
+    """Return the H100-calibrated shared-stage admission decision."""
+    if l2_cache_size is None:
+        return False
+    # H100/SM90 evidence uses L2 capacity as an empirically bracketed scale,
+    # not proven cache causality. Other architectures must revalidate even
+    # with the same L2 size; a different size alone does not falsify the rule.
+    return (
+        _shared_stage_norm_pressure_bytes(batch, dim, clusters)
+        <= l2_cache_size
+    )
 
 
 def _new_binding(batch, prepared):
@@ -287,21 +380,50 @@ def _new_binding(batch, prepared):
     )
 
     _check_extent("B", batch)
-    _check_padded_span("row", batch, prepared.dim)
+    _check_padded_span(
+        "row", batch, prepared.dim, prepared.centroids.element_size()
+    )
     with torch.cuda.device(prepared.centroids.device):
-        workspace = _aligned_bf16(
-            batch, prepared.dim, prepared.centroids.device
+        workspace = _aligned_operand(
+            batch,
+            prepared.dim,
+            prepared.centroids.device,
+            prepared.centroids.dtype,
         )
         scores = torch.empty(
             batch, dtype=torch.float32, device=workspace.device
         )
+        is_fp8 = workspace.dtype is torch.float8_e4m3fn
+        peak = (
+            torch.zeros((), dtype=torch.float32, device=workspace.device)
+            if is_fp8
+            else None
+        )
+        row_norms = (
+            torch.empty(batch, dtype=torch.float32, device=workspace.device)
+            if is_fp8
+            else None
+        )
+        if is_fp8:
+            l2_cache_size = getattr(
+                torch.cuda.get_device_properties(workspace.device),
+                "L2_cache_size",
+                None,
+            )
+            shared_stage_norm_profitable = _shared_stage_norm_profitable(
+                batch, prepared.dim, prepared.num_centroids, l2_cache_size
+            )
+        else:
+            shared_stage_norm_profitable = False
         plan = row_owned_plan(
             batch,
             prepared.num_centroids,
             prepared.dim,
             workspace.device,
+            workspace.dtype,
         )
-        use_row_owned = _bf16_row_owned_admitted(
+        use_row_owned = _float_row_owned_resources(
+            workspace.dtype,
             batch,
             prepared.num_centroids,
             workspace.stride(0) * workspace.element_size(),
@@ -330,7 +452,10 @@ def _new_binding(batch, prepared):
             )
             kernel = prepare_tiled_gemm(workspace, prepared, codes, scores)
             launcher = launch_tiled_gemm
-    return _Binding(workspace, codes, scores, labels, launcher, kernel)
+    return _Binding(
+        workspace, codes, scores, labels, launcher, kernel, peak, row_norms,
+        None, shared_stage_norm_profitable,
+    )
 
 
 def _binding_for(batch, prepared):
@@ -343,7 +468,7 @@ def _binding_for(batch, prepared):
     return binding
 
 
-def _assign_rows(rows, prepared):
+def _assign_rows(rows, prepared, validate=False, shared_stage_norm=False):
     """Assign contiguous FP32 rows and return stable FP32/int64 outputs."""
     import torch
 
@@ -364,15 +489,68 @@ def _assign_rows(rows, prepared):
         raise ValueError("rows and centroids must have the same dimension")
     if rows.shape[0] < 1:
         raise ValueError("rows must not be empty")
+    if shared_stage_norm and validate:
+        raise ValueError("shared stage/norm requires prevalidated rows")
 
     with torch.cuda.device(rows.device):
         binding = _binding_for(rows.shape[0], prepared)
-        binding.workspace.copy_(rows)
-        distances = torch.linalg.vector_norm(
-            binding.workspace, dim=1, dtype=torch.float32
-        )
+        if prepared.transform is None:
+            binding.workspace.copy_(rows)
+            distances = torch.linalg.vector_norm(
+                binding.workspace, dim=1, dtype=torch.float32
+            )
+        else:
+            from faiss.contrib.e_means_cute_argmin import (
+                affine_cast,
+                launch_row_norms,
+                prepare_row_norms,
+            )
+            from faiss.contrib.e_means_fp8 import (
+                _check_fp8_range,
+                _transform_fp8,
+            )
+
+            use_shared_stage_norm = (
+                shared_stage_norm and binding.shared_stage_norm_profitable
+            )
+            if use_shared_stage_norm:
+                if binding.prepared_row_norms is None:
+                    binding.prepared_row_norms = prepare_row_norms(
+                        binding.workspace, binding.row_norms
+                    )
+                _transform_fp8(
+                    rows,
+                    prepared.transform._bias,
+                    prepared.transform.scale,
+                    alignment=16,
+                    out=binding.workspace,
+                )
+                launch_row_norms(binding.prepared_row_norms)
+            else:
+                if validate:
+                    binding.peak.zero_()
+                affine_cast(
+                    rows,
+                    prepared.transform._bias,
+                    prepared.transform.scale,
+                    binding.workspace,
+                    binding.peak if validate else None,
+                    packed_rows=True,
+                    norms=binding.row_norms,
+                )
+                if validate:
+                    _check_fp8_range(binding.peak, "x")
+            distances = binding.row_norms
+
         binding.launcher(binding.kernel)
-        distances.square_().add_(binding.scores).clamp_min_(0)
+        if prepared.transform is None:
+            distances.square_()
+            distances.add_(binding.scores).clamp_min_(0)
+        else:
+            # Fused row norms live in the persistent binding, so return a
+            # fresh tensor rather than mutating the buffer.
+            distances = distances.add(binding.scores).clamp_min_(0)
+            distances.mul_(prepared.transform.scale**-2)
         labels = (
             binding.labels.clone()
             if binding.labels is not None
