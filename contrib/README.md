@@ -97,14 +97,16 @@ for each shape and dtype rather than runtime autotuning. The first use may
 compile kernels; later calls can reuse Triton's cache. Triton FP32 requests
 IEEE dot-product input precision.
 
-Set `assignment_backend="cute"` with `assignment_precision="bfloat16"` or
-`"float8_e4m3fn"` to use the optional CuTe backend on NVIDIA SM90. It requires
-`quack-kernels==0.6.5`, `nvidia-cutlass-dsl==4.7.1`, and
+Set `assignment_backend="cute"` with `assignment_precision="bfloat16"`,
+`"float8_e4m3fn"`, or `"int8"` to use the optional CuTe backend on NVIDIA
+SM90. It requires `quack-kernels==0.6.5`, `nvidia-cutlass-dsl==4.7.1`, and
 `cuda-python>=13,<14`; the first use compiles kernels, and unsupported
-configurations never fall back to another backend. E4M3 uses fast tensor-core
-accumulation with FP32 scores, not a strict FP32 reduction. Bit-equal FP32
-scores select the lower centroid ID; other mathematical ties may be
-backend-dependent.
+configurations never fall back to another backend. Floating CuTe formats rank
+FP32 scores; E4M3 uses fast tensor-core accumulation, not a strict FP32
+reduction. Bit-equal floating scores select the lower centroid ID; other
+mathematical ties may be backend-dependent. Native INT8 ranks exact INT32
+scores; its SM90 accumulator fragment is retyped only inside a locked local
+compile scope, so stock QuACK 0.6.5 needs no modification.
 
 With `assignment_backend="triton"` or `"cute"` and
 `assignment_precision="float8_e4m3fn"`, E-means fits an optional
@@ -114,11 +116,17 @@ distances between the decoded rounded operands in source coordinates. CuTe
 returns rescaled and clamped native fast-accumulation approximations to those
 distances. Centroid state and statistics remain FP32.
 
-With `assignment_backend="triton"` and `assignment_precision="int8"` on an
-NVIDIA SM80, SM90, or SM100 GPU, E-means accepts native INT8 or UINT8 corpora
+With `assignment_backend="triton"` or `"cute"` and
+`assignment_precision="int8"`, E-means accepts native INT8 or UINT8 corpora
 with `d <= 43919`. UINT8 values are translated exactly by subtracting 128, and
-ranking uses exact integer scores. Returned FP32 values are squared byte-lattice
-distances; training objectives sum those values in FP64. For floating corpora,
+ranking uses exact INT32 scores. CuTe INT8 is SM90-only; one low-dimension
+row-owned route is limited to the measured SM90 B/K/pitch/resource envelope;
+the tiled route covers every other valid shape. Returned FP32 values are
+squared byte-lattice distances; training objectives sum those values in FP64.
+The default CuTe native-byte chunk is 16,384 for `d <= 1024`, the validated
+envelope when `B > 8192`; wider dimensions retain 8,192 because each
+additional 8,192 rows costs approximately `85 * d` KiB of transient memory.
+Explicit chunk choices are unchanged. For floating corpora,
 `faiss.contrib.e_means_int8.Int8Quantizer` can train an explicit affine
 preprocessing transform and decode learned FP32 centroid state.
 

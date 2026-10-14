@@ -38,6 +38,20 @@ _CUTE_SM90 = _cute_sm90_ready()
 _CUTE_REASON = "the pinned CuTe stack on SM90 is required"
 
 
+def _int8_oracle(rows, centroids):
+    offset = 128 if rows.dtype is torch.uint8 else 0
+    rows64 = rows.to(torch.int64) - offset
+    centroids64 = centroids.to(torch.int64) - offset
+    dots = (rows64.double() @ centroids64.double().T).to(torch.int64)
+    scores = centroids64.square().sum(1)[None] - 2 * dots
+    labels = scores.argmin(1)
+    distances = (
+        rows64.square().sum(1)
+        + scores.gather(1, labels[:, None]).squeeze(1)
+    ).to(torch.float32)
+    return distances, labels
+
+
 def _two_sm90_ready():
     return (
         _CUTE_SM90
@@ -59,7 +73,7 @@ class TestEmeansCute(unittest.TestCase):
         if hasattr(contrib, "e_means_cute"):
             delattr(contrib, "e_means_cute")
         try:
-            with self.assertRaisesRegex(ValueError, "BF16 or E4M3"):
+            with self.assertRaisesRegex(ValueError, "BF16, E4M3, or INT8"):
                 Emeans(8, 4, assignment_backend="cute")
             model = Emeans(
                 8,
@@ -75,6 +89,10 @@ class TestEmeansCute(unittest.TestCase):
                 assignment_precision="float8_e4m3fn",
             )
             self.assertEqual(fp8.assignment_precision, "float8_e4m3fn")
+            int8 = Emeans(
+                8, 4, assignment_backend="cute", assignment_precision="int8"
+            )
+            self.assertEqual(int8.assignment_precision, "int8")
             self.assertNotIn(name, sys.modules)
         finally:
             if saved_module is not None:
@@ -82,8 +100,28 @@ class TestEmeansCute(unittest.TestCase):
             if saved_attribute is not None:
                 contrib.e_means_cute = saved_attribute
 
+    def test_native_int8_chunk_default_is_scoped(self):
+        def chunk(d, backend="cute", precision="int8", explicit=None):
+            model = Emeans(
+                d,
+                4,
+                assignment_backend=backend,
+                assignment_precision=precision,
+                assignment_chunk_size=explicit,
+            )
+            return model._get_assignment_chunk_size(True)
+
+        self.assertEqual(chunk(128), 16384)
+        self.assertEqual(chunk(1024), 16384)
+        self.assertEqual(chunk(1025), 8192)
+        self.assertEqual(chunk(128, backend="triton"), 8192)
+        self.assertEqual(chunk(128, precision="bfloat16"), 8192)
+        self.assertEqual(chunk(128, explicit=4096), 4096)
+
     def test_compatibility_error_precedes_device_work(self):
+        from faiss.contrib import e_means as e_means_module
         from faiss.contrib import e_means_cute
+        from faiss.contrib import e_means_fp8
 
         def lane_helper(tiled_copy, reference_src, tidx):
             return tiled_copy, reference_src, tidx
@@ -101,6 +139,9 @@ class TestEmeansCute(unittest.TestCase):
             ),
             "quack.gemm_tvm_ffi_utils": types.SimpleNamespace(
                 compile_gemm_kernel=lambda: None
+            ),
+            "quack.sm90_utils": types.SimpleNamespace(
+                partition_fragment_ABC=lambda unexpected: unexpected
             ),
         }
         versions = {
@@ -125,6 +166,59 @@ class TestEmeansCute(unittest.TestCase):
                         e_means_cute._stack_status(), (True, "ready")
                     )
 
+        e_means_cute._stack_status.cache_clear()
+        e_means_cute._int8_stack_status.cache_clear()
+        with mock.patch.object(
+            importlib.metadata, "version", side_effect=versions.__getitem__
+        ), mock.patch.object(
+            importlib.util, "find_spec", return_value=object()
+        ), mock.patch.object(
+            importlib, "import_module", side_effect=modules.__getitem__
+        ):
+            self.assertEqual(
+                e_means_cute._stack_status(), (True, "ready")
+            )
+            self.assertFalse(e_means_cute._int8_stack_status()[0])
+            public = types.SimpleNamespace(
+                assignment_backend="cute",
+                assignment_precision="bfloat16",
+            )
+            x = types.SimpleNamespace(device=torch.device("cuda"))
+            with mock.patch.object(
+                e_means_module,
+                "_get_cute_functions",
+                return_value=(None, None, lambda device: None),
+            ), mock.patch.object(e_means_fp8, "_check_fp8_support"):
+                for precision in ("bfloat16", "float8_e4m3fn"):
+                    public.assignment_precision = precision
+                    e_means_module.Emeans._check_assignment_support(
+                        public, x, True
+                    )
+                public.assignment_precision = "int8"
+                with self.assertRaisesRegex(
+                    RuntimeError,
+                    "fragment helper ABI mismatch",
+                ):
+                    e_means_module.Emeans._check_assignment_support(
+                        public, x, True
+                    )
+
+                def partition_fragment_ABC(
+                    thr_mma, shape_mnk, sA, sB, swap_AB=False
+                ):
+                    return thr_mma, shape_mnk, sA, sB, swap_AB
+
+                modules["quack.sm90_utils"].partition_fragment_ABC = (
+                    partition_fragment_ABC
+                )
+                e_means_cute._int8_stack_status.cache_clear()
+                self.assertEqual(
+                    e_means_cute._int8_stack_status(), (True, "ready")
+                )
+                e_means_module.Emeans._check_assignment_support(
+                    public, x, True
+                )
+
         with mock.patch.object(
             e_means_cute,
             "_stack_status",
@@ -135,6 +229,7 @@ class TestEmeansCute(unittest.TestCase):
             e_means_cute._check_device(torch.device("cuda"))
 
         e_means_cute._stack_status.cache_clear()
+        e_means_cute._int8_stack_status.cache_clear()
         with mock.patch.object(
             importlib.metadata,
             "version",
@@ -164,6 +259,37 @@ class TestEmeansCute(unittest.TestCase):
             untracked = torch.empty(1)
         self.assertIsNone(e_means_cute._tensor_version(untracked))
 
+    @unittest.skipUnless(_CUTE_SM90, _CUTE_REASON)
+    def test_int32_fragment_hook_restores_and_guards_identity(self):
+        from faiss.contrib import e_means_cute_kernel
+
+        helper_owner = e_means_cute_kernel.sm90_utils
+        original = helper_owner.partition_fragment_ABC
+        with self.assertRaisesRegex(RuntimeError, "injected failure"):
+            with e_means_cute_kernel._int32_accumulator_fragments():
+                self.assertIs(
+                    helper_owner.partition_fragment_ABC,
+                    e_means_cute_kernel._partition_fragment_ABC_acc_dtype,
+                )
+                raise RuntimeError("injected failure")
+        self.assertIs(helper_owner.partition_fragment_ABC, original)
+
+        def foreign_replacement(*args, **kwargs):
+            return args, kwargs
+
+        helper_owner.partition_fragment_ABC = foreign_replacement
+        try:
+            with self.assertRaisesRegex(
+                RuntimeError, "fragment helper changed during compile"
+            ):
+                with e_means_cute_kernel._int32_accumulator_fragments():
+                    pass
+            self.assertIs(
+                helper_owner.partition_fragment_ABC, foreign_replacement
+            )
+        finally:
+            helper_owner.partition_fragment_ABC = original
+
     def test_rejects_non_sm90_and_insufficient_shared_memory(self):
         from faiss.contrib import e_means_cute
 
@@ -177,6 +303,7 @@ class TestEmeansCute(unittest.TestCase):
                 torch.cuda, "get_device_capability", return_value=(8, 0)
             ), self.assertRaisesRegex(RuntimeError, "exactly SM90"):
                 e_means_cute._check_device(torch.device("cuda"))
+
             with mock.patch.object(
                 e_means_cute, "_require_stack"
             ), mock.patch.object(
@@ -188,6 +315,216 @@ class TestEmeansCute(unittest.TestCase):
         self.assertEqual(e_means_cute._check_padded_span("row", 1, 9), 16)
         with self.assertRaisesRegex(ValueError, "padded row storage"):
             e_means_cute._check_padded_span("row", 2**28, 1)
+
+    @unittest.skipUnless(_CUTE_SM90, _CUTE_REASON)
+    def test_native_int8_small_and_large_match_integer_oracle(self):
+        from faiss.contrib.e_means_int8 import resolve
+
+        device = torch.device("cuda")
+        generator = torch.Generator(device=device).manual_seed(7000)
+        centroids = torch.randint(
+            32, 224, (385, 79), dtype=torch.uint8, device=device,
+            generator=generator,
+        )
+        rows = torch.randint(
+            32, 224, (5, 79), dtype=torch.uint8, device=device,
+            generator=generator,
+        )
+        centroids[0].zero_()
+        centroids[192].zero_()
+        centroids[-1].fill_(255)
+        rows[0].zero_()
+        rows[1].fill_(255)
+        model = Emeans(
+            79, 385, assignment_precision="int8", assignment_backend="cute"
+        )
+        model.centroids = centroids.float()
+        model._assignment_transform = resolve(torch.uint8)
+        distances, labels = model.assign(rows)
+        expected = _int8_oracle(rows, centroids)
+        self.assertEqual(labels[:2].tolist(), [0, 384])
+        self.assertTrue(torch.equal(distances, expected[0]))
+        self.assertTrue(torch.equal(labels, expected[1]))
+
+        model._cute_assignment_cache = None
+        prepared, _ = model._prepare_torch_assignment(
+            model.centroids, validate_centroids=False
+        )
+        self.assertFalse(prepared.finite_validated)
+        model.assign(rows)
+        self.assertTrue(prepared.finite_validated)
+        model.centroids[0, 0] = float("nan")
+        with self.assertRaisesRegex(
+            ValueError, "INT8 centroids must be finite"
+        ):
+            model.assign(rows)
+
+        k, d, batch, probes = 65536, 96, 8192, 4
+        for dtype, low, high in (
+            (torch.int8, -128, 128),
+            (torch.uint8, 0, 256),
+        ):
+            with self.subTest(large_dtype=dtype):
+                centroids = torch.randint(
+                    low, high, (k, d), dtype=dtype, device=device,
+                    generator=generator,
+                )
+                rows = torch.zeros(
+                    (batch, d), dtype=dtype, device=device
+                )
+                rows[:probes] = torch.randint(
+                    low, high, (probes, d), dtype=dtype, device=device,
+                    generator=generator,
+                )
+                model = Emeans(
+                    d,
+                    k,
+                    assignment_chunk_size=batch,
+                    assignment_precision="int8",
+                    assignment_backend="cute",
+                )
+                model.centroids = centroids.float()
+                model._assignment_transform = resolve(dtype)
+                distances, labels = model.assign(rows)
+                expected = _int8_oracle(rows[:probes], centroids)
+                zero_expected = _int8_oracle(
+                    torch.zeros((1, d), dtype=dtype, device=device),
+                    centroids,
+                )
+                self.assertTrue(torch.equal(distances[:probes], expected[0]))
+                self.assertTrue(torch.equal(labels[:probes], expected[1]))
+                self.assertTrue(bool(torch.all(
+                    labels[probes:] == zero_expected[1][0]
+                )))
+                self.assertTrue(bool(torch.all(
+                    distances[probes:] == zero_expected[0][0]
+                )))
+
+    @unittest.skipUnless(_CUTE_SM90, _CUTE_REASON)
+    def test_native_int8_32k_matches_integer_oracle(self):
+        from faiss.contrib.e_means_int8 import resolve
+
+        device = torch.device("cuda")
+        generator = torch.Generator(device=device).manual_seed(32768)
+        batch, clusters, dim, probes = 32768, 16384, 128, 4
+        for dtype, low, high in (
+            (torch.int8, -128, 128),
+            (torch.uint8, 0, 256),
+        ):
+            with self.subTest(dtype=dtype):
+                centroids = torch.randint(
+                    low,
+                    high,
+                    (clusters, dim),
+                    dtype=dtype,
+                    device=device,
+                    generator=generator,
+                )
+                centroids[128].copy_(centroids[0])
+                rows = torch.zeros(
+                    (batch, dim), dtype=dtype, device=device
+                )
+                rows[:probes] = torch.randint(
+                    low,
+                    high,
+                    (probes, dim),
+                    dtype=dtype,
+                    device=device,
+                    generator=generator,
+                )
+                rows[0].copy_(centroids[0])
+                model = Emeans(
+                    dim,
+                    clusters,
+                    assignment_chunk_size=batch,
+                    assignment_precision="int8",
+                    assignment_backend="cute",
+                )
+                model.centroids = centroids.float()
+                model._assignment_transform = resolve(dtype)
+
+                distances, labels = model.assign(rows)
+                expected = _int8_oracle(rows[:probes], centroids)
+                zero_expected = _int8_oracle(
+                    rows[probes:probes + 1], centroids
+                )
+
+                self.assertEqual(labels[0].item(), 0)
+                self.assertTrue(torch.equal(distances[:probes], expected[0]))
+                self.assertTrue(torch.equal(labels[:probes], expected[1]))
+                self.assertTrue(bool(torch.all(
+                    distances[probes:] == zero_expected[0][0]
+                )))
+                self.assertTrue(bool(torch.all(
+                    labels[probes:] == zero_expected[1][0]
+                )))
+
+    @unittest.skipUnless(_CUTE_SM90, _CUTE_REASON)
+    def test_int8_quantizer_train_workflow_with_cute(self):
+        from faiss.contrib.e_means_int8 import Int8Quantizer, quantize, resolve
+
+        generator = torch.Generator(device="cuda").manual_seed(7117)
+        source = torch.randn(
+            (32, 80), generator=generator, device="cuda"
+        )
+        quantizer = Int8Quantizer(80)
+        quantizer.train(source[:16])
+        codes = quantizer.compute_codes(source)
+        model = Emeans(
+            80,
+            4,
+            niter=1,
+            batch_size=8,
+            alpha0=0.5,
+            assignment_chunk_size=8,
+            assignment_precision="int8",
+            assignment_backend="cute",
+        )
+        model.train(codes, init_centroids=codes[:4])
+        distances, labels = model.assign(codes)
+
+        self.assertEqual(model.centroids.dtype, torch.float32)
+        self.assertEqual(
+            (distances.dtype, labels.dtype),
+            (torch.float32, torch.int64),
+        )
+        native_centroids = quantize(model.centroids, resolve(codes.dtype))
+        expected = _int8_oracle(codes, native_centroids)
+        self.assertTrue(torch.equal(distances, expected[0]))
+        self.assertTrue(torch.equal(labels, expected[1]))
+        decoded = quantizer.decode(model.centroids)
+        self.assertTrue(bool(torch.isfinite(decoded).all()))
+
+    @unittest.skipUnless(_CUTE_SM90, _CUTE_REASON)
+    def test_native_int8_ragged_statistics_revival(self):
+        for dtype, value, bounds in (
+            (torch.int8, 0, (-128, 127)),
+            (torch.uint8, 128, (0, 255)),
+        ):
+            with self.subTest(dtype=dtype):
+                x = torch.full(
+                    (10, 17), value, dtype=dtype, device="cuda"
+                )
+                model = Emeans(
+                    17,
+                    2,
+                    niter=5,
+                    batch_size=10,
+                    alpha0=0.5,
+                    assignment_chunk_size=4,
+                    assignment_precision="int8",
+                    assignment_backend="cute",
+                )
+
+                objective = model.train(x, init_centroids=x[:2])
+
+                self.assertEqual(objective, 0.0)
+                self.assertEqual(model.n_splits, 1)
+                split_rows = model.centroids.round().clamp(*bounds).to(dtype)
+                _, labels = model.assign(split_rows)
+                torch.testing.assert_close(
+                    labels, torch.tensor([0, 1], device="cuda")
+                )
 
     @unittest.skipUnless(_CUTE_SM90, _CUTE_REASON)
     def test_fp8_train_and_assign_keep_fp32_state(self):

@@ -292,9 +292,11 @@ class Emeans:
     assignment_chunk_size : int, optional
         Maximum rows assigned at once. This does not alter the statistical
         batch size or the EMA schedule. The default is 65,536 rows for NumPy
-        and 8,192 for PyTorch. With NumPy input, it can change floating-point
-        assignment results if Faiss selects a different exact-search kernel
-        for a different query size.
+        and 8,192 for PyTorch, except CuTe native INT8/UINT8 uses 16,384 when
+        ``d <= 1024``. Wider dimensions retain 8,192 to bound transient
+        staging memory. With NumPy input, this option can change
+        floating-point assignment results if Faiss selects a different
+        exact-search kernel for a different query size.
     centroid_chunk_size : int, optional
         Maximum centroids examined at once by native PyTorch assignment.
         Triton and CuTe stream centroids internally and ignore this option.
@@ -309,15 +311,17 @@ class Emeans:
         statistics, and centroid state remain FP32. E4M3 is available with
         Triton or CuTe on qualified GPUs. It fits an optional
         per-coordinate shift and one shared power-of-two scale and validates
-        the full input. Rows and centroids are rounded identically. Returned
-        Triton returns FP32 squared distances between the decoded rounded
+        the full input. Rows and centroids are rounded identically. Triton
+        returns FP32 squared distances between the decoded rounded
         operands in source coordinates. CuTe returns rescaled and clamped
         native fast-accumulation approximations to those distances.
-        INT8 is also Triton-only on NVIDIA SM80, SM90, or SM100 GPUs and
-        requires ``d <= 43919`` so integer ranking remains exact. It accepts
-        native INT8 or UINT8 input; UINT8 values are translated exactly by
-        subtracting 128. Centroid preparation rounds and clamps FP32 state to
-        the signed-byte lattice, and ranking uses exact integer scores.
+        INT8 is available with Triton on NVIDIA SM80, SM90, or SM100 and with
+        CuTe on SM90.
+        It requires ``d <= 43919`` so integer ranking remains exact. It
+        accepts native INT8 or UINT8 input; UINT8 values are translated
+        exactly by subtracting 128. Centroid preparation rounds and clamps
+        FP32 state to the signed-byte lattice, and ranking uses exact integer
+        scores.
         Returned distances are FP32 squared byte-lattice values; training
         objectives sum those values in FP64, and centroid state remains FP32
         in source byte coordinates. With
@@ -331,12 +335,13 @@ class Emeans:
         PyTorch assignment implementation selected explicitly; native is the
         default. Triton requires a compatible installation and an NVIDIA CUDA
         SM80-or-later GPU. It uses fixed choices and does not benchmark at
-        runtime or fall back to native. CuTe requires BF16 or E4M3 on exactly
-        SM90 plus ``quack-kernels==0.6.5``, ``nvidia-cutlass-dsl==4.7.1``, and
-        ``cuda-python>=13,<14``; it never falls back. E4M3 uses fast tensor-core
-        accumulation with FP32 scores, not a strict FP32 reduction. CuTe ranks
-        native FP32 scores; bit-equal scores select lower ID. A float64-only
-        tie need not select the lowest ID.
+        runtime or fall back to native. CuTe requires BF16, E4M3, or INT8 on
+        exactly SM90 plus ``quack-kernels==0.6.5``,
+        ``nvidia-cutlass-dsl==4.7.1``, and ``cuda-python>=13,<14``.
+        It never falls back. Floating CuTe formats rank FP32 scores; E4M3 uses
+        fast tensor-core accumulation, not a strict FP32 reduction. Native INT8
+        ranks exact INT32 scores. Bit-equal scores select lower ID; a
+        float64-only floating tie need not select the lowest ID.
 
     Attributes
     ----------
@@ -429,19 +434,20 @@ class Emeans:
         if (
             self.assignment_backend == "cute"
             and self.assignment_precision
-            not in ("bfloat16", "float8_e4m3fn")
+            not in ("bfloat16", "float8_e4m3fn", "int8")
         ):
-            raise ValueError("CuTe assignment requires BF16 or E4M3")
+            raise ValueError("CuTe assignment requires BF16, E4M3, or INT8")
         if self.assignment_precision == "float8_e4m3fn" and (
             self.assignment_backend not in ("triton", "cute")
         ):
             raise ValueError(
                 "float8_e4m3fn assignment requires Triton or CuTe"
             )
-        if self.assignment_precision == "int8" and (
-            self.assignment_backend != "triton"
+        if (
+            self.assignment_precision == "int8"
+            and self.assignment_backend not in ("triton", "cute")
         ):
-            raise ValueError("int8 assignment requires Triton")
+            raise ValueError("int8 assignment requires Triton or CuTe")
         if self.assignment_precision == "int8" and self.d > 43919:
             raise ValueError("INT8 assignment requires d <= 43919")
         # Mirrors e_means_triton._MAX_K without importing optional Triton.
@@ -474,6 +480,13 @@ class Emeans:
     def _get_assignment_chunk_size(self, is_torch):
         if self.assignment_chunk_size is not None:
             return self.assignment_chunk_size
+        if (
+            is_torch
+            and self.assignment_backend == "cute"
+            and self.assignment_precision == "int8"
+            and self.d <= 1024
+        ):
+            return 16384
         return 8192 if is_torch else 65536
 
     def _check_assignment_support(self, x, is_torch):
@@ -491,6 +504,10 @@ class Emeans:
                 from faiss.contrib.e_means_fp8 import _check_fp8_support
 
                 _check_fp8_support(x.device)
+            elif self.assignment_precision == "int8":
+                from faiss.contrib.e_means_cute import _require_int8_stack
+
+                _require_int8_stack()
             return
         name = (
             "Triton"
@@ -533,15 +550,16 @@ class Emeans:
         if self.assignment_backend == "cute":
             _, prepare_centroids, _ = _get_cute_functions()
             transform = None
-            if self.assignment_precision == "float8_e4m3fn":
+            if self.assignment_precision in ("float8_e4m3fn", "int8"):
                 transform = self._assignment_transform
                 if transform is None:
-                    raise RuntimeError("the E4M3 transform is not fitted")
+                    raise RuntimeError("assignment transform is not fitted")
             self._cute_assignment_cache = prepare_centroids(
                 centroids,
                 self._cute_assignment_cache,
                 transform=transform,
                 peak_out=peak_out,
+                validate_centroids=validate_centroids,
             )
             return self._cute_assignment_cache, None
         if self.assignment_precision == "int8":

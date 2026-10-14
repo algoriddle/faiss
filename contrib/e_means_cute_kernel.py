@@ -3,11 +3,12 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 #
-# NativeRowVecLoad below is adapted from QuACK 0.6.5 RowVecLoad.begin_loop.
-# Copyright (c) 2025-2026, Han Guo, Tri Dao. Licensed under Apache-2.0.
-# Meta modified it to preserve int32 metadata and removed unrelated modes.
+# NativeRowVecLoad adapts QuACK 0.6.5 RowVecLoad.begin_loop (Apache-2.0).
+# QuACK copyright (c) 2025-2026, Han Guo, Tri Dao.
+# INT8 accumulator/key changes adapt PR #280 cute_kmeans/cute/assign.py at
+# e8e288285e885064b477a882e237fcc47da8a9b2; Meta removed unrelated modes.
 
-"""One fixed SM90 BF16/E4M3 GEMM-plus-argmin assignment kernel.
+"""One fixed SM90 BF16/E4M3/INT8 GEMM-plus-argmin assignment kernel.
 
 The schedule is CTA (M,N) = (128,192), cluster (2,1), with non-serpentine
 33-cluster N panels. BF16 uses TILE_K=64 and E4M3 uses TILE_K=128. E4M3
@@ -16,17 +17,19 @@ strict FP32 reduction. The kernel atomically reduces packed
 ``(score, centroid id)`` keys per input row.
 """
 
+from contextlib import contextmanager, nullcontext
 from functools import partial
 import hashlib
 from pathlib import Path
+import threading
 from typing import NamedTuple, Optional
 
 import cutlass
 import cutlass.cute as cute
-from cutlass import Boolean, Float32, Int32, Int64, const_expr
+from cutlass import Boolean, Float32, Int8, Int32, Int64, const_expr
 import torch
 
-from quack import layout_utils, utils as quack_utils
+from quack import layout_utils, sm90_utils, utils as quack_utils
 from quack.cache import jit_cache
 from quack.compile_utils import make_fake_tensor as fake_tensor
 from quack.cute_dsl_utils import (
@@ -62,6 +65,7 @@ from quack.tile_scheduler import (
 from faiss.contrib.e_means_cute_argmin import (
     INITIAL_KEY,
     encode_argmin_key,
+    finalize_int8_outputs,
     launch_argmin_decode,
     prepare_argmin_decode,
     require_tensor,
@@ -74,6 +78,48 @@ _STAGED_ROW_BYTES = 128
 CLUSTER_M = 2
 CLUSTER_N = 1
 BLOCKED_N_CLUSTERS = 33
+
+
+_PARTITION_FRAGMENT_LOCK = threading.RLock()
+_QUACK_PARTITION_FRAGMENT_ABC = sm90_utils.partition_fragment_ABC
+
+
+@cute.jit
+def _partition_fragment_ABC_acc_dtype(
+    thr_mma, shape_mnk, sA, sB, swap_AB=False
+):
+    """Retype only stock QuACK's hard-coded FP32 accumulator fragment."""
+    acc, tCrA, tCrB = _QUACK_PARTITION_FRAGMENT_ABC(
+        thr_mma, shape_mnk, sA, sB, swap_AB=swap_AB
+    )
+    acc = cute.make_rmem_tensor(acc.layout, thr_mma.op.acc_dtype)
+    return acc, tCrA, tCrB
+
+
+@contextmanager
+def _int32_accumulator_fragments():
+    """Scope the stock-v0.6.5 private hook to one synchronous compile.
+
+    The temporary binding is process-global; the lock serializes Faiss-owned
+    scopes but cannot hide it from unrelated QuACK compilers. Stock public
+    compiles use FP32 accumulators, so they observe an identity substitution.
+    A direct, non-public Float16 ``GemmSm90`` construction is the bounded
+    residual that would instead receive a Float16 fragment.
+    """
+    with _PARTITION_FRAGMENT_LOCK:
+        previous = sm90_utils.partition_fragment_ABC
+        if previous not in (
+            _QUACK_PARTITION_FRAGMENT_ABC,
+            _partition_fragment_ABC_acc_dtype,
+        ):
+            raise RuntimeError(
+                "QuACK SM90 fragment helper changed during compile"
+            )
+        sm90_utils.partition_fragment_ABC = _partition_fragment_ABC_acc_dtype
+        try:
+            yield
+        finally:
+            sm90_utils.partition_fragment_ABC = previous
 
 
 def _persistent_cache_source_key():
@@ -180,14 +226,15 @@ class _AtomicRowArgMin(EpiOp):
 
     @cute.jit
     def begin(self, gemm, param, smem_tensor, ctx):
+        score_type = Int32 if const_expr(gemm.acc_dtype is Int32) else Float32
         vector_layout = cute.make_layout(
             (ctx.tile_M, ctx.tile_N), stride=(1, 0)
         )
         state_layout = ctx.partition_for_epilogue_fn(
-            cute.make_rmem_tensor(vector_layout, Float32)
+            cute.make_rmem_tensor(vector_layout, score_type)
         ).layout
         return (
-            cute.make_rmem_tensor(state_layout, Float32),
+            cute.make_rmem_tensor(state_layout, score_type),
             cute.make_rmem_tensor(state_layout, Int32),
         )
 
@@ -197,7 +244,10 @@ class _AtomicRowArgMin(EpiOp):
         current_min = minima[None, None, None, epi_coord[0], epi_coord[1]]
         current_idx = indices[None, None, None, epi_coord[0], epi_coord[1]]
         if const_expr(epi_coord[1] == 0):
-            cute.filter_zeros(current_min).fill(Float32.inf)
+            if const_expr(gemm.acc_dtype is Int32):
+                cute.filter_zeros(current_min).fill(0x7FFFFFFF)
+            else:
+                cute.filter_zeros(current_min).fill(Float32.inf)
             cute.filter_zeros(current_idx).fill(0x7FFFFFFF)
         return current_min, current_idx
 
@@ -311,7 +361,12 @@ class _AtomicRowArgMin(EpiOp):
             for m in cutlass.range(cute.size(row_coordinates, mode=[0])):
                 local_row = row_coordinates[m][0]
                 if local_row < limit_m:
-                    key = encode_argmin_key(row_min[m], row_idx[m])
+                    key = (
+                        row_min[m].to(Int64) * Int64(0x100000000)
+                        + row_idx[m].to(Int64)
+                        if const_expr(gemm.acc_dtype is Int32)
+                        else encode_argmin_key(row_min[m], row_idx[m])
+                    )
                     cute.arch.atomic_min(
                         quack_utils.elem_pointer(output, local_row).llvm_ptr,
                         key,
@@ -347,6 +402,10 @@ class _GemmAssignMinSm90(ComposableEpiMixin, GemmSm90):
         if varlen_m:
             raise ValueError("the fixed scheduler does not support varlen M")
         return _BlockedTileScheduler
+
+
+def _use_int32_accumulator(gemm):
+    gemm.acc_dtype = Int32
 
 
 def _flatten_layout(shape, stride):
@@ -429,7 +488,11 @@ class _OrderedGemmAssignMinSm90(_GemmAssignMinSm90):
         _assert_candidate_order(tile_min.layout, centroid_ids.layout)
         type(self)._order_guard_ran = True
         for i in cutlass.range(cute.size(tile_min), unroll_full=True):
-            score = norms[i] - 2.0 * accumulator[i]
+            score = (
+                norms[i] - Int32(2) * accumulator[i]
+                if const_expr(self.acc_dtype is Int32)
+                else norms[i] - 2.0 * accumulator[i]
+            )
             take = score < tile_min[i]
             tile_min[i] = score if take else tile_min[i]
             tile_idx[i] = centroid_ids[i] if take else tile_idx[i]
@@ -450,9 +513,11 @@ def _compile_ordered(
         operand, operand, None, None, a_major, b_major, None, None
     )
     epi_n = cute.sym_int()
+    integer_scores = operand is Int8
     epilogue = _GemmAssignMinSm90.EpilogueArguments(
         mCentroidNorms=fake_tensor(
-            Float32, (batch_axis, epi_n), leading_dim=1, divisibility=4
+            Int32 if integer_scores else Float32,
+            (batch_axis, epi_n), leading_dim=1, divisibility=4
         ),
         mCentroidIds=fake_tensor(
             Int32, (batch_axis, epi_n), leading_dim=1, divisibility=4
@@ -463,24 +528,29 @@ def _compile_ordered(
     )
     _OrderedGemmAssignMinSm90._schedule_guard_ran = False
     _OrderedGemmAssignMinSm90._order_guard_ran = False
-    compiled = compile_gemm_kernel(
-        _OrderedGemmAssignMinSm90,
-        operand,
-        (TILE_M, TILE_N, tile_k),
-        (CLUSTER_M, CLUSTER_N, 1),
-        True,
-        True,
-        False,
-        False,
-        device_capacity,
-        a,
-        b,
-        d,
-        c,
-        epilogue,
-        _blocked_scheduler_args(1),
-        make_fake_varlen_args(False, False, False, None),
+    fragment_scope = (
+        _int32_accumulator_fragments if integer_scores else nullcontext
     )
+    with fragment_scope():
+        compiled = compile_gemm_kernel(
+            _OrderedGemmAssignMinSm90,
+            operand,
+            (TILE_M, TILE_N, tile_k),
+            (CLUSTER_M, CLUSTER_N, 1),
+            True,
+            True,
+            False,
+            False,
+            device_capacity,
+            a,
+            b,
+            d,
+            c,
+            epilogue,
+            _blocked_scheduler_args(1),
+            make_fake_varlen_args(False, False, False, None),
+            post_init=_use_int32_accumulator if integer_scores else None,
+        )
     if not _OrderedGemmAssignMinSm90._schedule_guard_ran:
         raise RuntimeError("QuACK did not invoke the fixed schedule guard")
     if not _OrderedGemmAssignMinSm90._order_guard_ran:
@@ -491,17 +561,19 @@ def _compile_ordered(
 def _centroid_metadata(prepared):
     k = prepared.num_centroids
     padded_k = ((k + TILE_N - 1) // TILE_N) * TILE_N
+    integer_scores = prepared.centroids.dtype is torch.int8
+    norm_dtype = torch.int32 if integer_scores else torch.float32
     require_tensor(
         prepared.norms,
         "centroid norms",
-        dtype=torch.float32,
+        dtype=norm_dtype,
         shape=(k,),
         device=prepared.centroids.device,
     )
     require_tensor(
         prepared.padded_norms,
         "padded centroid norms",
-        dtype=torch.float32,
+        dtype=norm_dtype,
         shape=(1, padded_k),
         device=prepared.centroids.device,
     )
@@ -529,8 +601,16 @@ class PreparedTiledGemm(NamedTuple):
     decode: object
 
 
+class _DecodeLaunch(NamedTuple):
+    launcher: object
+    payload: object
+
+
 @torch.no_grad()
-def prepare_tiled_gemm(rows, prepared, codes, scores):
+def prepare_tiled_gemm(
+    rows, prepared, codes=None, scores=None, *, keys=None, row_norms=None,
+    distances=None, labels=None,
+):
     """Compile and bind one stable private full-or-tail workspace."""
     centroids = prepared.centroids
     if (
@@ -540,12 +620,14 @@ def prepare_tiled_gemm(rows, prepared, codes, scores):
     ):
         raise ValueError("rows and centroids must be rank two with equal d")
     if (
-        rows.dtype not in (torch.bfloat16, torch.float8_e4m3fn)
+        rows.dtype not in (torch.bfloat16, torch.float8_e4m3fn, torch.int8)
         or centroids.dtype is not rows.dtype
         or rows.device != centroids.device
         or not rows.is_cuda
     ):
-        raise ValueError("CuTe operands must be same-device CUDA BF16/E4M3")
+        raise ValueError(
+            "CuTe operands must be same-device CUDA BF16/E4M3/INT8"
+        )
     if rows.stride(-1) != 1 or centroids.stride(-1) != 1:
         raise ValueError("CuTe operands must have unit inner stride")
     element_bytes = rows.element_size()
@@ -555,23 +637,43 @@ def prepare_tiled_gemm(rows, prepared, codes, scores):
     ):
         raise ValueError("CuTe row pitches must be 16-byte aligned")
     ids = _centroid_metadata(prepared)
-    keys = torch.full(
-        (1, rows.shape[0], 1),
-        INITIAL_KEY,
-        dtype=torch.int64,
-        device=rows.device,
-    )
+    integer_scores = rows.dtype is torch.int8
+    if integer_scores:
+        from faiss.contrib.e_means_cute import _require_int8_stack
+
+        _require_int8_stack()
+        if rows.shape[1] > 43919 or 48_896 * rows.shape[1] >= 2**31 - 1:
+            raise ValueError("INT8 assignment score exceeds signed int32")
+        require_tensor(
+            keys, "integer argmin keys", dtype=torch.int64,
+            shape=(1, rows.shape[0], 1), device=rows.device,
+        )
+    else:
+        keys = torch.full(
+            (1, rows.shape[0], 1), INITIAL_KEY,
+            dtype=torch.int64, device=rows.device,
+        )
     a = rows.unsqueeze(0)
     b = centroids.unsqueeze(0)
     tile_k = _STAGED_ROW_BYTES // element_bytes
     compiled = _compile_ordered(
-        torch2cute_dtype_map[rows.dtype],
+        Int8 if integer_scores else torch2cute_dtype_map[rows.dtype],
         tile_k,
         get_major(a, "m", "k"),
         get_major(b, "n", "k"),
         get_device_capacity(rows.device),
         _PERSISTENT_CACHE_SOURCE_KEY,
     )
+    if integer_scores:
+        decode = _DecodeLaunch(
+            finalize_int8_outputs,
+            (keys, row_norms, distances, labels),
+        )
+    else:
+        decode = _DecodeLaunch(
+            launch_argmin_decode,
+            prepare_argmin_decode(keys, codes, scores),
+        )
     return PreparedTiledGemm(
         compiled,
         a,
@@ -587,7 +689,7 @@ def prepare_tiled_gemm(rows, prepared, codes, scores):
             None,
         ),
         make_varlen_args(None, None, None),
-        prepare_argmin_decode(keys, codes, scores),
+        decode,
     )
 
 
@@ -605,4 +707,4 @@ def launch_tiled_gemm(prepared):
         None,
         None,
     )
-    launch_argmin_decode(prepared.decode)
+    prepared.decode.launcher(prepared.decode.payload)

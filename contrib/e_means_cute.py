@@ -3,12 +3,12 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-"""Host adapter for E-means BF16 and E4M3 CuTe assignment on SM90.
+"""Host adapter for E-means BF16, E4M3, and native INT8 CuTe assignment.
 
 Optional CuTe dependencies are resolved only after an explicit ``cute``
 backend request. Assignment selects between the tiled kernel and an admitted
-low-dimension row-owned kernel; there is no fallback backend. E4M3 uses fast
-tensor-core accumulation with FP32 scores; it is not a strict FP32 reduction.
+low-dimension row-owned kernel; there is no fallback backend. E4M3 ranks FP32
+scores, while native bytes rank exact INT32 scores.
 """
 
 from collections import OrderedDict
@@ -74,6 +74,32 @@ def _stack_status():
     return True, "ready"
 
 
+@lru_cache(maxsize=1)
+def _int8_stack_status():
+    """Validate the stock-v0.6.5 helper replaced by the local compile hook."""
+    try:
+        sm90_utils = importlib.import_module("quack.sm90_utils")
+        helper = getattr(sm90_utils, "partition_fragment_ABC", None)
+        signature = (
+            tuple(inspect.signature(helper).parameters)
+            if callable(helper)
+            else ()
+        )
+        if not callable(helper) or signature != (
+            "thr_mma", "shape_mnk", "sA", "sB", "swap_AB"
+        ):
+            return False, "QuACK SM90 fragment helper ABI mismatch"
+    except (
+        AttributeError,
+        ImportError,
+        ModuleNotFoundError,
+        TypeError,
+        ValueError,
+    ):
+        return False, "QuACK SM90 fragment helper is unavailable"
+    return True, "ready"
+
+
 def _require_stack():
     available, reason = _stack_status()
     if not available:
@@ -86,6 +112,14 @@ def _require_stack():
                 reason,
             )
         )
+
+
+def _require_int8_stack():
+    """Require the stock helper ABI used by the local INT8 compile hook."""
+    _require_stack()
+    available, reason = _int8_stack_status()
+    if not available:
+        raise RuntimeError("CuTe INT8 assignment is unavailable: %s" % reason)
 
 
 def _check_device(device):
@@ -161,6 +195,7 @@ class _PreparedCentroids:
     centroids: object
     norms: object
     padded_norms: object
+    finite_validated: bool
     bindings: OrderedDict = field(default_factory=OrderedDict)
 
     @property
@@ -177,11 +212,11 @@ class _Binding:
     workspace: object
     codes: object
     scores: object
-    labels: object
-    launcher: object
-    kernel: object
+    launches: tuple
     peak: object
     row_norms: object = None
+    distances: object = None
+    labels: object = None
     prepared_row_norms: object = None
     shared_stage_norm_profitable: bool = False
 
@@ -197,6 +232,9 @@ def _can_refresh(cached, centroids):
 def _transform_token(transform):
     if transform is None:
         return None
+    representation = getattr(transform, "representation", None)
+    if representation is not None:
+        return representation
     # The prepared object retains transform, so its identity cannot be reused.
     bias = transform._bias
     return (
@@ -209,11 +247,33 @@ def _transform_token(transform):
 
 
 def _refresh_prepared(
-    cached, centroids, source_version, transform, peak_out
+    cached, centroids, source_version, transform, peak_out,
+    validate_centroids,
 ):
     import torch
 
-    if transform is None:
+    if cached.centroids.dtype is torch.int8:
+        from faiss.contrib.e_means_cute_argmin import stage_int8_rows
+        from faiss.contrib.e_means_int8 import (
+            _ENCODE_CHUNK_ELEMENTS,
+            quantize,
+        )
+
+        if validate_centroids:
+            if not bool(torch.isfinite(centroids).all()):
+                raise ValueError("INT8 centroids must be finite")
+            cached.finite_validated = True
+        else:
+            cached.finite_validated = False
+        chunk = max(1, _ENCODE_CHUNK_ELEMENTS // centroids.shape[1])
+        for begin in range(0, len(centroids), chunk):
+            end = min(begin + chunk, len(centroids))
+            mirror = cached.centroids[begin:end]
+            mirror.copy_(quantize(centroids[begin:end].detach(), transform))
+            stage_int8_rows(
+                mirror, mirror, cached.norms[begin:end], "int8"
+            )
+    elif transform is None:
         cached.centroids.copy_(centroids.detach())
         cached.norms.copy_(
             cached.centroids.float().square().sum(dim=1)
@@ -246,7 +306,8 @@ def _refresh_prepared(
 
 
 def _prepare_centroids(
-    centroids, cached=None, transform=None, peak_out=None
+    centroids, cached=None, transform=None, peak_out=None,
+    validate_centroids=True,
 ):
     """Round one FP32 centroid state and compute norms from that mirror.
 
@@ -271,9 +332,17 @@ def _prepare_centroids(
     k, dim = centroids.shape
     _check_extent("K", k)
     _check_extent("d", dim)
-    dtype = (
-        torch.bfloat16 if transform is None else torch.float8_e4m3fn
-    )
+    representation = getattr(transform, "representation", None)
+    if representation not in (None, "int8", "uint8"):
+        raise ValueError("unknown native-byte representation")
+    if representation is not None:
+        _require_int8_stack()
+    if transform is None:
+        dtype = torch.bfloat16
+    elif representation is not None:
+        dtype = torch.int8
+    else:
+        dtype = torch.float8_e4m3fn
     _check_padded_span("centroid", k, dim, dtype.itemsize)
     padded_k = _padded_extent(k, _TILE_N)
     if padded_k >= 2**31:
@@ -287,19 +356,36 @@ def _prepare_centroids(
         and cached.source_version == source_version
         and cached.transform_token == transform_token
     ):
+        if (
+            representation is not None
+            and validate_centroids
+            and not cached.finite_validated
+        ):
+            if not bool(torch.isfinite(centroids).all()):
+                raise ValueError("INT8 centroids must be finite")
+            cached.finite_validated = True
         return cached
 
     with torch.cuda.device(centroids.device):
         if _can_refresh(cached, centroids) and cached.centroids.dtype is dtype:
             return _refresh_prepared(
-                cached, centroids, source_version, transform, peak_out
+                cached, centroids, source_version, transform, peak_out,
+                validate_centroids,
             )
         mirror = _aligned_operand(k, dim, centroids.device, dtype)
+        norm_dtype = torch.int32 if dtype is torch.int8 else torch.float32
         storage = torch.empty(
-            padded_k, dtype=torch.float32, device=centroids.device
+            padded_k, dtype=norm_dtype, device=centroids.device
         )
         if padded_k != k:
-            storage[k:].fill_(float("inf"))
+            # TMA zero-fills padded centroid rows, so their dot term is zero.
+            # The INT32_MAX norm sentinel remains strictly above every legal
+            # real score admitted by the raw-score guard and cannot win.
+            storage[k:].fill_(
+                torch.iinfo(torch.int32).max
+                if dtype is torch.int8
+                else float("inf")
+            )
         prepared = _PreparedCentroids(
             None,
             None,
@@ -308,9 +394,11 @@ def _prepare_centroids(
             mirror,
             storage[:k],
             storage.view(1, padded_k),
+            False,
         )
         return _refresh_prepared(
-            prepared, centroids, source_version, transform, peak_out
+            prepared, centroids, source_version, transform, peak_out,
+            validate_centroids,
         )
 
 
@@ -366,6 +454,103 @@ def _shared_stage_norm_profitable(batch, dim, clusters, l2_cache_size):
     )
 
 
+def _native_row_owned_region(batch, clusters, dim):
+    """Return whether B/K/d lies in the measured native-byte envelope."""
+    if batch == 8192:
+        return clusters in (16384, 65536, 262144)
+    if batch == 32768:
+        return clusters == 16384 and dim == 128
+    if batch != 16384:
+        return False
+    if clusters == 16384:
+        # This endpoint is evidenced at the public/training d=128 boundary.
+        return dim == 128
+    return clusters in (65536, 262144)
+
+
+def _native_row_owned_resources(
+    batch, clusters, dim, pitch_bytes, plan
+):
+    if plan is None or not _native_row_owned_region(
+        batch, clusters, dim
+    ):
+        return False
+    if batch in (16384, 32768):
+        return True
+    return clusters == 16384 or plan[0] <= 128 or pitch_bytes % 32 == 0
+
+
+def _new_int8_binding(workspace, prepared):
+    import torch
+
+    from faiss.contrib.e_means_cute_row_owned import (
+        launch_row_owned,
+        prepare_row_owned,
+        row_owned_plan,
+    )
+    from faiss.contrib.e_means_cute_kernel import (
+        launch_tiled_gemm,
+        prepare_tiled_gemm,
+    )
+
+    batch = len(workspace)
+    row_norms = torch.empty(
+        batch, dtype=torch.int32, device=workspace.device
+    )
+    distances = torch.empty(
+        batch, dtype=torch.float32, device=workspace.device
+    )
+    labels = torch.empty(
+        batch, dtype=torch.int64, device=workspace.device
+    )
+    plan = row_owned_plan(
+        batch,
+        prepared.num_centroids,
+        prepared.dim,
+        workspace.device,
+        workspace.dtype,
+    )
+    use_row_owned = _native_row_owned_resources(
+        batch,
+        prepared.num_centroids,
+        prepared.dim,
+        workspace.stride(0) * workspace.element_size(),
+        plan,
+    )
+    if use_row_owned:
+        core = prepare_row_owned(
+            workspace,
+            prepared,
+            row_norms,
+            distances,
+            labels,
+            plan,
+        )
+        launches = ((launch_row_owned, core),)
+    else:
+        keys = torch.full(
+            (1, batch, 1),
+            0x7FFFFFFFFFFFFFFF,
+            dtype=torch.int64,
+            device=workspace.device,
+        )
+        core = prepare_tiled_gemm(
+            workspace, prepared, keys=keys,
+            row_norms=row_norms, distances=distances, labels=labels,
+        )
+        launches = ((launch_tiled_gemm, core),)
+    return _Binding(
+        workspace=workspace,
+        codes=None,
+        scores=None,
+        launches=launches,
+        peak=None,
+        row_norms=row_norms,
+        distances=distances,
+        labels=labels,
+    )
+
+
 def _new_binding(batch, prepared):
     import torch
 
@@ -390,6 +575,8 @@ def _new_binding(batch, prepared):
             prepared.centroids.device,
             prepared.centroids.dtype,
         )
+        if workspace.dtype is torch.int8:
+            return _new_int8_binding(workspace, prepared)
         scores = torch.empty(
             batch, dtype=torch.float32, device=workspace.device
         )
@@ -437,6 +624,7 @@ def _new_binding(batch, prepared):
             kernel = prepare_row_owned(
                 workspace,
                 prepared,
+                None,
                 scores,
                 labels,
                 plan,
@@ -453,8 +641,14 @@ def _new_binding(batch, prepared):
             kernel = prepare_tiled_gemm(workspace, prepared, codes, scores)
             launcher = launch_tiled_gemm
     return _Binding(
-        workspace, codes, scores, labels, launcher, kernel, peak, row_norms,
-        None, shared_stage_norm_profitable,
+        workspace=workspace,
+        codes=codes,
+        scores=scores,
+        launches=((launcher, kernel),),
+        peak=peak,
+        row_norms=row_norms,
+        labels=labels,
+        shared_stage_norm_profitable=shared_stage_norm_profitable,
     )
 
 
@@ -469,7 +663,7 @@ def _binding_for(batch, prepared):
 
 
 def _assign_rows(rows, prepared, validate=False, shared_stage_norm=False):
-    """Assign contiguous FP32 rows and return stable FP32/int64 outputs."""
+    """Assign contiguous FP32 or native-byte rows with stable outputs."""
     import torch
 
     _require_stack()
@@ -477,24 +671,53 @@ def _assign_rows(rows, prepared, validate=False, shared_stage_norm=False):
         raise TypeError("prepared centroids have the wrong type")
     if not isinstance(rows, torch.Tensor) or rows.ndim != 2:
         raise ValueError("rows must be a rank-two tensor")
-    if (
-        not rows.is_cuda
-        or rows.dtype is not torch.float32
-        or not rows.is_contiguous()
-    ):
-        raise ValueError("rows must be contiguous CUDA FP32")
+    representation = getattr(prepared.transform, "representation", None)
+    if representation is not None:
+        _require_int8_stack()
+    if representation is None:
+        if (
+            not rows.is_cuda
+            or rows.dtype is not torch.float32
+            or not rows.is_contiguous()
+        ):
+            raise ValueError("rows must be contiguous CUDA FP32")
+    else:
+        expected_dtype = {
+            "int8": torch.int8,
+            "uint8": torch.uint8,
+        }[representation]
+        if (
+            not rows.is_cuda
+            or rows.dtype is not expected_dtype
+            or not rows.is_contiguous()
+        ):
+            raise ValueError(
+                "rows do not match the prepared CuTe representation"
+            )
     if rows.device != prepared.centroids.device:
         raise ValueError("rows and centroids must be on the same device")
     if rows.shape[1] != prepared.dim:
         raise ValueError("rows and centroids must have the same dimension")
     if rows.shape[0] < 1:
         raise ValueError("rows must not be empty")
-    if shared_stage_norm and validate:
-        raise ValueError("shared stage/norm requires prevalidated rows")
+    if shared_stage_norm and (
+        validate or representation is not None or prepared.transform is None
+    ):
+        raise ValueError("shared stage/norm requires prevalidated E4M3 rows")
 
     with torch.cuda.device(rows.device):
         binding = _binding_for(rows.shape[0], prepared)
-        if prepared.transform is None:
+        if representation is not None:
+            from faiss.contrib.e_means_cute_argmin import stage_int8_rows
+
+            stage_int8_rows(
+                rows,
+                binding.workspace,
+                binding.row_norms,
+                representation,
+            )
+            distances = None
+        elif prepared.transform is None:
             binding.workspace.copy_(rows)
             distances = torch.linalg.vector_norm(
                 binding.workspace, dim=1, dtype=torch.float32
@@ -541,8 +764,10 @@ def _assign_rows(rows, prepared, validate=False, shared_stage_norm=False):
                 if validate:
                     _check_fp8_range(binding.peak, "x")
             distances = binding.row_norms
-
-        binding.launcher(binding.kernel)
+        for launcher, prepared_launch in binding.launches:
+            launcher(prepared_launch)
+        if representation is not None:
+            return binding.distances.clone(), binding.labels.clone()
         if prepared.transform is None:
             distances.square_()
             distances.add_(binding.scores).clamp_min_(0)
