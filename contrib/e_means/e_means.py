@@ -330,6 +330,14 @@ class Emeans:
         UINT8 translation is internal. INT8 ranking is exact with d <= 43919,
         qualified NVIDIA SM80/SM90/SM100, and FP32 returned distances.
         CPU computes in FP32 and requires quantizer=None.
+    capture_assignments : bool, optional
+        Keep the centroid index each row receives during the final pass, the
+        pass whose per-cluster means become the closing centroids. ``train``
+        stores them in ``assignments`` in input row order; ``accumulate``
+        returns them as ``stats["labels"]`` during that pass. No extra search
+        is run: these are the final pass's own labels, made against centroids
+        that were still moving, so a later ``assign`` against the closing
+        centroids can label some rows differently. Costs one int64 per row.
 
     Attributes
     ----------
@@ -347,6 +355,10 @@ class Emeans:
         Resolved recipe used by the most recent call to :meth:`begin`.
     n_splits : int
         Total number of dead clusters revived during the training run.
+    assignments : ndarray or Tensor or None
+        With ``capture_assignments``, the int64 final-pass label of every row
+        given to ``train``, in input order; each closing centroid is the mean
+        of the rows labelled with it. None otherwise.
 
     Notes
     -----
@@ -381,6 +393,7 @@ class Emeans:
         centroid_chunk_size=4096,
         quantizer=None,
         assignment_backend="native",
+        capture_assignments=False,
     ):
         self.d = int(d)
         self.k = int(k)
@@ -397,6 +410,7 @@ class Emeans:
         )
         self.centroid_chunk_size = int(centroid_chunk_size)
         self.assignment_backend = assignment_backend
+        self.capture_assignments = bool(capture_assignments)
         if assignment_backend not in ("native", "triton", "cute"):
             raise ValueError("assignment_backend must be native, triton or cute")
         if assignment_backend == "triton" and self.k > 2**31 - 256:
@@ -454,6 +468,7 @@ class Emeans:
         self.iteration_stats = None
         self.recipe = None
         self.n_splits = 0
+        self.assignments = None
         self._usage = None
         self._centroids = None
         self._pending_stats = None
@@ -836,7 +851,9 @@ class Emeans:
         model-owned workspace: consume them with update before accumulating
         again. Copy them if they must outlive that update. CPU callers may
         combine matching frozen-snapshot statistics themselves, summing all
-        four fields, then call the same local update.
+        four fields, then call the same local update. With
+        ``capture_assignments``, the final pass also returns int64 ``labels``,
+        one per row in batch order; they are newly allocated and caller-owned.
 
         A typed (0,d) batch yields zeros and selects native input metadata.
         CUDA values must be finite and fit the selected representation; use
@@ -874,11 +891,20 @@ class Emeans:
             centroids, centroid_norm = self._centroids, None
         sums, counts = self._batch_stats[:, :-1], self._batch_stats[:, -1]
         chunk_size = self.recipe["assignment_chunk_size"]
+        # The final pass's labels are the ones its closing means are built from.
+        batch_labels = None
+        if self.capture_assignments and self._pass_sums is not None:
+            batch_labels = (
+                self._centroids.new_empty(n, dtype=torch.int64)
+                if self._is_torch else np.empty(n, dtype="int64")
+            )
         for begin in range(0, n, chunk_size):
             end = min(begin + chunk_size, n)
             rows = x[begin:end] if index is None else x[index[begin:end]]
             rows = self._prepare_rows(rows)
             distance, labels = self._assign_rows(rows, centroids, centroid_norm)
+            if batch_labels is not None:
+                batch_labels[begin:end] = labels
             if self._is_torch:
                 objective += distance.sum(dtype=torch.float64)
                 values = self._stats_operand[:len(rows)]
@@ -893,6 +919,8 @@ class Emeans:
                 counts += np.bincount(labels, minlength=self.k)
                 np.add.at(sums, labels, rows)
         stats = {"sums": sums, "counts": counts, "objective": objective, "n": n}
+        if batch_labels is not None:
+            stats["labels"] = batch_labels
         self._pending_stats = stats
         return stats
 
@@ -1089,7 +1117,9 @@ class Emeans:
 
         Return the final moving-pass objective. Initialization and epoch shuffles
         use the existing local seeded policy. No whole logical batch is gathered.
-        Explicit initial centroids must match x's array type and device.
+        Explicit initial centroids must match x's array type and device. With
+        ``capture_assignments``, the final pass's labels are kept in
+        ``assignments`` in input row order.
         """
         is_torch = _is_torch_tensor(x)
         x = _as_input_matrix(x, "x", is_torch)
@@ -1116,15 +1146,25 @@ class Emeans:
             raise ValueError("x and init_centroids must be on the same device")
         self.begin(n, init_centroids)
         x = self._prepare_input(x)
+        assignments = None
+        if self.capture_assignments:
+            if is_torch:
+                import torch
+
+                assignments = torch.full((n,), -1, dtype=torch.int64, device=device)
+            else:
+                assignments = np.full(n, -1, dtype="int64")
         for epoch in range(self.niter):
             order = _randperm(n, _epoch_seed(self.seed, epoch), is_torch, device)
             for begin in range(0, n, self.recipe["batch_size"]):
-                stats = self._accumulate(
-                    x, order[begin:begin + self.recipe["batch_size"]]
-                )
+                index = order[begin:begin + self.recipe["batch_size"]]
+                stats = self._accumulate(x, index)
+                if "labels" in stats:
+                    assignments[index] = stats["labels"]
                 self.update(stats)
             self.end_epoch()
         self.finalize()
+        self.assignments = assignments
         return self.iteration_stats[-1]["obj"]
 
     def assign(self, x):

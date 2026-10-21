@@ -324,6 +324,47 @@ class TestTorchEmeans(unittest.TestCase):
                 torch.testing.assert_close(caller.obj, matrix.obj, rtol=0, atol=0)
                 self.assertEqual(caller.n_splits, matrix.n_splits)
 
+    def test_capture_assignments_match_closing_means(self):
+        cases = [("cpu", "native", None)]
+        if torch.cuda.is_available():
+            cases.append(("cuda", "native", None))
+            if (getattr(torch.version, "hip", None) is None
+                    and torch.cuda.get_device_capability() >= (8, 0)
+                    and importlib.util.find_spec("triton") is not None):
+                cases += [("cuda", "triton", None), ("cuda", "triton", torch.bfloat16),
+                          ("cuda", "triton", torch.int8)]
+        for device, backend, represented in cases:
+            with self.subTest(device=device, backend=backend, represented=represented):
+                generator = torch.Generator(device=device).manual_seed(3)
+                x = torch.randn(301, 8, generator=generator, device=device)
+                quantizer, rows = None, x
+                if represented is torch.bfloat16:
+                    quantizer = CastQuantizer(8, torch.bfloat16)
+                elif represented is torch.int8:
+                    quantizer = Int8Quantizer(8)
+                    quantizer.train(x)
+                    quantizer.to(device)
+                    rows = quantizer.compute_codes(x)
+                args = dict(niter=2, seed=1, assignment_backend=backend,
+                            quantizer=quantizer, assignment_chunk_size=64)
+                km = Emeans(8, 9, capture_assignments=True, **args)
+                km.train(rows)
+                labels = km.assignments
+                self.assertEqual((labels.dtype, labels.device.type, labels.shape),
+                                 (torch.int64, device, (301,)))
+                self.assertTrue(((labels >= 0) & (labels < 9)).all())
+                # Closing means are built from the represented rows the final pass labelled.
+                values = (quantizer.decode(quantizer.compute_codes(x))
+                          if quantizer is not None else x)
+                for j in labels.unique().tolist():
+                    torch.testing.assert_close(km.centroids[j], values[labels == j].mean(0),
+                                               rtol=1e-5, atol=1e-5)
+                plain = Emeans(8, 9, **args)
+                plain.train(rows)
+                self.assertIsNone(plain.assignments)
+                if device == "cpu":
+                    torch.testing.assert_close(plain.centroids, km.centroids, rtol=0, atol=0)
+
     def test_closing_mean_and_assign(self):
         x = torch.tensor(
             [[0.0], [2.0], [10.0], [12.0]], requires_grad=True
