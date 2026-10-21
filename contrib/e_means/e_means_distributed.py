@@ -52,6 +52,9 @@ class DistributedEmeans(Emeans):
             raise ValueError(
                 "prescribed global batches and final tail must be divisible by group size"
             )
+        if any(rows % ranks for rows in self.recipe["epoch_rows"]):
+            self.reset()
+            raise ValueError("every epoch's rows must be divisible by group size")
         dist.broadcast(self._centroids, src=dist.get_global_rank(self._group, 0),
                        group=self._group)
 

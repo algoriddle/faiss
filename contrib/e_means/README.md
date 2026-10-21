@@ -25,15 +25,19 @@ and shuffling:
 
 ```python
 km.begin(global_n, init_centroids)
-for epoch in range(km.niter):
-    for batch in batches(epoch, km.recipe["batch_size"]):
+for epoch, rows in enumerate(km.recipe["epoch_rows"]):
+    for batch in batches(epoch, rows, km.recipe["batch_size"]):
         km.update(km.accumulate(batch))
     km.end_epoch()
 centroids = km.finalize()
 ```
 
-Each epoch has `ceil(global_n / batch_size)` updates, including its final
-remainder. The caller owns loading, ordering, transfers and prefetch. Centroids
+Epoch `e` has `ceil(recipe["epoch_rows"][e] / batch_size)` updates, including
+its final remainder. With an integer `niter`, every epoch covers `global_n`
+rows. A fractional `niter` such as 2.4 adds one epoch over the first 40% of that
+epoch's permutation before the closing pass, which still covers every row;
+below one pass, the single closing epoch covers the first
+`round(niter * global_n)` rows. The caller owns loading, ordering, transfers and prefetch. Centroids
 and masses remain resident. `accumulate` returns model-owned FP32 sums/counts,
 an FP64 assignment-objective scalar and a host row count; consume or copy these
 before another accumulation. CPU callers can sum all four statistics fields
