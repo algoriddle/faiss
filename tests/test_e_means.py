@@ -37,6 +37,13 @@ class TestEmeansRecipe(unittest.TestCase):
                 self.assertEqual(batch, expected_batch)
                 self.assertAlmostEqual(alpha, expected_alpha)
 
+    def test_fp32_dot_validation(self):
+        self.assertEqual(Emeans(4, 3).fp32_dot, "ieee")
+        with self.assertRaises(ValueError):
+            Emeans(4, 3, fp32_dot="tf32")
+        with self.assertRaisesRegex(ValueError, "Triton"):
+            Emeans(4, 3, fp32_dot="tf32x3")
+
     def test_invalid_overrides(self):
         with self.assertRaises(ValueError):
             Emeans(4, 3, batch_size=16)

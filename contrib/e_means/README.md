@@ -72,7 +72,12 @@ and requires `quantizer=None`, even though the cast helper can execute on CPU.
 `assignment_backend="triton"` explicitly selects optional Triton CUDA assignment
 instead of the default native Torch implementation. It requires NVIDIA SM80 or
 later, supports the same FP32/FP16/BF16 represented inputs and cast quantizer,
-and retains the shared lifecycle/statistics. FP32 dots request IEEE precision.
+and retains the shared lifecycle/statistics. FP32 dots request IEEE precision
+unless `fp32_dot="tf32x3"` is passed: each FP32 operand is then split into a
+TF32 value and its TF32 remainder, and three tensor-core products are summed
+(Triton's `tf32x3`). That is several times faster than IEEE products and close
+to FP32 accuracy; keep the default when coordinates are very large compared
+with the distances between nearby centroids in two or three dimensions.
 It uses bounded centroid tiles and split-K partial results without runtime
 autotuning or backend fallback. `centroid_chunk_size` applies only to native
 Torch; Triton chooses its internal tile geometry. Conservative known-size
