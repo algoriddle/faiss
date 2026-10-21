@@ -244,6 +244,14 @@ def _synchronize(device):
         torch.cuda.synchronize(device)
 
 
+def _get_triton_assign_rows():
+    try:
+        from .e_means_triton import assign_rows
+    except ImportError as error:
+        raise ImportError("Triton assignment requires the triton package") from error
+    return assign_rows
+
+
 class Emeans:
     """Cluster vectors with mini-batch exponential moving averages.
 
@@ -275,6 +283,11 @@ class Emeans:
     centroid_chunk_size : int, optional
         Maximum centroids examined at once by the PyTorch assignment path.
 
+    assignment_backend : {"native", "triton"}, optional
+        Native is the default. Triton requires NVIDIA CUDA SM80 or later and
+        a compatible Triton installation. It uses bounded tiled/split assignment,
+        FP32 IEEE dot input precision, and no runtime autotuning or backend fallback.
+        centroid_chunk_size applies only to native Torch assignment.
     quantizer : CastQuantizer, optional
         Explicit stateless FP16/BF16 conversion for CUDA batches. None uses
         native FP32/FP16/BF16 input, fixed by the first batch including an empty
@@ -330,6 +343,7 @@ class Emeans:
         assignment_chunk_size=None,
         centroid_chunk_size=4096,
         quantizer=None,
+        assignment_backend="native",
     ):
         self.d = int(d)
         self.k = int(k)
@@ -345,6 +359,11 @@ class Emeans:
             else int(assignment_chunk_size)
         )
         self.centroid_chunk_size = int(centroid_chunk_size)
+        self.assignment_backend = assignment_backend
+        if assignment_backend not in ("native", "triton"):
+            raise ValueError("assignment_backend must be native or triton")
+        if assignment_backend == "triton" and self.k > 2**31 - 256:
+            raise ValueError("Triton assignment requires k <= 2**31 - 256")
         self.quantizer = quantizer
         if quantizer is not None:
             from .e_means_quantizer import CastQuantizer
@@ -398,6 +417,10 @@ class Emeans:
             raise TypeError("x and centroids must use the same array type")
         if self.quantizer is not None and (not is_torch or state.device.type != "cuda"):
             raise ValueError("CPU E-means requires quantizer=None")
+        if self.assignment_backend == "triton":
+            if not is_torch or state.device.type != "cuda":
+                raise ValueError("Triton assignment requires CUDA tensors")
+            _get_triton_assign_rows()
         x = _as_input_matrix(x, "x", is_torch, allow_empty)
         if x.shape[1] != self.d:
             raise ValueError("x must have dimension d")
@@ -408,10 +431,10 @@ class Emeans:
         import torch
 
         dtype = self.quantizer.dtype if self.quantizer is not None else x.dtype
-        if x.device.type == "cuda" and dtype != torch.float32:
+        if x.device.type == "cuda" and (dtype != torch.float32 or self.assignment_backend == "triton"):
             if (getattr(torch.version, "hip", None) is not None
                     or torch.cuda.get_device_capability(x.device) < (8, 0)):
-                raise RuntimeError("FP16/BF16 assignment requires NVIDIA SM80 or later")
+                raise RuntimeError("selected assignment requires NVIDIA SM80 or later")
         if self._input_dtype is not None and dtype != self._input_dtype:
             raise ValueError("native input dtype must be consistent across the run")
         self._input_dtype = dtype
@@ -511,6 +534,8 @@ class Emeans:
 
     def _assign_rows(self, x, centroids, centroid_norm=None):
         if _is_torch_tensor(x):
+            if self.assignment_backend == "triton":
+                return _get_triton_assign_rows()(x, centroids, centroid_norm)
             import torch
 
             x_norm = x.float().square().sum(dim=1)
@@ -561,6 +586,8 @@ class Emeans:
         centroids = _as_float32_matrix(init_centroids, "init_centroids", is_torch)
         if centroids.shape != (self.k, self.d):
             raise ValueError("init_centroids must have shape (k, d)")
+        if self.assignment_backend == "triton" and (not is_torch or centroids.device.type != "cuda"):
+            raise ValueError("Triton assignment requires CUDA tensors")
         if self.quantizer is not None and (not is_torch or centroids.device.type != "cuda"):
             raise ValueError("CPU E-means requires quantizer=None")
         self.reset()
@@ -600,6 +627,7 @@ class Emeans:
             "init_usage": _INIT_USAGE,
             "seed": self.seed,
             "backend": "torch" if is_torch else "faiss",
+            "assignment_backend": self.assignment_backend,
             "assignment_chunk_size": self._get_assignment_chunk_size(is_torch),
         }
         if is_torch:

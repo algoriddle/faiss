@@ -5,6 +5,7 @@
 
 import unittest
 import tempfile
+import importlib.util
 
 import numpy as np
 import torch
@@ -66,6 +67,34 @@ class TestTorchEmeans(unittest.TestCase):
                 _cpu_gloo_replica, args=("file://" + directory + "/group",),
                 nprocs=2, join=True, start_method="fork"
             )
+
+    def test_backend_selection_and_cpu_rejection(self):
+        self.assertEqual(Emeans(1, 1).assignment_backend, "native")
+        with self.assertRaises(ValueError):
+            Emeans(1, 1, assignment_backend="unknown")
+        with self.assertRaisesRegex(ValueError, "Triton assignment"):
+            Emeans(1, 1, assignment_backend="triton").train(torch.zeros((2, 1)))
+
+    @unittest.skipUnless(
+        torch.cuda.is_available() and getattr(torch.version, "hip", None) is None
+        and torch.cuda.get_device_capability() >= (8, 0)
+        and importlib.util.find_spec("triton") is not None, "Triton CUDA required"
+    )
+    def test_triton_matches_represented_training(self):
+        initial = torch.tensor([[0.], [3.]], device="cuda")
+        for dtype in (torch.float32, torch.float16, torch.bfloat16):
+            with self.subTest(dtype=dtype):
+                x = torch.tensor([[0.125], [0.25], [3.125], [3.25], [3.5]],
+                                 dtype=dtype, device="cuda")
+                args = dict(niter=2, batch_size=2, alpha0=0.5, seed=7)
+                native = Emeans(1, 2, **args)
+                tiled = Emeans(1, 2, assignment_backend="triton", **args)
+                native.train(x, initial)
+                tiled.train(x, initial)
+                torch.testing.assert_close(tiled.centroids, native.centroids, atol=2e-6, rtol=2e-6)
+                torch.testing.assert_close(tiled.obj, native.obj, atol=1e-5, rtol=2e-6)
+                torch.testing.assert_close(tiled.assign(x)[1], native.assign(x)[1])
+                self.assertEqual(tiled.recipe["assignment_backend"], "triton")
 
     def test_stateless_cast_and_cpu_scope(self):
         q = CastQuantizer(1, torch.bfloat16)

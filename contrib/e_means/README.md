@@ -69,6 +69,16 @@ follows Torch cast semantics. The existing internally generated FP16 split
 range guard remains. CPU computes supplied represented floating values in FP32
 and requires `quantizer=None`, even though the cast helper can execute on CPU.
 
+`assignment_backend="triton"` explicitly selects optional Triton CUDA assignment
+instead of the default native Torch implementation. It requires NVIDIA SM80 or
+later, supports the same FP32/FP16/BF16 represented inputs and cast quantizer,
+and retains the shared lifecycle/statistics. FP32 dots request IEEE precision.
+It uses bounded centroid tiles and split-K partial results without runtime
+autotuning or backend fallback. `centroid_chunk_size` applies only to native
+Torch; Triton chooses its internal tile geometry. Conservative known-size
+parallelism/work-per-partition rules are performance defaults, not hardware
+legality or a portable crossover. Padded physical index/label bounds still apply.
+
 GPU callers use `DistributedEmeans(d, k, group=group, transport="auto", ...)`
 with an initialized, caller-owned process group. Group and transport are fixed
 at construction. `begin(global_n, init_centroids)` takes a same-shape tensor on
