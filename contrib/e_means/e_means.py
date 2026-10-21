@@ -153,10 +153,11 @@ def _as_input_matrix(x, name, is_torch, allow_empty=False):
     if not isinstance(x, torch.Tensor):
         raise TypeError("%s must be a torch.Tensor" % name)
     if x.dtype not in (torch.float32, torch.float16, torch.bfloat16,
-                       getattr(torch, "float8_e4m3fn", None)):
-        raise ValueError("%s must be FP32, FP16, BF16 or E4M3" % name)
-    if x.device.type != "cuda" and x.dtype == getattr(torch, "float8_e4m3fn", None):
-        raise ValueError("native E4M3 input requires CUDA")
+                       getattr(torch, "float8_e4m3fn", None), torch.int8, torch.uint8):
+        raise ValueError("%s must be FP32, FP16, BF16, E4M3, INT8 or UINT8" % name)
+    if x.device.type != "cuda" and x.dtype in (
+            getattr(torch, "float8_e4m3fn", None), torch.int8, torch.uint8):
+        raise ValueError("native code input requires CUDA")
     # Reuse shape/device checks; CPU computes in FP32 on represented values.
     if x.device.type == "cpu":
         return _as_float32_matrix(x.float(), name, True, allow_empty)
@@ -255,6 +256,14 @@ def _get_triton_assign_rows():
     return assign_rows
 
 
+def _get_triton_int8_functions():
+    try:
+        from .e_means_triton import assign_int8_rows, prepare_int8_centroids
+    except ImportError as error:
+        raise ImportError("Triton assignment requires the triton package") from error
+    return assign_int8_rows, prepare_int8_centroids
+
+
 class Emeans:
     """Cluster vectors with mini-batch exponential moving averages.
 
@@ -291,7 +300,7 @@ class Emeans:
         a compatible Triton installation. It uses bounded tiled/split assignment,
         FP32 IEEE dot input precision, and no runtime autotuning or backend fallback.
         centroid_chunk_size applies only to native Torch assignment.
-    quantizer : CastQuantizer or Fp8Quantizer, optional
+    quantizer : CastQuantizer, Fp8Quantizer or Int8Quantizer, optional
         Explicit stateless FP16/BF16 conversion for CUDA batches. None uses
         native FP32/FP16/BF16 input, fixed by the first batch including an empty
         one. Centroid operands and FP32 statistics use those same represented
@@ -299,6 +308,10 @@ class Emeans:
         Triton: floating batches encode per chunk; matching native E4M3 codes
         bypass encoding. Statistics, centroids and distances use decoded units.
         None with native E4M3 uses raw code values, also requiring Triton.
+        Int8Quantizer accepts matching native INT8 codes only, requires Triton,
+        and returns decoded units. Raw INT8/UINT8 with None retain numeric units;
+        UINT8 translation is internal. INT8 ranking is exact with d <= 43919,
+        qualified NVIDIA SM80/SM90/SM100, and FP32 returned distances.
         CPU computes in FP32 and requires quantizer=None.
 
     Attributes
@@ -372,14 +385,21 @@ class Emeans:
         if assignment_backend == "triton" and self.k > 2**31 - 256:
             raise ValueError("Triton assignment requires k <= 2**31 - 256")
         self.quantizer = quantizer
-        self._fp8_quantizer = False
+        self._fp8_quantizer = self._int8_quantizer = False
         if quantizer is not None:
             from .e_means_quantizer import CastQuantizer
             from .e_means_fp8 import Fp8Quantizer
+            from .e_means_int8 import Int8Quantizer
 
-            if not isinstance(quantizer, (CastQuantizer, Fp8Quantizer)) or quantizer.d != self.d:
-                raise ValueError("quantizer must be a matching CastQuantizer or Fp8Quantizer")
+            if not isinstance(quantizer, (CastQuantizer, Fp8Quantizer, Int8Quantizer)) or quantizer.d != self.d:
+                raise ValueError("quantizer must be a matching CastQuantizer, Fp8Quantizer or Int8Quantizer")
             self._fp8_quantizer = isinstance(quantizer, Fp8Quantizer)
+            self._int8_quantizer = isinstance(quantizer, Int8Quantizer)
+            if self._int8_quantizer:
+                if assignment_backend != "triton":
+                    raise ValueError("INT8 requires Triton assignment")
+                if self.d > 43919:
+                    raise ValueError("INT8 assignment requires d <= 43919")
             if self._fp8_quantizer and assignment_backend != "triton":
                 raise ValueError("FP8 requires Triton assignment")
 
@@ -444,15 +464,25 @@ class Emeans:
         import torch
 
         dtype = self.quantizer.dtype if self.quantizer is not None else x.dtype
-        if dtype == getattr(torch, "float8_e4m3fn", None):
+        if dtype in (torch.int8, torch.uint8):
+            from .e_means_int8 import _check_int8_support
+
+            if self.assignment_backend != "triton":
+                raise ValueError("INT8 requires Triton assignment")
+            if self.d > 43919:
+                raise ValueError("INT8 assignment requires d <= 43919")
+            if x.dtype != dtype:
+                raise TypeError("INT8 training requires matching native codes; no JIT INT8")
+            _check_int8_support(x.device)
+        elif dtype == getattr(torch, "float8_e4m3fn", None):
             from .e_means_fp8 import _check_fp8_support
 
             if self.assignment_backend != "triton":
                 raise ValueError("FP8 requires Triton assignment")
             _check_fp8_support(x.device)
-        elif x.dtype == getattr(torch, "float8_e4m3fn", None):
+        elif x.dtype in (getattr(torch, "float8_e4m3fn", None), torch.int8, torch.uint8):
             raise ValueError("native codes must match the quantizer dtype")
-        if self._fp8_quantizer:
+        if self._fp8_quantizer or self._int8_quantizer:
             self.quantizer._validate(x, "x")
         if x.device.type == "cuda" and (dtype != torch.float32 or self.assignment_backend == "triton"):
             if (getattr(torch.version, "hip", None) is not None
@@ -466,6 +496,8 @@ class Emeans:
         return x
 
     def _prepare_rows(self, rows):
+        if self._int8_quantizer and rows.dtype != self.quantizer.dtype:
+            raise TypeError("INT8 training requires matching native codes; no JIT INT8")
         if self.quantizer is None or rows.dtype == self.quantizer.dtype:
             return rows
         return self.quantizer.compute_codes(rows)
@@ -474,6 +506,13 @@ class Emeans:
         import torch
 
         dtype = self._input_dtype or torch.float32
+        if dtype in (torch.int8, torch.uint8):
+            from .e_means_quantizer import _transform
+            from .e_means_int8 import representation
+
+            _, prepare = _get_triton_int8_functions()
+            value = _transform(centroids, self.quantizer if self._int8_quantizer else None)
+            return prepare(value, representation(dtype), validate=False)
         if dtype == getattr(torch, "float8_e4m3fn", None):
             from .e_means_fp8 import _transform, _update_fp8_peak
 
@@ -560,7 +599,15 @@ class Emeans:
                 _check_torch_abs_bound(
                     "revived centroids", 65504.0, donor_centroids, child_centroids
                 )
-        if _is_torch_tensor(child_centroids) and self._input_dtype == getattr(torch, "float8_e4m3fn", None):
+        if _is_torch_tensor(child_centroids) and self._input_dtype in (torch.int8, torch.uint8):
+            from .e_means_int8 import representation, separate_splits
+
+            # Retain the source guard on internally generated finite FP32 splits.
+            _check_torch_abs_bound("revived centroids", torch.finfo(torch.float32).max,
+                                   donor_centroids, child_centroids)
+            separate_splits(donor_centroids, child_centroids,
+                            representation(self._input_dtype), self.quantizer)
+        elif _is_torch_tensor(child_centroids) and self._input_dtype == getattr(torch, "float8_e4m3fn", None):
             from .e_means_fp8 import separate_splits
 
             separate_splits(donor_centroids, child_centroids, self.quantizer)
@@ -578,8 +625,17 @@ class Emeans:
     def _assign_rows(self, x, centroids, centroid_norm=None):
         if _is_torch_tensor(x):
             if self.assignment_backend == "triton":
-                distance, labels = _get_triton_assign_rows()(x, centroids, centroid_norm)
-                if self._fp8_quantizer:
+                import torch
+
+                if self._input_dtype in (torch.int8, torch.uint8):
+                    from .e_means_int8 import representation
+
+                    assign, _ = _get_triton_int8_functions()
+                    distance, labels = assign(x, centroids, centroid_norm,
+                                              representation(self._input_dtype))
+                else:
+                    distance, labels = _get_triton_assign_rows()(x, centroids, centroid_norm)
+                if self._fp8_quantizer or self._int8_quantizer:
                     from .e_means_quantizer import _ldexp
 
                     distance = _ldexp(distance, self.quantizer._distance_exponent)
@@ -638,7 +694,7 @@ class Emeans:
             raise ValueError("Triton assignment requires CUDA tensors")
         if self.quantizer is not None and (not is_torch or centroids.device.type != "cuda"):
             raise ValueError("CPU E-means requires quantizer=None")
-        if self._fp8_quantizer:
+        if self._fp8_quantizer or self._int8_quantizer:
             self.quantizer._validate(centroids, "init_centroids")
         self.reset()
         self._input_dtype = self.quantizer.dtype if self.quantizer is not None else None
@@ -976,7 +1032,7 @@ class Emeans:
         return self.centroids
 
     def train(self, x, init_centroids=None):
-        """Train a dense floating matrix through the same caller-driven loop.
+        """Train a dense supported matrix through the same caller-driven loop.
 
         Return the final moving-pass objective. Initialization and epoch shuffles
         use the existing local seeded policy. No whole logical batch is gathered.
@@ -1038,6 +1094,8 @@ class Emeans:
             labels = torch.empty(
                 len(x), dtype=torch.int64, device=x.device
             )
+            if self._input_dtype in (torch.int8, torch.uint8):
+                _check_torch_abs_bound("centroids", torch.finfo(torch.float32).max, centroids)
             self._fp8_peak = None
             centroids, centroid_norm = self._prepare_torch_assignment(centroids)
             if self._input_dtype == getattr(torch, "float8_e4m3fn", None):

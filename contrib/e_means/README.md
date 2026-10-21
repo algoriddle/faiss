@@ -135,3 +135,21 @@ FP8 codes with `quantizer=None` define raw numeric code units. FP8 input require
 NVIDIA SM90, SM100 or SM103. Conversion does not clip or scan values: unchecked
 out-of-range/nonfinite values can produce NaN codes and invalid results. The
 existing internal-centroid range check runs at epoch close and during assign.
+
+Native INT8/UINT8 assignment uses exact INT32 ranking (dimension at most
+43,919), with FP32 returned distances, on qualified NVIDIA SM80/SM90/SM100.
+An explicit INT8 quantizer returns decoded centroids and distances:
+
+```python
+from faiss.contrib.e_means.e_means_int8 import Int8Quantizer
+
+q = Int8Quantizer(d)
+q.train(representative_sample)
+codes = q.compute_codes(x)  # rounds and clips finite outliers, in bounded chunks
+km = Emeans(d, k, quantizer=q, assignment_backend="triton")
+km.train(codes)  # matching native codes only; no floating-to-INT8 JIT
+```
+
+Without a quantizer, native signed/unsigned bytes retain their numeric units.
+Calibration, device placement and validation are explicit; unchecked nonfinite
+values have no meaningful encoding result. Use `q.validate(x)` when needed.

@@ -14,6 +14,7 @@ from faiss.contrib.e_means import Emeans, DistributedEmeans
 from faiss.contrib.e_means.e_means import _epoch_seed
 from faiss.contrib.e_means.e_means_quantizer import CastQuantizer
 from faiss.contrib.e_means.e_means_fp8 import Fp8Quantizer
+from faiss.contrib.e_means.e_means_int8 import Int8Quantizer
 
 
 def _cpu_gloo_replica(rank, rendezvous):
@@ -68,6 +69,59 @@ class TestTorchEmeans(unittest.TestCase):
                 _cpu_gloo_replica, args=("file://" + directory + "/group",),
                 nprocs=2, join=True, start_method="fork"
             )
+
+    def test_explicit_int8_quantizer_and_scope(self):
+        x = torch.tensor([[10., 100.], [12., 104.], [14., 108.], [16., 112.]])
+        q = Int8Quantizer(2)
+        with self.assertRaises(RuntimeError):
+            q.compute_codes(x)
+        q.train(x)
+        self.assertEqual((q.code_size, q.scale), (2, 16.))
+        self.assertIs(q.to("cpu"), q)
+        expected = torch.tensor([[-48, -96], [-16, -32], [16, 32], [48, 96]], dtype=torch.int8)
+        torch.testing.assert_close(q.compute_codes(x), expected)
+        torch.testing.assert_close(q.decode(expected), x)
+        torch.testing.assert_close(q.compute_codes(torch.tensor([[1e6, -1e6]])),
+                                   torch.tensor([[127, -128]], dtype=torch.int8))
+        q.validate(x)
+        with self.assertRaises(ValueError):
+            q.validate(torch.full((1, 2), float("nan")))
+        self.assertEqual(q.compute_codes(x[:0]).shape, (0, 2))
+        with self.assertRaisesRegex(ValueError, "requires Triton"):
+            Emeans(2, 2, quantizer=q)
+        with self.assertRaisesRegex(TypeError, "no JIT INT8"):
+            Emeans(2, 2, quantizer=q, assignment_backend="triton").train(x)
+        with self.assertRaisesRegex(ValueError, "d <= 43919"):
+            Emeans(43920, 2, quantizer=Int8Quantizer(43920), assignment_backend="triton")
+
+    @unittest.skipUnless(
+        torch.cuda.is_available() and getattr(torch.version, "hip", None) is None
+        and torch.cuda.get_device_capability() in ((8, 0), (9, 0), (10, 0))
+        and importlib.util.find_spec("triton") is not None, "qualified INT8 CUDA required"
+    )
+    def test_native_int8_uint8_and_decoded_training(self):
+        base = torch.tensor([[-4.], [-2.], [4.], [6.]], device="cuda")
+        q = Int8Quantizer(1)
+        q.train(base)
+        for dtype, offset, quantizer in ((torch.int8, 0, None),
+                                         (torch.uint8, 128, None), (torch.int8, 0, q)):
+            with self.subTest(dtype=dtype, calibrated=quantizer is not None):
+                codes = (base + offset).to(dtype) if quantizer is None else q.compute_codes(base)
+                initial = base[[0, 2]] + offset
+                km = Emeans(1, 2, niter=1, batch_size=4, alpha0=.5, quantizer=quantizer,
+                            assignment_backend="triton", assignment_chunk_size=1)
+                objective = km.train(codes, initial)
+                self.assertEqual(objective, 8.)
+                torch.testing.assert_close(km.centroids,
+                    torch.tensor([[-3. + offset], [5. + offset]], device="cuda"))
+                distance, labels = km.assign(codes)
+                torch.testing.assert_close(distance, torch.ones(4, device="cuda"))
+                torch.testing.assert_close(labels, torch.tensor([0, 0, 1, 1], device="cuda"))
+                self.assertEqual((km.centroids.dtype, distance.dtype, labels.dtype),
+                                 (torch.float32, torch.float32, torch.int64))
+                self.assertEqual(km.recipe["representation"], str(dtype).removeprefix("torch."))
+        with self.assertRaisesRegex(TypeError, "no JIT INT8"):
+            Emeans(1, 2, quantizer=q, assignment_backend="triton").train(base)
 
     def test_explicit_fp8_calibration_and_scope(self):
         q = Fp8Quantizer(1)
