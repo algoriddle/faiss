@@ -7,6 +7,7 @@
 
 import math
 import time
+import warnings
 
 import numpy as np
 
@@ -18,6 +19,11 @@ _CHECK_UNUSED_EVERY = 5
 _INIT_USAGE = 2.0**-16
 _SPLIT_EPSILON = 1e-4
 _UNUSED_THRESHOLD = 0.1
+# Spherical mode scales every input row to unit length; it says so once per run
+# when some row's norm differed from one by more than this (relative).
+_UNIT_NORM_TOLERANCE = 1e-2
+# Floor on norms divided by in spherical mode, so a zero vector stays zero.
+_NORM_FLOOR = 1e-30
 
 # The default profile couples fitted batch-size and initial-step laws. The
 # batch laws were fitted on full passes with 100K to 10M training vectors; the
@@ -256,6 +262,16 @@ def _get_triton_assign_rows():
     return assign_rows
 
 
+def _get_triton_unit_rows():
+    try:
+        from .e_means_triton import unit_rows
+    except ImportError as error:
+        raise ImportError(
+            "spherical E-means on the Triton and CuTe backends scales rows with "
+            "a Triton kernel and requires the triton package") from error
+    return unit_rows
+
+
 def _get_triton_int8_functions():
     try:
         from .e_means_triton import assign_int8_rows, prepare_int8_centroids
@@ -330,6 +346,17 @@ class Emeans:
         UINT8 translation is internal. INT8 ranking is exact with d <= 43919,
         qualified NVIDIA SM80/SM90/SM100, and FP32 returned distances.
         CPU computes in FP32 and requires quantizer=None.
+    spherical : bool, optional
+        Spherical (cosine) k-means (Dhillon and Modha, 2001). Every input row
+        and every initial centroid is scaled to unit length (in FP32 or wider)
+        before assignment and statistics; rows go to the centroid of highest cosine
+        similarity, and centroids are unit-length directions of their rows'
+        mean (concept vectors). The EMA state is unchanged and is normalized
+        when read, so the final pass's closing centroids are normalized sums.
+        One warning per run reports input rows that were not unit-norm.
+        :meth:`assign` returns cosine similarities instead of squared distances;
+        ``obj`` stays a distortion, the sum of ``2 - 2 cos`` over rows.
+        Floating input only (FP32, FP16, BF16, CastQuantizer).
 
     Attributes
     ----------
@@ -381,6 +408,7 @@ class Emeans:
         centroid_chunk_size=4096,
         quantizer=None,
         assignment_backend="native",
+        spherical=False,
     ):
         self.d = int(d)
         self.k = int(k)
@@ -397,6 +425,9 @@ class Emeans:
         )
         self.centroid_chunk_size = int(centroid_chunk_size)
         self.assignment_backend = assignment_backend
+        self.spherical = bool(spherical)
+        # What the first array returned by assign() holds.
+        self.assign_returns = "cosine_similarity" if self.spherical else "squared_l2_distance"
         if assignment_backend not in ("native", "triton", "cute"):
             raise ValueError("assignment_backend must be native, triton or cute")
         if assignment_backend == "triton" and self.k > 2**31 - 256:
@@ -421,6 +452,8 @@ class Emeans:
                     raise ValueError("INT8 assignment requires d <= 43919")
             if self._fp8_quantizer and assignment_backend not in ("triton", "cute"):
                 raise ValueError("FP8 requires Triton or CuTe assignment")
+            if self.spherical and (self._fp8_quantizer or self._int8_quantizer):
+                raise ValueError("spherical E-means requires floating input (FP32, FP16, BF16)")
 
         if assignment_backend == "cute" and quantizer is not None:
             import torch
@@ -463,6 +496,9 @@ class Emeans:
         self._input_dtype = None
         self._fp8_peak = None
         self._cute_assignment_cache = None
+        self._unit_centroids = None
+        self._row_deviation = None
+        self._unit_notice_given = False
 
     def _get_assignment_chunk_size(self, is_torch):
         if self.assignment_chunk_size is not None:
@@ -515,6 +551,9 @@ class Emeans:
             _check_fp8_support(x.device)
         elif x.dtype in (getattr(torch, "float8_e4m3fn", None), torch.int8, torch.uint8):
             raise ValueError("native codes must match the quantizer dtype")
+        if self.spherical and dtype in (getattr(torch, "float8_e4m3fn", None), torch.int8,
+                                        torch.uint8):
+            raise ValueError("spherical E-means requires floating input (FP32, FP16, BF16)")
         if self._fp8_quantizer or self._int8_quantizer:
             self.quantizer._validate(x, "x")
         if x.device.type == "cuda" and (dtype != torch.float32 or self.assignment_backend == "triton"):
@@ -527,6 +566,74 @@ class Emeans:
         if self.recipe is not None:
             self.recipe["representation"] = str(dtype).removeprefix("torch.")
         return x
+
+    def _unit_rows(self, x, index, begin, end):
+        """Rows begin:end (of ``x[index]`` when indexed) scaled to unit length in
+        FP32 and returned in their input dtype.
+
+        The largest distance of an input norm from one is kept for the
+        once-per-run notice; on CUDA it stays on the device until the epoch's
+        existing transfer. The Triton and CuTe backends gather and scale in one
+        Triton pass; the native backend keeps to PyTorch operations.
+        """
+        index = None if index is None else index[begin:end]
+        if (_is_torch_tensor(x) and x.device.type == "cuda"
+                and self.assignment_backend != "native"):
+            unit_rows = _get_triton_unit_rows()
+            deviation = self._row_deviation
+            if deviation is None:
+                import torch
+
+                deviation = torch.zeros((), dtype=torch.float32, device=x.device)
+            return unit_rows(x[begin:end] if index is None else x, index, deviation)
+        rows = x[begin:end] if index is None else x[index]
+        if not _is_torch_tensor(rows):
+            norms = np.sqrt(np.einsum("ij,ij->i", rows, rows, dtype="float64"))
+            if len(norms) and self._row_deviation is not None:
+                self._row_deviation = max(self._row_deviation,
+                                          float(np.abs(norms - 1.0).max()))
+            unit = rows / np.maximum(norms, _NORM_FLOOR)[:, None]
+            return np.ascontiguousarray(unit, dtype="float32")
+        import torch
+
+        values = rows.to(torch.float32, copy=True)       # never the caller's rows
+        norms = torch.linalg.vector_norm(values, dim=1)
+        if len(norms) and self._row_deviation is not None:
+            torch.maximum(self._row_deviation, (norms - 1.0).abs().max(),
+                          out=self._row_deviation)
+        values /= norms.clamp_min(_NORM_FLOOR)[:, None]
+        return values if rows.dtype == torch.float32 else values.to(rows.dtype)
+
+    def _scaling_span(self, chunk_size, x):
+        """Rows scaled per kernel launch in spherical mode: whole assignment
+        chunks, at most 65,536 rows and 64 MiB, at least one chunk."""
+        row_bytes = self.d * (x.element_size() if _is_torch_tensor(x) else x.itemsize)
+        return chunk_size * max(1, min(65536 // chunk_size,
+                                       (64 << 20) // (chunk_size * row_bytes)))
+
+    def _spherical_rows(self, x, index, begin, end, n, span, scaled):
+        """Unit rows begin:end, scaled one span of chunks at a time so that
+        short chunks do not each pay a launch; ``scaled`` keeps the span."""
+        if begin % span == 0:
+            scaled["rows"] = self._unit_rows(x, index, begin, min(begin + span, n))
+        offset = begin % span
+        return scaled["rows"][offset:offset + end - begin]
+
+    def _readout(self, centroids):
+        """Centroids as assignment sees them: the state itself, or its directions."""
+        if not self.spherical:
+            return centroids
+        if not _is_torch_tensor(centroids):
+            norms = np.sqrt(np.einsum("ij,ij->i", centroids, centroids))
+            return np.ascontiguousarray(
+                centroids / np.maximum(norms, _NORM_FLOOR)[:, None], dtype="float32")
+        import torch
+
+        buffer = self._unit_centroids
+        if buffer is None or buffer.shape != centroids.shape or buffer.device != centroids.device:
+            buffer = self._unit_centroids = torch.empty_like(centroids)
+        norms = torch.linalg.vector_norm(centroids, dim=1, keepdim=True)
+        return torch.div(centroids, norms.clamp_min(_NORM_FLOOR), out=buffer)
 
     def _prepare_rows(self, rows):
         if self._int8_quantizer and rows.dtype != self.quantizer.dtype:
@@ -739,6 +846,12 @@ class Emeans:
         centroids = _as_float32_matrix(init_centroids, "init_centroids", is_torch)
         if centroids.shape != (self.k, self.d):
             raise ValueError("init_centroids must have shape (k, d)")
+        if self.spherical:
+            # Concept vectors are unit directions from the start.
+            norms = (centroids.norm(dim=1, keepdim=True) if is_torch
+                     else np.sqrt(np.einsum("ij,ij->i", centroids, centroids))[:, None])
+            centroids = centroids / (norms.clamp_min(_NORM_FLOOR) if is_torch
+                                     else np.maximum(norms, _NORM_FLOOR))
         if self.assignment_backend == "cute" and (not is_torch or centroids.device.type != "cuda"):
             raise ValueError("CuTe assignment requires CUDA tensors")
         if self.assignment_backend == "triton" and (not is_torch or centroids.device.type != "cuda"):
@@ -751,6 +864,8 @@ class Emeans:
         self._input_dtype = self.quantizer.dtype if self.quantizer is not None else None
         self._centroids = _clone(centroids)
         self._is_torch = is_torch
+        if self.spherical:
+            self._row_deviation = centroids.new_zeros(()) if is_torch else 0.0
         if is_torch:
             import torch
 
@@ -786,6 +901,8 @@ class Emeans:
             "backend": "torch" if is_torch else "faiss",
             "assignment_backend": self.assignment_backend,
             "assignment_chunk_size": self._get_assignment_chunk_size(is_torch),
+            "spherical": self.spherical,
+            "assign_returns": self.assign_returns,
         }
         if is_torch:
             self.recipe.update(
@@ -866,17 +983,22 @@ class Emeans:
             objective = self._objective.new_zeros(())
             # Empty batches still bind metadata but bypass nonempty preparation.
             centroids, centroid_norm = (
-                self._prepare_torch_assignment(self._centroids) if n else (None, None)
+                self._prepare_torch_assignment(self._readout(self._centroids))
+                if n else (None, None)
             )
         else:
             self._batch_stats.fill(0)
             objective = np.float64(0)
-            centroids, centroid_norm = self._centroids, None
+            centroids, centroid_norm = self._readout(self._centroids), None
         sums, counts = self._batch_stats[:, :-1], self._batch_stats[:, -1]
         chunk_size = self.recipe["assignment_chunk_size"]
+        span, scaled = (self._scaling_span(chunk_size, x), {}) if self.spherical else (None, None)
         for begin in range(0, n, chunk_size):
             end = min(begin + chunk_size, n)
-            rows = x[begin:end] if index is None else x[index[begin:end]]
+            if self.spherical:
+                rows = self._spherical_rows(x, index, begin, end, n, span, scaled)
+            else:
+                rows = x[begin:end] if index is None else x[index[begin:end]]
             rows = self._prepare_rows(rows)
             distance, labels = self._assign_rows(rows, centroids, centroid_norm)
             if self._is_torch:
@@ -1022,13 +1144,22 @@ class Emeans:
             totals = torch.stack(
                 (objective, torch.dot(self._pass_counts, self._pass_counts))
                 + ((self._fp8_peak.double(),) if fp8 else ())
+                + ((self._row_deviation.double(),) if self.spherical else ())
             ).tolist()
             objective, count_square = totals[:2]
             if fp8:
                 _check_fp8_range(totals[-1], "centroids")
+            deviation = totals[-1] if self.spherical else None  # never with FP8
         else:
             objective = float(self._objective)
             count_square = float(np.dot(self._pass_counts, self._pass_counts))
+            deviation = self._row_deviation
+        if self.spherical and deviation > _UNIT_NORM_TOLERANCE and not self._unit_notice_given:
+            self._unit_notice_given = True
+            warnings.warn(
+                "spherical E-means: input rows were not unit-norm (largest |norm - 1| = "
+                "%.3g); they were scaled to unit length for assignment and statistics"
+                % deviation, stacklevel=2)
         stat = {
             "obj": objective,
             "time": time.perf_counter() - self._start_time,
@@ -1063,23 +1194,33 @@ class Emeans:
         if self._is_torch:
             import torch
 
-            mean = self._pass_sums / self._pass_counts.clamp_min(1).float()[:, None]
-            self.centroids = torch.where(
-                nonempty[:, None], mean, centroids
-            ).contiguous()
+            if self.spherical:
+                # Concept vectors of the final pass: its normalized sums.
+                state = torch.where(nonempty[:, None], self._pass_sums, centroids)
+                self.centroids = self._readout(state).clone()
+            else:
+                mean = self._pass_sums / self._pass_counts.clamp_min(1).float()[:, None]
+                self.centroids = torch.where(
+                    nonempty[:, None], mean, centroids
+                ).contiguous()
             self.obj = torch.tensor(
                 objectives, dtype=torch.float64, device=centroids.device
             )
         else:
-            centroids[nonempty] = (
-                self._pass_sums[nonempty]
-                / self._pass_counts[nonempty, None].astype("float32")
-            )
+            if self.spherical:
+                centroids[nonempty] = self._pass_sums[nonempty]
+                centroids = self._readout(centroids)
+            else:
+                centroids[nonempty] = (
+                    self._pass_sums[nonempty]
+                    / self._pass_counts[nonempty, None].astype("float32")
+                )
             self.centroids = np.ascontiguousarray(centroids, dtype="float32")
             self.obj = np.asarray(objectives, dtype="float64")
         self._centroids = self._usage = self._batch_stats = None
         self._pass_sums = self._pass_counts = self._objective = None
         self._pending_stats = None
+        self._unit_centroids = None
         if self._is_torch:
             self._stats_operand = None
         return self.centroids
@@ -1131,6 +1272,9 @@ class Emeans:
         """Return squared L2 distances and centroid indices.
 
         Distances use rounded centroid operands in represented-value coordinates.
+        With ``spherical=True`` the first array holds cosine similarities instead
+        (higher is closer; ``assign_returns`` says which), computed from the unit
+        rows and unit centroids the kernel compared.
         """
         if self.centroids is None:
             raise RuntimeError("train must be called before assign")
@@ -1143,6 +1287,7 @@ class Emeans:
         x = self._prepare_input(x)
         centroids = (self.centroids.detach()
                      if is_torch and self.assignment_backend != "cute" else self.centroids)
+        centroids = self._readout(centroids)
         assignment_chunk_size = self._get_assignment_chunk_size(is_torch)
 
         if is_torch:
@@ -1165,11 +1310,34 @@ class Emeans:
             labels = np.empty(len(x), dtype="int64")
             centroid_norm = None
 
+        span, scaled = ((self._scaling_span(assignment_chunk_size, x), {}) if self.spherical
+                        else (None, None))
         for begin in range(0, len(x), assignment_chunk_size):
             end = min(begin + assignment_chunk_size, len(x))
-            rows = self._prepare_rows(x[begin:end])
+            rows = (self._spherical_rows(x, None, begin, end, len(x), span, scaled)
+                    if self.spherical else x[begin:end])
+            rows = self._prepare_rows(rows)
             if self.assignment_backend == "cute":
                 self._assign_rows(rows, centroids, centroid_norm, distance[begin:end], labels[begin:end])
             else:
                 distance[begin:end], labels[begin:end] = self._assign_rows(rows, centroids, centroid_norm)
+            if self.spherical:
+                distance[begin:end] = self._cosine(rows, centroids, labels[begin:end])
         return distance, labels
+
+    def _cosine(self, rows, centroids, labels):
+        """Cosine similarity of represented rows and their assigned represented centroids."""
+        if not _is_torch_tensor(rows):
+            chosen = centroids[labels]
+            norms = np.sqrt(np.einsum("ij,ij->i", rows, rows)
+                            * np.einsum("ij,ij->i", chosen, chosen))
+            dots = np.einsum("ij,ij->i", rows, chosen)
+            return (dots / np.maximum(norms, _NORM_FLOOR)).astype("float32")
+        import torch
+
+        values = self.quantizer.decode(rows) if self.quantizer is not None else rows.float()
+        table = centroids.centroids if self.assignment_backend == "cute" else centroids
+        chosen = table[labels, :self.d].float()     # an operand may carry zero padding
+        norms = (torch.linalg.vector_norm(values, dim=1)
+                 * torch.linalg.vector_norm(chosen, dim=1))
+        return (values * chosen).sum(dim=1) / norms.clamp_min(_NORM_FLOOR)

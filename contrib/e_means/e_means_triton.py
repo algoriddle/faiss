@@ -10,6 +10,8 @@ stream centroid tiles with bounded score workspaces instead of materializing
 the native backend's row-by-centroid score tensor.
 """
 
+import math
+
 import torch
 
 try:
@@ -44,6 +46,10 @@ _INT8_BLOCK_D = 128
 _INT8_PREPARE_BLOCK_D = 256
 _INT8_MAX_D = 43919
 _INT8_D_ALIGNMENT = 16
+# Spherical row scaling: tiles of _UNIT_ROWS_TILE elements, at most
+# _UNIT_ROWS_BLOCK_D columns wide.
+_UNIT_ROWS_TILE = 4096
+_UNIT_ROWS_BLOCK_D = 128
 _MAX_K = 2**31 - max(
     _SPLIT_K_MAX_PARTITIONS,
     _SPLIT_K_BLOCK_K,
@@ -488,6 +494,62 @@ def _stage_int8_rows_kernel(
 
 
 @triton.jit
+def _unit_rows_kernel(
+    x_ptr,
+    index_ptr,
+    out_ptr,
+    deviation_ptr,
+    B,
+    D,
+    stride_xb,
+    D_CONST: tl.constexpr,
+    ROW_ALIGN: tl.constexpr,
+    HAS_INDEX: tl.constexpr,
+    BLOCK_B: tl.constexpr,
+    BLOCK_D: tl.constexpr,
+):
+    # Narrow widths and widths that are not multiples of 16 are compiled in
+    # (D_CONST), so column masks and row starts are known well enough to
+    # vectorize loads; wide aligned widths stay runtime values, which measured
+    # faster there.
+    if D_CONST:
+        width = D_CONST
+    else:
+        width = D
+    row = tl.program_id(0).to(tl.int64) * BLOCK_B + tl.arange(0, BLOCK_B)
+    valid = row < B
+    if HAS_INDEX:
+        source = tl.load(index_ptr + row, mask=valid, other=0).to(tl.int64)
+    else:
+        source = row
+    start = tl.multiple_of(source * stride_xb, ROW_ALIGN)
+    square = tl.zeros((BLOCK_B,), tl.float32)
+    for d0 in range(0, width, BLOCK_D):
+        column = d0 + tl.arange(0, BLOCK_D)
+        mask = valid[:, None] & (column < width)[None, :]
+        value = tl.load(
+            x_ptr + start[:, None] + column[None, :], mask=mask, other=0.0
+        ).to(tl.float32)
+        square += tl.sum(value * value, axis=1)
+    norm = tl.sqrt_rn(square)
+    tl.atomic_max(
+        deviation_ptr, tl.max(tl.where(valid, tl.abs(norm - 1.0), 0.0), axis=0)
+    )
+    norm = tl.maximum(norm, 1e-30)
+    for d0 in range(0, width, BLOCK_D):
+        column = d0 + tl.arange(0, BLOCK_D)
+        mask = valid[:, None] & (column < width)[None, :]
+        value = tl.load(
+            x_ptr + start[:, None] + column[None, :], mask=mask, other=0.0
+        ).to(tl.float32)
+        tl.store(
+            out_ptr + row[:, None] * width + column[None, :],
+            tl.div_rn(value, norm[:, None]).to(out_ptr.dtype.element_ty),
+            mask=mask,
+        )
+
+
+@triton.jit
 def _prepare_int8_kernel(
     centroid_ptr,
     prepared_ptr,
@@ -919,6 +981,40 @@ def assign_int8_rows(
             num_stages=3,
         )
     return distance, labels
+
+
+def unit_rows(x, index, deviation):
+    """Rows of ``x`` (``x[index]`` when indexed) scaled to unit length in FP32.
+
+    One pass gathers, normalizes and stores the rows in x's dtype, and raises
+    the FP32 scalar ``deviation`` to the largest |norm - 1| it saw.
+    """
+    b = len(x) if index is None else len(index)
+    d = x.shape[1]
+    out = torch.empty((b, d), dtype=x.dtype, device=x.device)
+    if b == 0:
+        return out
+    if d > 1 and x.stride(1) != 1:
+        raise ValueError("unit_rows requires rows with unit column stride")
+    block_d = min(_UNIT_ROWS_BLOCK_D, triton.next_power_of_2(d))
+    block_b = _UNIT_ROWS_TILE // block_d
+    with torch.cuda.device(x.device):
+        _unit_rows_kernel[(triton.cdiv(b, block_b),)](
+            x,
+            x if index is None else index,
+            out,
+            deviation,
+            b,
+            d,
+            x.stride(0),
+            D_CONST=d if d <= _UNIT_ROWS_BLOCK_D or d % 16 else 0,
+            ROW_ALIGN=math.gcd(x.stride(0), 16),
+            HAS_INDEX=index is not None,
+            BLOCK_B=block_b,
+            BLOCK_D=block_d,
+            num_warps=4,
+        )
+    return out
 
 
 def assign_rows(x, centroids, centroid_norm):

@@ -6,6 +6,7 @@
 import unittest
 import tempfile
 import importlib.util
+import warnings
 
 import numpy as np
 import torch
@@ -235,6 +236,89 @@ class TestTorchEmeans(unittest.TestCase):
                 torch.testing.assert_close(tiled.obj, native.obj, atol=1e-5, rtol=2e-6)
                 torch.testing.assert_close(tiled.assign(x)[1], native.assign(x)[1])
                 self.assertEqual(tiled.recipe["assignment_backend"], "triton")
+
+    def test_spherical_torch_matches_numpy(self):
+        rng = np.random.RandomState(8)
+        axes = np.eye(6, dtype="float32")[:5]
+        x = np.concatenate([a + 0.1 * rng.randn(60, 6) for a in axes]).astype("float32")
+        x *= rng.uniform(0.5, 4.0, (len(x), 1)).astype("float32")     # not unit-norm
+        init = x[::60].copy()
+        args = dict(niter=2, batch_size=64, alpha0=0.4, seed=3, spherical=True)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            reference = Emeans(6, 5, **args)
+            reference.train(x, init_centroids=init)
+            model = Emeans(6, 5, **args)
+            model.train(torch.from_numpy(x), init_centroids=torch.from_numpy(init))
+        torch.testing.assert_close(model.centroids, torch.from_numpy(reference.centroids),
+                                   atol=1e-5, rtol=0)
+        torch.testing.assert_close(model.centroids.norm(dim=1), torch.ones(5),
+                                   atol=1e-6, rtol=0)
+        similarity, labels = model.assign(torch.from_numpy(x))
+        expected = torch.from_numpy(x / np.linalg.norm(x, axis=1, keepdims=True)) @ model.centroids.T
+        torch.testing.assert_close(labels, expected.argmax(dim=1))
+        torch.testing.assert_close(similarity, expected.max(dim=1).values, atol=1e-6, rtol=0)
+
+    def test_spherical_rejects_byte_formats(self):
+        for quantizer in (Int8Quantizer(4), Fp8Quantizer(4)):
+            with self.subTest(quantizer=type(quantizer).__name__):
+                with self.assertRaisesRegex(ValueError, "floating input"):
+                    Emeans(4, 2, spherical=True, quantizer=quantizer,
+                           assignment_backend="triton")
+
+    @unittest.skipUnless(
+        torch.cuda.is_available() and getattr(torch.version, "hip", None) is None
+        and torch.cuda.get_device_capability() >= (8, 0)
+        and importlib.util.find_spec("triton") is not None, "Triton CUDA required"
+    )
+    def test_spherical_triton_matches_native(self):
+        generator = torch.Generator(device="cuda").manual_seed(4)
+        axes = torch.eye(20, device="cuda")[:4]
+        x = axes.repeat_interleave(64, 0) + 0.1 * torch.randn(256, 20, generator=generator,
+                                                             device="cuda")
+        x = 3.0 * x                                    # not unit-norm; width 20 is padded
+        init = x[::64].clone()
+        for dtype in (torch.float32, torch.float16, torch.bfloat16):
+            with self.subTest(dtype=dtype):
+                args = dict(niter=2, batch_size=32, alpha0=0.4, seed=7, spherical=True)
+                native = Emeans(20, 4, **args)
+                tiled = Emeans(20, 4, assignment_backend="triton", **args)
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore")
+                    native.train(x.to(dtype), init)
+                    tiled.train(x.to(dtype), init)
+                torch.testing.assert_close(tiled.centroids, native.centroids,
+                                           atol=2e-6, rtol=2e-6)
+                torch.testing.assert_close(tiled.centroids.norm(dim=1),
+                                           torch.ones(4, device="cuda"), atol=1e-6, rtol=0)
+                similarity, labels = tiled.assign(x.to(dtype))
+                native_similarity, native_labels = native.assign(x.to(dtype))
+                torch.testing.assert_close(labels, native_labels)
+                torch.testing.assert_close(similarity, native_similarity, atol=1e-6, rtol=0)
+                self.assertLessEqual(float(similarity.max()), 1.0 + 1e-6)
+
+    @unittest.skipUnless(
+        torch.cuda.is_available() and getattr(torch.version, "hip", None) is None
+        and torch.cuda.get_device_capability() >= (8, 0)
+        and importlib.util.find_spec("triton") is not None, "Triton CUDA required"
+    )
+    def test_spherical_scaling_spans_match_one_chunk(self):
+        # 70,000 rows in 8,192-row chunks are scaled in two spans (65,536 + 4,464).
+        generator = torch.Generator(device="cuda").manual_seed(5)
+        x = torch.randn(70000, 32, generator=generator, device="cuda")
+        x *= torch.empty(70000, 1, device="cuda").uniform_(0.5, 3.0, generator=generator)
+        init = x[:6].clone()
+        out = []
+        for chunk in (8192, 70000):
+            km = Emeans(32, 6, niter=1, batch_size=len(x), alpha0=1.0, spherical=True,
+                        assignment_backend="triton", assignment_chunk_size=chunk)
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                km.train(x, init_centroids=init)
+            out.append((km.centroids, km.assign(x)))
+        torch.testing.assert_close(out[0][0], out[1][0], atol=1e-6, rtol=0)
+        torch.testing.assert_close(out[0][1][1], out[1][1][1])
+        torch.testing.assert_close(out[0][1][0], out[1][1][0], atol=1e-6, rtol=0)
 
     def test_stateless_cast_and_cpu_scope(self):
         q = CastQuantizer(1, torch.bfloat16)
