@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-"""Host adapter for E-means BF16/E4M3 CuTe assignment on SM90.
+"""Host adapter for E-means BF16/E4M3/native-byte CuTe assignment on SM90.
 
 Optional CuTe dependencies are resolved only after an explicit ``cute``
 backend request. Assignment selects between the tiled kernel and a resource-legal
@@ -173,6 +173,7 @@ class _PreparedCentroids:
     norms: object
     padded_norms: object
     peak: object = None
+    representation: object = None
     bindings: OrderedDict = field(default_factory=OrderedDict)
 
     @property
@@ -221,7 +222,18 @@ def _transform_token(transform):
 def _refresh_prepared(cached, centroids, source_version, transform, peak_out):
     import torch
 
-    if cached.centroids.dtype is torch.bfloat16:
+    if cached.centroids.dtype is torch.int8:
+        from .e_means_cute_argmin import stage_int8_rows
+        from .e_means_int8 import _ENCODE_CHUNK_ELEMENTS, quantize
+
+        chunk = max(1, _ENCODE_CHUNK_ELEMENTS // centroids.shape[1])
+        for begin in range(0, len(centroids), chunk):
+            end = min(begin + chunk, len(centroids))
+            mirror = cached.centroids[begin:end]
+            mirror.copy_(quantize(centroids[begin:end].detach(),
+                                  cached.representation, transform))
+            stage_int8_rows(mirror, mirror, cached.norms[begin:end], "int8")
+    elif cached.centroids.dtype is torch.bfloat16:
         cached.centroids.copy_(centroids.detach())
         torch.sum(cached.centroids.float().square(), dim=1, out=cached.norms)
     else:
@@ -267,8 +279,14 @@ def _prepare_centroids(centroids, cached=None, transform=None, peak_out=None, dt
     ):
         raise ValueError("centroids must be contiguous CUDA FP32")
     dtype = torch.bfloat16 if dtype is None else dtype
-    if dtype not in (torch.bfloat16, torch.float8_e4m3fn):
-        raise ValueError("CuTe operands must be BF16 or E4M3")
+    representation = ("int8" if dtype is torch.int8 else
+                      "uint8" if dtype is torch.uint8 else None)
+    if dtype not in (torch.bfloat16, torch.float8_e4m3fn, torch.int8, torch.uint8):
+        raise ValueError("CuTe operands must be BF16, E4M3 or native bytes")
+    if representation is not None:
+        if centroids.shape[1] > 43919:
+            raise ValueError("INT8 assignment requires d <= 43919")
+        dtype = torch.int8
     k, dim = centroids.shape
     _check_extent("K", k)
     _check_extent("d", dim)
@@ -285,6 +303,7 @@ def _prepare_centroids(centroids, cached=None, transform=None, peak_out=None, dt
         and cached.source_version == source_version
         and cached.transform_token == transform_token
         and cached.centroids.dtype is dtype
+        and cached.representation == representation
     ):
         if dtype is torch.float8_e4m3fn:
             from .e_means_fp8 import _check_fp8_range
@@ -298,13 +317,16 @@ def _prepare_centroids(centroids, cached=None, transform=None, peak_out=None, dt
 
     with torch.cuda.device(centroids.device):
         if _can_refresh(cached, centroids) and cached.centroids.dtype is dtype:
+            cached.representation = representation
             return _refresh_prepared(cached, centroids, source_version, transform, peak_out)
         mirror = _aligned_operand(k, dim, centroids.device, dtype)
         storage = torch.empty(
-            padded_k, dtype=torch.float32, device=centroids.device
+            padded_k, dtype=torch.int32 if representation is not None else torch.float32,
+            device=centroids.device
         )
         if padded_k != k:
-            storage[k:].fill_(float("inf"))
+            storage[k:].fill_(torch.iinfo(torch.int32).max
+                              if representation is not None else float("inf"))
         prepared = _PreparedCentroids(
             None,
             None,
@@ -313,6 +335,7 @@ def _prepare_centroids(centroids, cached=None, transform=None, peak_out=None, dt
             mirror,
             storage[:k],
             storage.view(1, padded_k),
+            representation=representation,
         )
         return _refresh_prepared(prepared, centroids, source_version, transform, peak_out)
 
@@ -339,6 +362,9 @@ def _new_binding(batch, prepared):
         scores = torch.empty(
             batch, dtype=torch.float32, device=workspace.device
         )
+        row_norms = (torch.empty(batch, dtype=torch.int32 if workspace.dtype is torch.int8
+                                else torch.float32, device=workspace.device)
+                     if workspace.dtype in (torch.int8, torch.float8_e4m3fn) else None)
         plan = row_owned_plan(
             batch,
             prepared.num_centroids,
@@ -358,6 +384,7 @@ def _new_binding(batch, prepared):
                 labels,
                 plan,
                 overlap_wgmma=workspace.dtype is torch.bfloat16,
+                row_norms=row_norms if workspace.dtype is torch.int8 else None,
             )
             launcher = launch_row_owned
         else:
@@ -365,10 +392,9 @@ def _new_binding(batch, prepared):
             codes = torch.empty(
                 batch, dtype=torch.int64, device=workspace.device
             )
-            kernel = prepare_tiled_gemm(workspace, prepared, codes, scores)
+            kernel = prepare_tiled_gemm(workspace, prepared, codes, scores,
+                                        row_norms if workspace.dtype is torch.int8 else None)
             launcher = launch_tiled_gemm
-    row_norms = (torch.empty(batch, dtype=torch.float32, device=workspace.device)
-                 if workspace.dtype is torch.float8_e4m3fn else None)
     return _Binding(workspace, codes, scores, labels, launcher, kernel, row_norms)
 
 
@@ -383,7 +409,7 @@ def _binding_for(batch, prepared):
 
 
 def _assign_rows(rows, prepared, distance_out=None, labels_out=None):
-    """Assign represented BF16 rows into owned or caller FP32/int64 outputs."""
+    """Assign represented rows into owned or caller FP32/int64 outputs."""
     import torch
 
     _require_stack()
@@ -393,11 +419,13 @@ def _assign_rows(rows, prepared, distance_out=None, labels_out=None):
         raise ValueError("rows must be a rank-two tensor")
     if (
         not rows.is_cuda
-        or (rows.dtype is not prepared.centroids.dtype
-            and not (prepared.transform is not None and rows.dtype is torch.float32))
+        or (rows.dtype is not (torch.uint8 if prepared.representation == "uint8"
+                               else prepared.centroids.dtype)
+            and not (prepared.centroids.dtype is torch.float8_e4m3fn
+                     and prepared.transform is not None and rows.dtype is torch.float32))
         or not rows.is_contiguous()
     ):
-        raise ValueError("rows must be contiguous CUDA BF16/E4M3 operands or FP32 quantizer input")
+        raise ValueError("rows must be contiguous CUDA BF16/E4M3/native-byte operands or FP32 FP8 input")
     if rows.device != prepared.centroids.device:
         raise ValueError("rows and centroids must be on the same device")
     if rows.shape[1] != prepared.dim:
@@ -415,7 +443,13 @@ def _assign_rows(rows, prepared, distance_out=None, labels_out=None):
     require_tensor(labels_out, "labels", dtype=torch.int64, shape=(len(rows),), device=rows.device)
     with torch.cuda.device(rows.device):
         binding = _binding_for(rows.shape[0], prepared)
-        if prepared.centroids.dtype is torch.bfloat16:
+        if prepared.centroids.dtype is torch.int8:
+            from .e_means_cute_argmin import stage_int8_rows
+
+            stage_int8_rows(rows, binding.workspace, binding.row_norms,
+                            prepared.representation)
+            binding.launcher(binding.kernel, labels_out, distance_out)
+        elif prepared.centroids.dtype is torch.bfloat16:
             binding.workspace.copy_(rows)
             torch.linalg.vector_norm(binding.workspace, dim=1, dtype=torch.float32,
                                      out=distance_out)
@@ -432,16 +466,17 @@ def _assign_rows(rows, prepared, distance_out=None, labels_out=None):
             else:
                 binding.workspace.copy_(rows)
 
-        binding.launcher(binding.kernel, labels_out)
+        if prepared.centroids.dtype is not torch.int8:
+            binding.launcher(binding.kernel, labels_out)
         if prepared.centroids.dtype is torch.float8_e4m3fn:
             if binding.prepared_row_norms is None:
                 binding.prepared_row_norms = prepare_row_norms(
                     binding.workspace, binding.row_norms, prepared.centroids)
             launch_row_norms(binding.prepared_row_norms, distance_out, labels_out)
-        else:
+        elif prepared.centroids.dtype is torch.bfloat16:
             distance_out.add_(binding.scores).clamp_min_(0)
         if prepared.transform is not None:
-            # Operand-device scope retains stock ldexp, including subnormals/zero.
+            # Operand-device scope retains stock ldexp for subnormal distances and zero.
             torch.ldexp(distance_out, prepared.transform._distance_exponent,
                         out=distance_out)
     return distance_out, labels_out

@@ -168,3 +168,9 @@ coordinates. Ranking is approximate; distances are recomputed from selected
 represented operands. Unchecked invalid
 JIT inputs have no meaningful result and need not match Torch cast overflow.
 Calls on one model share mutable workspace; the caller must order stream switching.
+
+CuTe also accepts native INT8/UINT8 on SM90, with the same 43,919 dimension
+bound and caller-owned `Int8Quantizer` workflow above. Select
+`assignment_backend="cute"` when training native codes; floating-to-INT8 JIT
+is unsupported. Integer scores and lower-ID ties are exact; wide final distances
+are reconstructed through INT64 before returning FP32 values.

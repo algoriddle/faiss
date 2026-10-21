@@ -6,7 +6,7 @@
 # Adapted from PR #280 cute_kmeans/cute/row_owned.py at
 # e8e288285e885064b477a882e237fcc47da8a9b2.
 
-"""Low-dimension SM90 floating row-owned assignment kernel.
+"""Low-dimension SM90 floating and integer row-owned assignment kernel.
 
 The strict FP32 scan retains the first equal score visited. A compile-time
 layout proof establishes increasing centroid visitation order, and the
@@ -22,6 +22,7 @@ from cutlass import (
     BFloat16,
     Float8E4M3FN,
     Float32,
+    Int8,
     Int32,
     Int64,
     const_expr,
@@ -41,6 +42,8 @@ from .e_means_cute_argmin import require_tensor
 
 
 TILE_N = 128
+LOCAL_ID_BITS = 7
+_MAX_SCORE_TERM = 48_896  # max(c*c - 2*x*c), x/c in [-128,127]; P06 bound.
 _PRODUCER_THREADS = 128
 _WARPGROUP_THREADS = 128
 _SMEM_OVERHEAD = 2048
@@ -82,12 +85,13 @@ def _assert_candidate_order(coordinates, tiled_mma, tile_m):
                 raise RuntimeError("centroid candidates are not ordered by ID")
 
 
-def _row_owned_shape_legal(batch, clusters, dim):
+def _row_owned_shape_legal(batch, clusters, dim, packed_integer=False):
     return (
         batch >= 1
         and clusters >= TILE_N
         and clusters % TILE_N == 0
         and dim >= 1
+        and (not packed_integer or _MAX_SCORE_TERM * dim * TILE_N + TILE_N - 1 < 2**31)
     )
 
 
@@ -101,6 +105,7 @@ class _RowOwnedAssignSm90:
     def __init__(
         self,
         operand_type,
+        packed_integer,
         tile_k,
         tile_m,
         stages,
@@ -108,6 +113,8 @@ class _RowOwnedAssignSm90:
         overlap_wgmma,
     ):
         self.operand_type = operand_type
+        self.score_type = Int32 if packed_integer else Float32
+        self.packed_integer = packed_integer
         self.tile_k = tile_k
         self.tile_m = tile_m
         self.stages = stages
@@ -115,13 +122,15 @@ class _RowOwnedAssignSm90:
         self.overlap_wgmma = overlap_wgmma
 
     @cute.jit
-    def __call__(self, q, centroids, norms, values, labels, stream):
+    def __call__(
+        self, q, centroids, norms, row_norms, values, labels, stream
+    ):
         tiled_mma = hopper_utils.make_trivial_tiled_mma(
             self.operand_type,
             self.operand_type,
             cute.nvgpu.OperandMajorMode.K,
             cute.nvgpu.OperandMajorMode.K,
-            Float32,
+            self.score_type,
             atom_layout_mnk=(self.mma_warpgroups, 1, 1),
             tiler_mn=(64, TILE_N),
         )
@@ -148,7 +157,7 @@ class _RowOwnedAssignSm90:
         c_bytes = cute.size_in_bytes(
             self.operand_type, cute.select(c_layout, mode=[0, 1])
         )
-        n_bytes = TILE_N * Float32.width // 8
+        n_bytes = TILE_N * self.score_type.width // 8
         q_atom, q_tensor = cpasync.make_tiled_tma_atom(
             cpasync.CopyBulkTensorTileG2SOp(), q, q_layout,
             (self.tile_m, self.tile_k),
@@ -179,7 +188,7 @@ class _RowOwnedAssignSm90:
             ]
             norms: cute.struct.Align[
                 cute.struct.MemRange[
-                    Float32, cute.cosize(n_layout)
+                    self.score_type, cute.cosize(n_layout)
                 ], 128
             ]
 
@@ -190,6 +199,7 @@ class _RowOwnedAssignSm90:
             c_tensor,
             n_atom,
             n_tensor,
+            row_norms,
             values,
             labels,
             tiled_mma,
@@ -219,6 +229,7 @@ class _RowOwnedAssignSm90:
         centroids,
         n_atom,
         norms,
+        row_norms,
         values,
         labels,
         tiled_mma,
@@ -285,6 +296,7 @@ class _RowOwnedAssignSm90:
             self.mma(
                 q,
                 centroids,
+                row_norms,
                 values,
                 labels,
                 q_smem,
@@ -355,17 +367,39 @@ class _RowOwnedAssignSm90:
         """Fold one centroid block's scores into every row slot's best."""
         values = layout_utils.reshape_acc_to_mn(accumulator)
         width = const_expr(cute.size(values, mode=[1]))
-        for column in cutlass.range_constexpr(width):
-            local = coordinates[0, column][1]
-            centroid = block * TILE_N + local
-            norm = n_smem[local, stage]
-            for row in cutlass.range_constexpr(cute.size(row_min)):
-                score = cute.math.fma(
-                    Float32(-2.0), values[row, column], norm
+        if const_expr(self.packed_integer):
+            folded = cute.make_rmem_tensor((width,), Int32)
+            for column in cutlass.range_constexpr(width):
+                local = coordinates[0, column][1]
+                folded[column] = (
+                    n_smem[local, stage] * Int32(TILE_N) + local
                 )
-                take = score < row_min[row]
-                row_min[row] = score if take else row_min[row]
-                row_id[row] = centroid if take else row_id[row]
+            for row in cutlass.range_constexpr(cute.size(row_min)):
+                best = Int32(0x7FFFFFFF)
+                for column in cutlass.range_constexpr(width):
+                    key = (
+                        folded[column]
+                        - Int32(2 * TILE_N) * values[row, column]
+                    )
+                    best = key if key < best else best
+                take = (
+                    (best >> Int32(LOCAL_ID_BITS))
+                    < (row_min[row] >> Int32(LOCAL_ID_BITS))
+                )
+                row_min[row] = best if take else row_min[row]
+                row_id[row] = block if take else row_id[row]
+        else:
+            for column in cutlass.range_constexpr(width):
+                local = coordinates[0, column][1]
+                centroid = block * TILE_N + local
+                norm = n_smem[local, stage]
+                for row in cutlass.range_constexpr(cute.size(row_min)):
+                    score = cute.math.fma(
+                        Float32(-2.0), values[row, column], norm
+                    )
+                    take = score < row_min[row]
+                    row_min[row] = score if take else row_min[row]
+                    row_id[row] = centroid if take else row_id[row]
 
     @cute.jit
     def gemm(self, tiled_mma, accumulator, q_fragment, c_fragment,
@@ -396,6 +430,7 @@ class _RowOwnedAssignSm90:
         self,
         q,
         centroids,
+        row_norms,
         output_values,
         output_labels,
         q_smem,
@@ -427,10 +462,14 @@ class _RowOwnedAssignSm90:
         )
         _assert_candidate_order(coordinates, tiled_mma, self.tile_m)
         row_shape = (cute.size(coordinates, mode=[0]),)
-        row_min = cute.make_rmem_tensor(row_shape, Float32)
+        row_min = cute.make_rmem_tensor(row_shape, self.score_type)
         row_id = cute.make_rmem_tensor(row_shape, Int32)
-        row_min.fill(Float32.inf)
-        row_id.fill(0)
+        if const_expr(self.packed_integer):
+            row_min.fill(0x7FFFFFFF)
+            row_id.fill(0x7FFFFFFF)
+        else:
+            row_min.fill(Float32.inf)
+            row_id.fill(0)
         q_state = pipeline.make_pipeline_state(
             pipeline.PipelineUserType.Consumer, 1
         )
@@ -459,7 +498,7 @@ class _RowOwnedAssignSm90:
                 )
                 accumulator = cute.make_rmem_tensor(
                     tiled_mma.partition_shape_C((self.tile_m, TILE_N)),
-                    Float32,
+                    self.score_type,
                 )
                 self.gemm(
                     tiled_mma,
@@ -488,9 +527,24 @@ class _RowOwnedAssignSm90:
                 other_id = cute.arch.shuffle_sync_bfly(
                     row_id[row], offset=offset
                 )
-                take = (other_key < row_min[row]) | (
-                    (other_key == row_min[row]) & (other_id < row_id[row])
-                )
+                if const_expr(self.packed_integer):
+                    other_score = other_key >> Int32(LOCAL_ID_BITS)
+                    current_score = row_min[row] >> Int32(LOCAL_ID_BITS)
+                    take = (other_score < current_score) | (
+                        (other_score == current_score)
+                        & (
+                            (other_id < row_id[row])
+                            | (
+                                (other_id == row_id[row])
+                                & (other_key < row_min[row])
+                            )
+                        )
+                    )
+                else:
+                    take = (other_key < row_min[row]) | (
+                        (other_key == row_min[row])
+                        & (other_id < row_id[row])
+                    )
                 row_min[row] = other_key if take else row_min[row]
                 row_id[row] = other_id if take else row_id[row]
         lane = cute.arch.lane_idx()
@@ -499,8 +553,20 @@ class _RowOwnedAssignSm90:
             for local in cutlass.range_constexpr(cute.size(row_min)):
                 row = row_block * self.tile_m + coordinates[local, 0][0]
                 if row < q.shape[0]:
-                    output_values[row] = row_min[local]
-                    output_labels[row] = row_id[local].to(Int64)
+                    if const_expr(self.packed_integer):
+                        code = (
+                            row_id[local] * Int32(TILE_N)
+                            + (row_min[local] & Int32(TILE_N - 1))
+                        )
+                        score = row_min[local] >> Int32(LOCAL_ID_BITS)
+                        distance = (
+                            score.to(Int64) + row_norms[row].to(Int64)
+                        )
+                        output_values[row] = distance.to(Float32)
+                        output_labels[row] = code.to(Int64)
+                    else:
+                        output_values[row] = row_min[local]
+                        output_labels[row] = row_id[local].to(Int64)
         q_pipe.consumer_release(q_state)
 
     @cute.jit
@@ -636,11 +702,13 @@ def _required_smem(tile_k, tile_m, stages, element_bytes):
 
 
 def _operand_type(dtype):
+    if dtype is torch.int8:
+        return Int8
     if dtype is torch.bfloat16:
         return BFloat16
     if dtype is torch.float8_e4m3fn:
         return Float8E4M3FN
-    raise ValueError("row-owned operands must be BF16 or E4M3")
+    raise ValueError("row-owned operands must be BF16, E4M3 or INT8")
 
 
 def row_owned_plan(batch, clusters, dim, device, dtype=torch.bfloat16):
@@ -651,7 +719,7 @@ def row_owned_plan(batch, clusters, dim, device, dtype=torch.bfloat16):
     not a measured performance crossover or a batch-size admission table.
     """
     _operand_type(dtype)
-    if not _row_owned_shape_legal(batch, clusters, dim):
+    if not _row_owned_shape_legal(batch, clusters, dim, dtype is torch.int8):
         return None
     properties = torch.cuda.get_device_properties(device)
     smem = properties.shared_memory_per_block_optin
@@ -670,6 +738,7 @@ class PreparedRowOwned(NamedTuple):
     rows: torch.Tensor
     centroids: torch.Tensor
     norms: torch.Tensor
+    row_norms: object
     values: torch.Tensor
     labels: torch.Tensor
 
@@ -696,8 +765,9 @@ def prepare_row_owned(
     plan,
     *,
     overlap_wgmma=False,
+    row_norms=None,
 ):
-    """Compile and bind one floating row-owned assignment operation.
+    """Compile and bind one floating or native-byte row-owned operation.
 
     It returns bare FP32 scores, matching the tiled floating contract.
     ``overlap_wgmma`` selects the faithful three-stage ping-pong schedule.
@@ -706,6 +776,9 @@ def prepare_row_owned(
 
     centroids = prepared.centroids
     operand_type = _operand_type(rows.dtype)
+    packed_integer = rows.dtype is torch.int8
+    if packed_integer and overlap_wgmma:
+        raise ValueError("row-owned overlap is unavailable for native bytes")
     if not isinstance(overlap_wgmma, bool):
         raise ValueError("overlap_wgmma must be a compile-time bool")
     _require_stack()
@@ -716,9 +789,15 @@ def prepare_row_owned(
     if rows.shape[1] != centroids.shape[1]:
         raise ValueError("row-owned operands must have equal dimensions")
     require_tensor(
-        prepared.norms, "row-owned centroid norms", dtype=torch.float32,
+        prepared.norms, "row-owned centroid norms",
+        dtype=torch.int32 if packed_integer else torch.float32,
         shape=(len(centroids),), device=rows.device,
     )
+    if packed_integer:
+        require_tensor(row_norms, "row-owned row norms", dtype=torch.int32,
+                       shape=(len(rows),), device=rows.device)
+    elif row_norms is not None:
+        raise ValueError("floating row-owned assignment takes no row norms")
     require_tensor(
         values, "row-owned values", dtype=torch.float32,
         shape=(len(rows),), device=rows.device,
@@ -741,7 +820,7 @@ def prepare_row_owned(
         raise ValueError("plan does not match the row-owned operands")
     tile_k, tile_m, stages = plan
     if (
-        not _row_owned_shape_legal(len(rows), len(centroids), rows.shape[1])
+        not _row_owned_shape_legal(len(rows), len(centroids), rows.shape[1], packed_integer)
         or tile_k != _row_owned_tile_k(rows.shape[1])
         or tile_m not in (64, 128)
         or stages != 3
@@ -759,6 +838,7 @@ def prepare_row_owned(
         from_dlpack(rows, assumed_align=16).mark_layout_dynamic(leading_dim=1),
         from_dlpack(centroids, assumed_align=16).mark_layout_dynamic(leading_dim=1),
         from_dlpack(prepared.norms, assumed_align=16),
+        from_dlpack(row_norms, assumed_align=4) if packed_integer else None,
         from_dlpack(values, assumed_align=4),
         from_dlpack(labels, assumed_align=8),
     )
@@ -781,6 +861,7 @@ def prepare_row_owned(
         compiled = cute.compile(
             _RowOwnedAssignSm90(
                 operand_type,
+                packed_integer,
                 tile_k,
                 tile_m,
                 stages,
@@ -799,6 +880,7 @@ def prepare_row_owned(
         rows,
         centroids,
         prepared.norms,
+        row_norms,
         values,
         labels,
     )
@@ -808,11 +890,14 @@ _COMPILED = {}
 
 
 @torch.no_grad()
-def launch_row_owned(prepared, labels_out=None):
+def launch_row_owned(prepared, labels_out=None, distance_out=None):
     labels = prepared.labels if labels_out is None else labels_out
     if labels_out is not None:
         require_tensor(labels, "labels", dtype=torch.int64,
                        shape=prepared.labels.shape, device=prepared.labels.device)
+    values = prepared.values if distance_out is None else distance_out
+    require_tensor(values, "values", dtype=torch.float32,
+                   shape=prepared.values.shape, device=prepared.values.device)
     with torch.cuda.device(prepared.values.device):
         prepared.compiled(prepared.rows, prepared.centroids, prepared.norms,
-                          prepared.values, labels)
+                          prepared.row_norms, values, labels)
