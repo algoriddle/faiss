@@ -37,7 +37,7 @@ def _validate_params(d, k, niter, operating_point, batch_size, alpha0, seed):
         raise ValueError("d must be positive")
     if k < 1:
         raise ValueError("k must be positive")
-    if niter < 1:
+    if not niter > 0:
         raise ValueError("niter must be positive")
     if operating_point not in _BATCH_LAWS:
         raise ValueError("operating_point must be 'throughput' or 'quality'")
@@ -88,6 +88,24 @@ def _resolve_recipe(n, k, niter, operating_point, batch_size, alpha0):
         alpha0 = float(alpha0)
 
     return batch_size, alpha0
+
+
+def _epoch_rows(n, niter):
+    """Return the rows seen by each epoch for a possibly fractional ``niter``.
+
+    Whole passes come first, then one epoch over the fractional remainder (a
+    prefix of that epoch's permutation), then the closing pass over every row,
+    so closing means always come from a complete pass. Below one pass there is
+    a single closing epoch over the first ``round(niter * n)`` rows.
+    """
+    if niter < 1:
+        rows = int(round(niter * n))
+        if rows < 1:
+            raise ValueError("niter * global_n rounds to zero rows")
+        return [rows]
+    whole = int(math.floor(niter - 1 + 1e-9))
+    remainder = int(round((niter - 1 - whole) * n))
+    return [n] * whole + ([remainder] if remainder else []) + [n]
 
 
 def _epoch_seed(seed, iteration):
@@ -281,8 +299,12 @@ class Emeans:
         Dimension of the vectors to cluster.
     k : int
         Number of clusters.
-    niter : int, optional
-        Number of training epochs.
+    niter : int or float, optional
+        Number of training passes. A fractional budget such as 2.4 runs the
+        whole passes, then one epoch over the first 40% of a fresh permutation,
+        then the closing pass over every row; below one pass, the closing pass
+        covers only the first ``round(niter * n)`` rows. ``recipe["epoch_rows"]``
+        lists the rows of each epoch.
     batch_size, alpha0 : optional
         Coupled statistical batch size and initial EMA step. If omitted, both
         are selected by the fitted recipe.
@@ -384,7 +406,8 @@ class Emeans:
     ):
         self.d = int(d)
         self.k = int(k)
-        self.niter = int(niter)
+        niter = float(niter)
+        self.niter = int(niter) if niter.is_integer() else niter
         self.batch_size = batch_size
         self.alpha0 = alpha0
         self.operating_point = operating_point
@@ -729,7 +752,8 @@ class Emeans:
 
         ``init_centroids`` has shape (k, d); its array type and device select
         execution. It is copied. Each epoch must supply the resolved batch
-        sizes, including the final remainder, then call :meth:`end_epoch`.
+        sizes for ``recipe["epoch_rows"]`` rows, including the final remainder,
+        then call :meth:`end_epoch`.
         Loading, ordering, transfers and prefetch are the caller's responsibility.
         """
         n = int(global_n)
@@ -766,6 +790,8 @@ class Emeans:
             self.batch_size, self.alpha0,
         )
         steps_per_pass = (n + batch_size - 1) // batch_size
+        epoch_rows = _epoch_rows(n, self.niter)
+        epoch_steps = [(rows + batch_size - 1) // batch_size for rows in epoch_rows]
         manual = self.batch_size is not None
         self.recipe = {
             "name": "manual" if manual else "canonical_v1",
@@ -775,7 +801,9 @@ class Emeans:
             "alpha0": alpha0,
             "niter": self.niter,
             "steps_per_pass": steps_per_pass,
-            "total_steps": self.niter * steps_per_pass,
+            "total_steps": sum(epoch_steps),
+            "epoch_rows": epoch_rows,
+            "epoch_steps": epoch_steps,
             "tail_policy": "keep",
             "alpha_min_factor": _ALPHA_MIN_FACTOR,
             "check_unused_every": _CHECK_UNUSED_EVERY,
@@ -804,7 +832,7 @@ class Emeans:
         self._start_time = time.perf_counter()
 
     def _require_running(self):
-        if self._centroids is None or self._epoch >= self.niter:
+        if self._centroids is None or self._epoch >= len(self.recipe["epoch_rows"]):
             raise RuntimeError("begin a run before accumulating or updating")
 
     def _start_epoch(self):
@@ -818,14 +846,14 @@ class Emeans:
             self._objective = self._usage.new_zeros((), dtype=torch.float64)
             self._pass_sums = (
                 self._centroids.new_zeros((self.k, self.d))
-                if self._epoch == self.niter - 1 else None
+                if self._epoch == len(self.recipe["epoch_rows"]) - 1 else None
             )
         else:
             self._pass_counts = np.zeros(self.k, dtype="float64")
             self._objective = np.float64(0)
             self._pass_sums = (
                 np.zeros_like(self._centroids)
-                if self._epoch == self.niter - 1 else None
+                if self._epoch == len(self.recipe["epoch_rows"]) - 1 else None
             )
 
     def accumulate(self, x):
@@ -853,10 +881,11 @@ class Emeans:
             raise RuntimeError(
                 "consume accumulated statistics before accumulating again"
             )
-        if self._epoch_steps == self.recipe["steps_per_pass"]:
+        if self._epoch_steps == self.recipe["epoch_steps"][self._epoch]:
             raise RuntimeError("call end_epoch before the next batch")
         n = len(x) if index is None else len(index)
-        expected_n = min(self.recipe["batch_size"], self._n - self._epoch_rows)
+        expected_n = min(self.recipe["batch_size"],
+                         self.recipe["epoch_rows"][self._epoch] - self._epoch_rows)
         if n > expected_n:
             raise ValueError("batch exceeds the prescribed logical batch size")
         if self._is_torch:
@@ -934,9 +963,10 @@ class Emeans:
         caller obligations; shape, dtype, device and host row count are checked.
         """
         self._require_running()
-        if self._epoch_steps == self.recipe["steps_per_pass"]:
+        if self._epoch_steps == self.recipe["epoch_steps"][self._epoch]:
             raise RuntimeError("call end_epoch before the next update")
-        expected_n = min(self.recipe["batch_size"], self._n - self._epoch_rows)
+        expected_n = min(self.recipe["batch_size"],
+                         self.recipe["epoch_rows"][self._epoch] - self._epoch_rows)
         ids, sums, counts, objective = self._prepare_statistics(stats, expected_n)
         # Capture already-global statistics once before reuse/EMA/revival.
         self._objective += objective  # Local contribution; reduced once per epoch.
@@ -1005,8 +1035,9 @@ class Emeans:
     def end_epoch(self):
         """Finish one complete pass and record its moving-pass objective."""
         self._require_running()
-        if (self._pending_stats is not None or self._epoch_rows != self._n
-                or self._epoch_steps != self.recipe["steps_per_pass"]):
+        rows = self.recipe["epoch_rows"][self._epoch]
+        if (self._pending_stats is not None or self._epoch_rows != rows
+                or self._epoch_steps != self.recipe["epoch_steps"][self._epoch]):
             raise RuntimeError("epoch is incomplete; consume all prescribed batches")
         if self._is_torch:
             import torch
@@ -1032,7 +1063,7 @@ class Emeans:
         stat = {
             "obj": objective,
             "time": time.perf_counter() - self._start_time,
-            "imbalance_factor": self.k * count_square / (self._n * self._n),
+            "imbalance_factor": self.k * count_square / (rows * rows),
             "nsplit": self.n_splits - self._splits_before,
         }
         self.iteration_stats.append(stat)
@@ -1043,7 +1074,7 @@ class Emeans:
                    stat["imbalance_factor"], stat["nsplit"])
             )
         self._epoch += 1
-        if self._epoch < self.niter:
+        if self._epoch < len(self.recipe["epoch_rows"]):
             self._start_epoch()
 
     def finalize(self):
@@ -1055,7 +1086,7 @@ class Emeans:
         """
         if self.centroids is not None:
             return self.centroids
-        if self._centroids is None or self._epoch != self.niter:
+        if self._centroids is None or self._epoch != len(self.recipe["epoch_rows"]):
             raise RuntimeError("complete all epochs before finalize")
         nonempty = self._pass_counts > 0
         centroids = self._centroids if self._is_torch else self._centroids.copy()
@@ -1116,9 +1147,9 @@ class Emeans:
             raise ValueError("x and init_centroids must be on the same device")
         self.begin(n, init_centroids)
         x = self._prepare_input(x)
-        for epoch in range(self.niter):
-            order = _randperm(n, _epoch_seed(self.seed, epoch), is_torch, device)
-            for begin in range(0, n, self.recipe["batch_size"]):
+        for epoch, rows in enumerate(self.recipe["epoch_rows"]):
+            order = _randperm(n, _epoch_seed(self.seed, epoch), is_torch, device)[:rows]
+            for begin in range(0, rows, self.recipe["batch_size"]):
                 stats = self._accumulate(
                     x, order[begin:begin + self.recipe["batch_size"]]
                 )

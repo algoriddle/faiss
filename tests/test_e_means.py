@@ -117,6 +117,46 @@ class TestEmeans(unittest.TestCase):
         np.testing.assert_array_equal(caller.obj, matrix.obj)
         self.assertEqual(caller.n_splits, matrix.n_splits)
 
+    def test_fractional_pass_budget(self):
+        x = np.random.RandomState(5).randn(31, 3).astype("float32")
+        init = x[:4].copy()
+        cases = ((2, [31, 31]), (2.5, [31, 16, 31]), (1.25, [8, 31]), (0.5, [16]))
+        for niter, rows in cases:
+            with self.subTest(niter=niter):
+                km = Emeans(3, 4, niter=niter, batch_size=4, alpha0=0.2, seed=7)
+                km.train(x, init_centroids=init)
+                steps = [(r + 3) // 4 for r in rows]
+                # Whole passes, one prefix epoch, then a closing pass over every row.
+                self.assertEqual(km.recipe["epoch_rows"], rows)
+                self.assertEqual(km.recipe["epoch_steps"], steps)
+                self.assertEqual(km.recipe["total_steps"], sum(steps))
+                self.assertEqual(len(km.iteration_stats), len(rows))
+                self.assertTrue(np.isfinite(km.centroids).all())
+
+    def test_fractional_caller_batches_match_matrix_training(self):
+        x = np.random.RandomState(123).randn(17, 3).astype("float32")
+        init = x[:4].copy()
+        args = dict(niter=2.5, batch_size=4, alpha0=0.2, seed=7)
+        matrix, caller = Emeans(3, 4, **args), Emeans(3, 4, **args)
+        matrix.train(x, init_centroids=init)
+        caller.begin(len(x), init)
+        for epoch, rows in enumerate(caller.recipe["epoch_rows"]):
+            seed = _epoch_seed(caller.seed, epoch)
+            order = np.random.RandomState(seed).permutation(len(x))[:rows]
+            for begin in range(0, rows, 4):
+                caller.update(caller.accumulate(x[order[begin:begin + 4]]))
+            caller.end_epoch()
+        np.testing.assert_array_equal(caller.finalize(), matrix.centroids)
+        np.testing.assert_array_equal(caller.obj, matrix.obj)
+
+    def test_invalid_pass_budget(self):
+        for niter in (0, -1, 0.0):
+            with self.assertRaises(ValueError):
+                Emeans(1, 1, niter=niter)
+        x = np.zeros((3, 1), dtype="float32")
+        with self.assertRaises(ValueError):
+            Emeans(1, 1, niter=0.1, batch_size=1, alpha0=0.5).train(x)
+
     def test_lifecycle_rejects_incomplete_batches(self):
         km = Emeans(1, 1, niter=1, batch_size=3, alpha0=0.5)
         km.begin(5, np.zeros((1, 1), dtype="float32"))
