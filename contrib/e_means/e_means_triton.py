@@ -35,6 +35,7 @@ _DIRECT_BLOCK_B = 64
 _DIRECT_BLOCK_K = 256
 _DIRECT_REDUCED_BLOCK_D = 64
 _DIRECT_FP32_BLOCK_D = 32
+_FLOAT8_E4M3FN = getattr(torch, "float8_e4m3fn", None)
 _FULL_D_MAX_D = 128
 _FULL_D_CONFIG = (64, 128, 4, 3)
 _MAX_K = 2**31 - max(
@@ -58,6 +59,30 @@ def _centroid_offset_is_wide(shape, stride):
 
 
 @triton.jit
+def _selected_fp8_distance(
+    x_ptr, centroid_ptr, row, label, D,
+    stride_xb, stride_xd, stride_ck, stride_cd,
+    row_mask, BLOCK_D: tl.constexpr,
+):
+    distance = tl.full(row.shape, 0.0, tl.float32)
+    for d0 in range(0, D, BLOCK_D):
+        column = d0 + tl.arange(0, BLOCK_D)
+        mask = row_mask[:, None] & (column[None, :] < D)
+        x = tl.load(
+            x_ptr + row[:, None] * stride_xb + column[None, :] * stride_xd,
+            mask=mask, other=0.0,
+        ).to(tl.float32)
+        c = tl.load(
+            centroid_ptr + label[:, None].to(tl.int64) * stride_ck
+            + column[None, :].to(tl.int64) * stride_cd,
+            mask=mask, other=0.0,
+        ).to(tl.float32)
+        delta = x - c
+        distance += tl.sum(delta * delta, axis=1)
+    return distance
+
+
+@triton.jit
 def _assign_kernel(
     x_ptr,
     centroid_ptr,
@@ -77,6 +102,7 @@ def _assign_kernel(
     FULL_D: tl.constexpr,
     REDUCED: tl.constexpr,
     FP16: tl.constexpr,
+    FP8: tl.constexpr,
     WIDE_CENTROID: tl.constexpr,
 ):
     row_program = tl.program_id(0).to(tl.int64)
@@ -94,13 +120,14 @@ def _assign_kernel(
             mask=row_mask[:, None] & (column[None, :] < D),
             other=0.0,
         )
-        if REDUCED:
+        if REDUCED and not FP8:
             full_x = (
                 full_x.to(tl.float16) if FP16 else full_x.to(tl.bfloat16)
             )
-        x_float = full_x.to(tl.float32)
-        row_norm = tl.sum(x_float * x_float, axis=1)
-    else:
+        if not FP8:
+            x_float = full_x.to(tl.float32)
+            row_norm = tl.sum(x_float * x_float, axis=1)
+    elif not FP8:
         for d0 in range(0, D, BLOCK_D):
             column = d0 + tl.arange(0, BLOCK_D)
             x = tl.load(
@@ -110,7 +137,7 @@ def _assign_kernel(
                 mask=row_mask[:, None] & (column[None, :] < D),
                 other=0.0,
             )
-            if REDUCED:
+            if REDUCED and not FP8:
                 x = x.to(tl.float16) if FP16 else x.to(tl.bfloat16)
             x = x.to(tl.float32)
             row_norm += tl.sum(x * x, axis=1)
@@ -138,11 +165,19 @@ def _assign_kernel(
                 mask=centroid_mask[:, None] & column_mask[None, :],
                 other=0.0,
             )
-            score = tl.dot(
-                full_x,
-                tl.trans(c),
-                out_dtype=tl.float32,
-            )
+            if FP8:
+                score = tl.dot(
+                    full_x,
+                    tl.trans(c),
+                    out_dtype=tl.float32,
+                    max_num_imprecise_acc=max(32, BLOCK_D),
+                )
+            else:
+                score = tl.dot(
+                    full_x,
+                    tl.trans(c),
+                    out_dtype=tl.float32,
+                )
         else:
             score = tl.zeros((BLOCK_B, BLOCK_K), tl.float32)
             for d0 in range(0, D, BLOCK_D):
@@ -155,7 +190,7 @@ def _assign_kernel(
                     mask=row_mask[:, None] & column_mask[None, :],
                     other=0.0,
                 )
-                if REDUCED:
+                if REDUCED and not FP8:
                     x = x.to(tl.float16) if FP16 else x.to(tl.bfloat16)
                 if WIDE_CENTROID:
                     centroid_offset = (
@@ -172,7 +207,15 @@ def _assign_kernel(
                     mask=centroid_mask[:, None] & column_mask[None, :],
                     other=0.0,
                 )
-                if REDUCED:
+                if FP8:
+                    score = tl.dot(
+                        x,
+                        tl.trans(c),
+                        acc=score,
+                        out_dtype=tl.float32,
+                        max_num_imprecise_acc=max(32, BLOCK_D),
+                    )
+                elif REDUCED:
                     score = tl.dot(
                         x,
                         tl.trans(c),
@@ -205,7 +248,13 @@ def _assign_kernel(
         best_score = tl.where(better, block_score, best_score)
         best_label = tl.where(better, block_label, best_label)
 
-    distance = tl.maximum(best_score + row_norm, 0.0)
+    if FP8:
+        distance = _selected_fp8_distance(
+            x_ptr, centroid_ptr, row, best_label, D,
+            stride_xb, stride_xd, stride_ck, stride_cd, row_mask, BLOCK_D,
+        )
+    else:
+        distance = tl.maximum(best_score + row_norm, 0.0)
     tl.store(distance_ptr + row, distance, mask=row_mask)
     tl.store(label_ptr + row, best_label.to(tl.int64), mask=row_mask)
 
@@ -229,6 +278,7 @@ def _assign_split_k_kernel(
     BLOCK_K: tl.constexpr,
     BLOCK_D: tl.constexpr,
     FP16: tl.constexpr,
+    FP8: tl.constexpr,
     WIDE_CENTROID: tl.constexpr,
 ):
     row_program = tl.program_id(0).to(tl.int64)
@@ -258,7 +308,8 @@ def _assign_split_k_kernel(
                 mask=row_mask[:, None] & column_mask[None, :],
                 other=0.0,
             )
-            x = x.to(tl.float16) if FP16 else x.to(tl.bfloat16)
+            if not FP8:
+                x = x.to(tl.float16) if FP16 else x.to(tl.bfloat16)
             if WIDE_CENTROID:
                 centroid_offset = (
                     centroid[:, None].to(tl.int64) * stride_ck
@@ -274,12 +325,21 @@ def _assign_split_k_kernel(
                 mask=centroid_mask[:, None] & column_mask[None, :],
                 other=0.0,
             )
-            score = tl.dot(
-                x,
-                tl.trans(c),
-                acc=score,
-                out_dtype=tl.float32,
-            )
+            if FP8:
+                score = tl.dot(
+                    x,
+                    tl.trans(c),
+                    acc=score,
+                    out_dtype=tl.float32,
+                    max_num_imprecise_acc=max(32, BLOCK_D),
+                )
+            else:
+                score = tl.dot(
+                    x,
+                    tl.trans(c),
+                    acc=score,
+                    out_dtype=tl.float32,
+                )
 
         norm = tl.load(
             centroid_norm_ptr + centroid,
@@ -307,6 +367,7 @@ def _assign_split_k_kernel(
 @triton.jit
 def _reduce_split_k_kernel(
     x_ptr,
+    centroid_ptr,
     partial_score_ptr,
     partial_label_ptr,
     distance_ptr,
@@ -315,23 +376,27 @@ def _reduce_split_k_kernel(
     D,
     stride_xb,
     stride_xd,
+    stride_ck,
+    stride_cd,
     PARTITIONS: tl.constexpr,
     BLOCK_PARTITIONS: tl.constexpr,
     BLOCK_D: tl.constexpr,
     FP16: tl.constexpr,
+    FP8: tl.constexpr,
 ):
     row = tl.program_id(0).to(tl.int64)
-    row_norm = tl.zeros((), tl.float32)
-    for d0 in range(0, D, BLOCK_D):
-        column = d0 + tl.arange(0, BLOCK_D)
-        x = tl.load(
-            x_ptr + row * stride_xb + column * stride_xd,
-            mask=column < D,
-            other=0.0,
-        )
-        x = x.to(tl.float16) if FP16 else x.to(tl.bfloat16)
-        x = x.to(tl.float32)
-        row_norm += tl.sum(x * x, axis=0)
+    if not FP8:
+        row_norm = tl.zeros((), tl.float32)
+        for d0 in range(0, D, BLOCK_D):
+            column = d0 + tl.arange(0, BLOCK_D)
+            x = tl.load(
+                x_ptr + row * stride_xb + column * stride_xd,
+                mask=column < D,
+                other=0.0,
+            )
+            x = x.to(tl.float16) if FP16 else x.to(tl.bfloat16)
+            x = x.to(tl.float32)
+            row_norm += tl.sum(x * x, axis=0)
 
     partition = tl.arange(0, BLOCK_PARTITIONS)
     mask = partition < PARTITIONS
@@ -352,16 +417,25 @@ def _reduce_split_k_kernel(
     best_label = tl.sum(
         tl.where(partition == best_partition, partial_label, 0), axis=0
     )
-    tl.store(distance_ptr + row, tl.maximum(best_score + row_norm, 0.0))
+    if FP8:
+        rows = row + tl.arange(0, 1).to(tl.int64)
+        labels = best_label + tl.arange(0, 1)
+        distance = tl.sum(_selected_fp8_distance(
+            x_ptr, centroid_ptr, rows, labels, D,
+            stride_xb, stride_xd, stride_ck, stride_cd, rows < B, BLOCK_D,
+        ), axis=0)
+    else:
+        distance = tl.maximum(best_score + row_norm, 0.0)
+    tl.store(distance_ptr + row, distance)
     tl.store(label_ptr + row, best_label.to(tl.int64))
 
 
-def _use_split_k(b, k, d, is_reduced):
+def _use_split_k(b, k, d, is_reduced, direct_block_d=_DIRECT_REDUCED_BLOCK_D):
     """Add parallelism only to a small grid after accounting for padding work."""
     if not is_reduced or _split_k_partitions(b, k) == 1:
         return False
     rows = triton.cdiv(b, _DIRECT_BLOCK_B)
-    direct_span = triton.cdiv(d, _DIRECT_REDUCED_BLOCK_D) * _DIRECT_REDUCED_BLOCK_D
+    direct_span = triton.cdiv(d, direct_block_d) * direct_block_d
     split_span = triton.cdiv(d, _SPLIT_K_BLOCK_D) * _SPLIT_K_BLOCK_D
     # About one wave of the original four-wave target. A wider reduction tile
     # can double work for short rows; avoid it on an already adequate row grid.
@@ -394,7 +468,14 @@ def _launch_assignment(
     k = centroids.shape[0]
     is_reduced = centroids.dtype != torch.float32
     is_fp16 = centroids.dtype == torch.float16
-    split_k = _use_split_k(b, k, d, is_reduced)
+    is_fp8 = centroids.dtype == _FLOAT8_E4M3FN
+    direct_block_d = _DIRECT_REDUCED_BLOCK_D if is_reduced else _DIRECT_FP32_BLOCK_D
+    # E4M3 benefits from a wider contraction tile when it adds no padded work.
+    # This replaces the old fitted D>=512 gate with the actual padded span.
+    if (is_fp8 and triton.cdiv(d, 128) * 128
+            == triton.cdiv(d, _DIRECT_REDUCED_BLOCK_D) * _DIRECT_REDUCED_BLOCK_D):
+        direct_block_d = 128
+    split_k = _use_split_k(b, k, d, is_reduced, direct_block_d)
     if not split_k:
         full_d = (
             is_reduced
@@ -406,11 +487,7 @@ def _launch_assignment(
         else:
             block_b = _DIRECT_BLOCK_B
             block_k = _DIRECT_BLOCK_K
-            block_d = (
-                _DIRECT_REDUCED_BLOCK_D
-                if is_reduced
-                else _DIRECT_FP32_BLOCK_D
-            )
+            block_d = direct_block_d
             num_warps = 8
             num_stages = 3
         _assign_kernel[(triton.cdiv(b, block_b),)](
@@ -432,6 +509,7 @@ def _launch_assignment(
             FULL_D=full_d,
             REDUCED=is_reduced,
             FP16=is_fp16,
+            FP8=is_fp8,
             WIDE_CENTROID=wide_centroid,
             num_warps=num_warps,
             num_stages=num_stages,
@@ -465,12 +543,14 @@ def _launch_assignment(
         BLOCK_K=_SPLIT_K_BLOCK_K,
         BLOCK_D=_SPLIT_K_BLOCK_D,
         FP16=is_fp16,
+        FP8=is_fp8,
         WIDE_CENTROID=wide_centroid,
         num_warps=_SPLIT_K_NUM_WARPS,
         num_stages=_SPLIT_K_NUM_STAGES,
     )
     _reduce_split_k_kernel[(b,)](
         x,
+        centroids,
         partial_score,
         partial_label,
         distance,
@@ -479,12 +559,23 @@ def _launch_assignment(
         d,
         x.stride(0),
         x.stride(1),
+        centroids.stride(0),
+        centroids.stride(1),
         PARTITIONS=partitions,
         BLOCK_PARTITIONS=triton.next_power_of_2(partitions),
         BLOCK_D=128,
         FP16=is_fp16,
+        FP8=is_fp8,
         num_warps=4,
     )
+
+
+def _pad_fp8(value):
+    d = value.shape[1]
+    result = torch.zeros((len(value), triton.cdiv(d, 64) * 64),
+                         dtype=value.dtype, device=value.device)
+    result[:, :d].copy_(value)
+    return result[:, :d]
 
 
 def assign_rows(x, centroids, centroid_norm):
@@ -501,10 +592,18 @@ def assign_rows(x, centroids, centroid_norm):
         torch.float32,
         torch.float16,
         torch.bfloat16,
+        _FLOAT8_E4M3FN,
     ):
         raise TypeError(
-            "Triton rows must be FP32 or match the FP32/FP16/BF16 centroid dtype"
+            "Triton rows must be FP32 or match floating centroid dtype; E4M3 must match"
         )
+    is_fp8 = centroids.dtype == _FLOAT8_E4M3FN
+    if is_fp8:
+        from .e_means_fp8 import _check_fp8_support
+
+        _check_fp8_support(x.device)
+        if x.dtype != _FLOAT8_E4M3FN:
+            raise TypeError("FP8 assignment requires native E4M3 rows")
     if centroid_norm.dtype != torch.float32:
         raise TypeError("centroid_norm must be float32")
     if x.ndim != 2 or centroids.ndim != 2 or centroid_norm.ndim != 1:
@@ -518,6 +617,12 @@ def assign_rows(x, centroids, centroid_norm):
     if d != centroid_d or centroid_norm.shape[0] != k:
         raise ValueError("Triton assignment shapes do not match")
     with torch.cuda.device(x.device):
+        if is_fp8:
+            # Prepared centroids already have aligned storage; reuse per snapshot.
+            if x.stride(1) != 1 or x.stride(0) % 64:
+                x = _pad_fp8(x)
+            if centroids.stride(1) != 1 or centroids.stride(0) % 64:
+                centroids = _pad_fp8(centroids)
         distance = torch.empty(b, dtype=torch.float32, device=x.device)
         labels = torch.empty(b, dtype=torch.int64, device=x.device)
         wide_centroid = _centroid_offset_is_wide(

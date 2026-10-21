@@ -69,3 +69,11 @@ class CastQuantizer:
             raise TypeError("x must be FP32, FP16 or BF16")
         if not bool((x.float().abs() <= torch.finfo(self.dtype).max).all()):
             raise ValueError("x must be finite and fit the quantizer range")
+
+
+def _ldexp(value, exponent):
+    # Stock CUDA ldexp can launch on the current device rather than the operand's.
+    if value.is_cuda:
+        with torch.cuda.device(value.device):
+            return torch.ldexp(value, exponent)
+    return torch.ldexp(value, exponent)

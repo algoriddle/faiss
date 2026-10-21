@@ -116,3 +116,22 @@ with the combined statistics and prescribed global `n`. All replicas need
 identical initialization, recipe, seed and collective schedules. Do not pass
 a CPU group to local `update`; the distributed subclass requires CUDA state. See
 `../../demos/demo_e_means_distributed.py` for a small `torchrun` example.
+
+For calibrated E4M3 on qualified Triton CUDA GPUs, use an explicit quantizer:
+
+```python
+from faiss.contrib.e_means.e_means_fp8 import Fp8Quantizer
+q = Fp8Quantizer(x.shape[1])
+q.train(representative_sample)
+q.to(x.device)
+q.validate(x)  # optional explicit finite/range scan
+km = Emeans(x.shape[1], k, quantizer=q, assignment_backend="triton")
+km.train(x)  # floating chunks encode during assignment
+# Alternatively: km.train(q.compute_codes(x))
+centroids = km.centroids  # already decoded FP32; do not decode again
+```
+
+FP8 codes with `quantizer=None` define raw numeric code units. FP8 input requires
+NVIDIA SM90, SM100 or SM103. Conversion does not clip or scan values: unchecked
+out-of-range/nonfinite values can produce NaN codes and invalid results. The
+existing internal-centroid range check runs at epoch close and during assign.

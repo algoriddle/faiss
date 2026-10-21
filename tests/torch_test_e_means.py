@@ -13,6 +13,7 @@ import torch
 from faiss.contrib.e_means import Emeans, DistributedEmeans
 from faiss.contrib.e_means.e_means import _epoch_seed
 from faiss.contrib.e_means.e_means_quantizer import CastQuantizer
+from faiss.contrib.e_means.e_means_fp8 import Fp8Quantizer
 
 
 def _cpu_gloo_replica(rank, rendezvous):
@@ -67,6 +68,91 @@ class TestTorchEmeans(unittest.TestCase):
                 _cpu_gloo_replica, args=("file://" + directory + "/group",),
                 nprocs=2, join=True, start_method="fork"
             )
+
+    def test_explicit_fp8_calibration_and_scope(self):
+        q = Fp8Quantizer(1)
+        with self.assertRaises(RuntimeError):
+            q.compute_codes(torch.zeros((1, 1)))
+        sample = torch.tensor([[0.], [2.], [10.], [12.]])
+        q.train(sample)
+        self.assertTrue(q.is_trained)
+        self.assertEqual(q.code_size, 1)
+        self.assertEqual((q.scale, q.decision), (8., "small_sample_centered"))
+        self.assertIs(q.to("cpu"), q)
+        torch.testing.assert_close(q.decode(q.compute_codes(sample)), sample)
+        self.assertEqual(q.compute_codes(sample[:0]).shape, (0, 1))
+        with self.assertRaises(ValueError):
+            q.validate(torch.tensor([[float("nan")]]))
+        with self.assertRaisesRegex(ValueError, "FP8 requires Triton"):
+            Emeans(1, 2, quantizer=q)
+        with self.assertRaises(ValueError):
+            Emeans(1, 2, quantizer=q, assignment_backend="triton").train(sample)
+
+    @unittest.skipUnless(
+        torch.cuda.is_available() and getattr(torch.version, "hip", None) is None
+        and torch.cuda.get_device_capability() in ((9, 0), (10, 0), (10, 3))
+        and importlib.util.find_spec("triton") is not None, "qualified FP8 CUDA required"
+    )
+    def test_fp8_native_jit_decoded_lifecycle(self):
+        x = torch.tensor([[0.1], [2.2], [10.3], [12.4]], device="cuda")
+        q = Fp8Quantizer(1)
+        q.train(x)
+        codes = q.compute_codes(x)
+        represented = q.decode(codes)
+        self.assertFalse(torch.equal(x, represented))
+        init = torch.tensor([[0.], [10.]], device="cuda")
+        args = dict(niter=1, batch_size=4, alpha0=0.5, quantizer=q,
+                    assignment_backend="triton", assignment_chunk_size=2)
+        jit, native, steps = (Emeans(1, 2, **args) for _ in range(3))
+        jit.train(x, init)
+        native.train(codes, init)
+        steps.begin(len(x), init)
+        stats = steps.accumulate(codes)
+        steps.update(stats)
+        steps.end_epoch()
+        steps.finalize()
+        expected = represented.reshape(2, 2, 1).mean(dim=1)
+        for model in (jit, native, steps):
+            torch.testing.assert_close(model.centroids, expected)
+            torch.testing.assert_close(model.obj, jit.obj, atol=0, rtol=0)
+            distance, labels = model.assign(codes)
+            operands = q.decode(q.compute_codes(expected))
+            oracle = (represented[:, None] - operands[None, :]).square().sum(2)
+            torch.testing.assert_close(distance, oracle.min(1).values, atol=2e-5, rtol=2e-5)
+            torch.testing.assert_close(labels, oracle.argmin(1))
+        self.assertEqual((jit.centroids.dtype, distance.dtype, labels.dtype),
+                         (torch.float32, torch.float32, torch.int64))
+        raw = Emeans(1, 2, niter=1, batch_size=4, alpha0=0.5,
+                     assignment_backend="triton")
+        raw.train(codes, codes[[0, 2]].float())
+        torch.testing.assert_close(raw.centroids, codes.float().reshape(2, 2, 1).mean(1))
+
+    @unittest.skipUnless(
+        torch.cuda.is_available() and getattr(torch.version, "hip", None) is None
+        and torch.cuda.get_device_capability() in ((9, 0), (10, 0), (10, 3))
+        and importlib.util.find_spec("triton") is not None, "qualified FP8 CUDA required"
+    )
+    def test_fp8_long_positive_selected_distances(self):
+        d = 4096
+        base = (torch.arange(d, device='cuda') % 251).float()
+        x = torch.stack((base, base + 32, base + 40))
+        q = Fp8Quantizer(d)
+        q.train(torch.stack((torch.full_like(base, -128), torch.full_like(base, 128))))
+        codes = q.compute_codes(x)
+        for k in (2, 1024):
+            initial = (base + 96).repeat(k, 1)
+            initial[:2] = x[:2]
+            operands = q.decode(q.compute_codes(initial)).double()
+            oracle = (q.decode(codes).double()[:, None] - operands[None]).square().sum(2)
+            for rows in (codes, x):
+                with self.subTest(k=k, native=rows is codes):
+                    model = Emeans(d, k, quantizer=q, assignment_backend='triton')
+                    model.centroids = initial.clone()
+                    distance, labels = model.assign(rows)
+                    torch.testing.assert_close(labels, oracle.argmin(1))
+                    chosen = oracle.gather(1, labels[:, None]).flatten()
+                    torch.testing.assert_close(distance.double(), chosen, rtol=2e-6, atol=1e-3)
+                    self.assertEqual(distance[:2].tolist(), [0., 0.])
 
     def test_backend_selection_and_cpu_rejection(self):
         self.assertEqual(Emeans(1, 1).assignment_backend, "native")
