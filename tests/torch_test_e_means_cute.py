@@ -5,6 +5,7 @@
 
 import importlib.metadata
 import unittest
+import warnings
 
 import numpy as np
 import torch
@@ -44,6 +45,29 @@ class TestEmeansCute(unittest.TestCase):
             Emeans(2, 2, assignment_backend='cute', quantizer=CastQuantizer(2, torch.float16))
         with self.assertRaisesRegex(ValueError, 'int32'):
             Emeans(2, 2**31 - 127, assignment_backend='cute')
+
+    @unittest.skipUnless(_ready(), 'pinned CuTe stack on SM90 required')
+    def test_spherical_matches_triton(self):
+        generator = torch.Generator(device='cuda').manual_seed(9)
+        axes = torch.eye(96, device='cuda')[:8]
+        x = axes.repeat_interleave(128, 0) + 0.05 * torch.randn(1024, 96, generator=generator,
+                                                               device='cuda')
+        x = (2.5 * x).bfloat16()                       # not unit-norm
+        init = x[::128].float()
+        args = dict(niter=2, batch_size=256, alpha0=0.4, seed=1, spherical=True)
+        cute = Emeans(96, 8, assignment_backend='cute', **args)
+        tiled = Emeans(96, 8, assignment_backend='triton', **args)
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore')
+            cute.train(x, init)
+            tiled.train(x, init)
+        torch.testing.assert_close(cute.centroids, tiled.centroids, atol=1e-5, rtol=0)
+        torch.testing.assert_close(cute.centroids.norm(dim=1), torch.ones(8, device='cuda'),
+                                   atol=1e-6, rtol=0)
+        similarity, labels = cute.assign(x)
+        tiled_similarity, tiled_labels = tiled.assign(x)
+        torch.testing.assert_close(labels, tiled_labels)
+        torch.testing.assert_close(similarity, tiled_similarity, atol=1e-5, rtol=0)
 
     @unittest.skipUnless(_ready(), 'pinned CuTe stack on SM90 required')
     def test_native_and_jit_training(self):

@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import unittest
+import warnings
 
 import numpy as np
 
@@ -68,6 +69,105 @@ class TestEmeansRecipe(unittest.TestCase):
         last = _scheduled_alpha(alpha0, 9, 10)
         self.assertGreater(last, 0.04)
         self.assertAlmostEqual(last, 0.04880982706687237)
+
+
+def _unit(x):
+    return x / np.linalg.norm(x, axis=1, keepdims=True)
+
+
+def _three_directions(seed=0, per=40, d=6):
+    """Rows scattered around three well-separated unit directions."""
+    rng = np.random.RandomState(seed)
+    axes = np.eye(d, dtype="float32")[:3]
+    rows = np.concatenate([a + 0.15 * rng.randn(per, d) for a in axes]).astype("float32")
+    return _unit(rows).astype("float32"), axes
+
+
+class TestSphericalEmeans(unittest.TestCase):
+    def test_one_step_is_dhillon_modha(self):
+        x, axes = _three_directions()
+        init = _unit(axes + 0.3).astype("float32")
+        km = Emeans(6, 3, niter=1, batch_size=len(x), alpha0=1.0, spherical=True)
+        km.train(x, init_centroids=init)
+        # Dhillon and Modha (2001), steps 2-3: assign by highest cosine, then
+        # each concept vector is the normalized sum of its cluster's rows.
+        labels = np.argmax(x @ _unit(init).T, axis=1)
+        expected = _unit(np.stack([x[labels == j].sum(0) for j in range(3)]))
+        np.testing.assert_allclose(km.centroids, expected, rtol=0, atol=1e-6)
+
+    def test_lloyd_steps_match_faiss_spherical(self):
+        import faiss
+        x, axes = _three_directions(seed=1)
+        init = _unit(axes + 0.3).astype("float32")
+        for niter in (1, 3):
+            with self.subTest(niter=niter):
+                ours = Emeans(6, 3, niter=niter, batch_size=len(x), alpha0=1.0,
+                              spherical=True)
+                ours.train(x, init_centroids=init)
+                reference = faiss.Kmeans(6, 3, niter=niter, spherical=True)
+                reference.train(x, init_centroids=init)
+                # A full-batch pass at alpha0=1 is a spherical Lloyd step; at three
+                # passes both settle on the same concept vectors of these directions.
+                np.testing.assert_allclose(ours.centroids, reference.centroids,
+                                           rtol=0, atol=1e-5)
+
+    def test_rows_are_normalized_and_reported_once(self):
+        x, _ = _three_directions(seed=2)
+        scaled = x * np.random.RandomState(3).uniform(0.2, 9.0, (len(x), 1)).astype("float32")
+        init = x[[0, 40, 80]].copy()
+        args = dict(niter=2, batch_size=16, alpha0=0.3, seed=5, spherical=True)
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            unit = Emeans(6, 3, **args)
+            unit.train(x, init_centroids=init)
+            self.assertEqual(len(caught), 0)
+            raw = Emeans(6, 3, **args)
+            raw.train(scaled, init_centroids=init * 7.0)
+        notices = [w for w in caught if "not unit-norm" in str(w.message)]
+        self.assertEqual(len(notices), 1)
+        np.testing.assert_allclose(raw.centroids, unit.centroids, rtol=0, atol=1e-6)
+        np.testing.assert_array_equal(raw.assign(scaled)[1], unit.assign(x)[1])
+
+    def test_centroids_stay_on_the_sphere(self):
+        x = _unit(np.random.RandomState(4).randn(500, 8)).astype("float32")
+        km = Emeans(8, 20, niter=3, spherical=True)
+        km.train(x)
+        np.testing.assert_allclose(np.linalg.norm(km.centroids, axis=1), 1.0,
+                                   rtol=0, atol=1e-6)
+        self.assertTrue(km.recipe["spherical"])
+        self.assertEqual(km.recipe["assign_returns"], "cosine_similarity")
+
+    def test_assign_returns_cosine_similarity(self):
+        x = _unit(np.random.RandomState(6).randn(300, 5)).astype("float32")
+        km = Emeans(5, 7, niter=2, spherical=True)
+        km.train(x)
+        similarity, labels = km.assign(x * 3.0)
+        cosines = x @ km.centroids.T
+        np.testing.assert_array_equal(labels, np.argmax(cosines, axis=1))
+        np.testing.assert_allclose(similarity, cosines.max(axis=1), rtol=0, atol=1e-6)
+        self.assertEqual(km.assign_returns, "cosine_similarity")
+
+    def test_scaling_spans_match_one_chunk(self):
+        # 70,000 rows in 8,192-row chunks are scaled in two spans (65,536 + 4,464).
+        rng = np.random.RandomState(7)
+        x = (rng.randn(70000, 4) * rng.uniform(0.5, 3.0, (70000, 1))).astype("float32")
+        init = x[:5].copy()
+        out = []
+        for chunk in (8192, 70000):
+            km = Emeans(4, 5, niter=1, batch_size=len(x), alpha0=1.0, spherical=True,
+                        assignment_chunk_size=chunk)
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                km.train(x, init_centroids=init)
+            out.append((km.centroids, km.assign(x)))
+        np.testing.assert_allclose(out[0][0], out[1][0], rtol=0, atol=1e-6)
+        np.testing.assert_array_equal(out[0][1][1], out[1][1][1])
+        np.testing.assert_allclose(out[0][1][0], out[1][1][0], rtol=0, atol=1e-6)
+
+    def test_default_is_euclidean(self):
+        km = Emeans(4, 3)
+        self.assertFalse(km.spherical)
+        self.assertEqual(km.assign_returns, "squared_l2_distance")
 
 
 class TestEmeans(unittest.TestCase):

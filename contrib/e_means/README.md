@@ -16,8 +16,21 @@ The default statistical batch size and EMA step are selected together; set
 `batch_size` and `alpha0` together to override them. NumPy input uses exact
 Faiss L2 assignment. PyTorch input stays on its CPU or CUDA device and does not
 call Faiss; PyTorch is optional. This reference implementation supports dense
-floating Euclidean clustering and makes no speed claim. See
+floating Euclidean and spherical clustering and makes no speed claim. See
 `../../demos/demo_e_means.py` for a DEEP1M example.
+
+`spherical=True` selects spherical (cosine) k-means (Dhillon and Modha, 2001).
+Rows and initial centroids are scaled to unit L2 norm in FP32 (or wider) before
+assignment and statistics; one `UserWarning` per run reports rows whose norm
+differed from one by more than 1e-2, and zero rows stay zero. Masses and
+positions update exactly as in Euclidean runs, while assignment and the
+returned centroids use the positions' directions, so final centroids are the
+normalized sums of the final pass's own assignments. `assign` then returns
+cosine similarities (higher is closer) instead of squared distances;
+`assign_returns` and `recipe["assign_returns"]` name the quantity. `obj` stays a
+distortion, `2 - 2 cos` summed over rows. Spherical mode takes floating input
+only (FP32, FP16, BF16 or `CastQuantizer`); FP8 and INT8 raise. On Triton and
+CuTe one Triton kernel gathers and scales up to 65,536 rows per launch.
 
 For caller-driven batches, supply FP32 initial centroids and the global row
 count. `train` uses the same numerical operations with seeded initialization
