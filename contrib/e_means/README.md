@@ -153,3 +153,12 @@ km.train(codes)  # matching native codes only; no floating-to-INT8 JIT
 Without a quantizer, native signed/unsigned bytes retain their numeric units.
 Calibration, device placement and validation are explicit; unchecked nonfinite
 values have no meaningful encoding result. Use `q.validate(x)` when needed.
+
+CuTe BF16 assignment is an explicit optional backend on exactly NVIDIA SM90,
+requiring `quack-kernels==0.6.5`, `nvidia-cutlass-dsl==4.7.1` and
+`cuda-python>=13,<14`. Supply native BF16 rows with `quantizer=None`, or use
+`CastQuantizer(d, torch.bfloat16)` for per-chunk floating conversion; select
+`assignment_backend="cute"`. It uses resource-constrained tiled/row-owned
+assignment, native FP32 score ranking and no runtime autotuning or fallback.
+Bit-equal scores select the lower centroid ID; FP64-only ties can differ.
+Calls on one model share mutable workspace; the caller must order stream switching.
