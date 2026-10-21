@@ -117,6 +117,70 @@ class TestEmeans(unittest.TestCase):
         np.testing.assert_array_equal(caller.obj, matrix.obj)
         self.assertEqual(caller.n_splits, matrix.n_splits)
 
+    def test_capture_assignments_match_closing_means(self):
+        x = np.random.RandomState(5).randn(203, 3).astype("float32")
+        args = dict(niter=3, seed=1, assignment_chunk_size=16)
+        km = Emeans(3, 7, capture_assignments=True, **args)
+        km.train(x)
+        labels = km.assignments
+        self.assertEqual((labels.dtype, labels.shape), (np.int64, (len(x),)))
+        self.assertTrue(((labels >= 0) & (labels < 7)).all())
+        # Each closing centroid is the mean of the rows the final pass gave it.
+        for j in np.unique(labels):
+            np.testing.assert_allclose(
+                km.centroids[j], x[labels == j].mean(axis=0), rtol=1e-5, atol=1e-6
+            )
+        plain = Emeans(3, 7, **args)
+        plain.train(x)
+        self.assertIsNone(plain.assignments)
+        np.testing.assert_array_equal(plain.centroids, km.centroids)
+        np.testing.assert_array_equal(plain.obj, km.obj)
+
+    def test_caller_batches_return_final_pass_labels(self):
+        x = np.random.RandomState(123).randn(17, 3).astype("float32")
+        init = x[:4].copy()
+        args = dict(niter=3, batch_size=4, alpha0=0.2, seed=7,
+                    assignment_chunk_size=2, capture_assignments=True)
+        matrix, caller = Emeans(3, 4, **args), Emeans(3, 4, **args)
+        matrix.train(x, init_centroids=init)
+        caller.begin(len(x), init)
+        labels = np.full(len(x), -1)
+        for epoch in range(caller.niter):
+            order = np.random.RandomState(_epoch_seed(caller.seed, epoch)).permutation(len(x))
+            for begin in range(0, len(x), caller.recipe["batch_size"]):
+                rows = order[begin:begin + 4]
+                stats = caller.accumulate(x[rows])
+                self.assertEqual("labels" in stats, epoch == caller.niter - 1)
+                if "labels" in stats:
+                    labels[rows] = stats["labels"]
+                caller.update(stats)
+            caller.end_epoch()
+        np.testing.assert_array_equal(caller.finalize(), matrix.centroids)
+        self.assertIsNone(caller.assignments)
+        np.testing.assert_array_equal(labels, matrix.assignments)
+
+    def test_capture_memory_is_one_int64_per_row(self):
+        # Even when one batch holds every row, capture adds one int64 per row:
+        # train() writes the final pass's labels straight to their rows. And an
+        # epoch boundary holds one permutation, not two.
+        import tracemalloc
+
+        def peak(**args):
+            tracemalloc.start()
+            base = tracemalloc.get_traced_memory()[0]
+            Emeans(d, k, alpha0=0.5, seed=3, **args).train(x)
+            used = tracemalloc.get_traced_memory()[1] - base
+            tracemalloc.stop()
+            return used
+
+        n, d, k = 400_000, 2, 16
+        x = np.random.RandomState(0).randn(n, d).astype("float32")
+        Emeans(d, k, niter=1, batch_size=1000, alpha0=0.5).train(x[:1000])  # warm caches
+        off = peak(niter=1, batch_size=n)
+        on = peak(niter=1, batch_size=n, capture_assignments=True)
+        self.assertTrue(6.0 < (on - off) / n < 10.0, (on - off) / n)
+        self.assertLess((peak(niter=2, batch_size=n) - off) / n, 4.0)
+
     def test_lifecycle_rejects_incomplete_batches(self):
         km = Emeans(1, 1, niter=1, batch_size=3, alpha0=0.5)
         km.begin(5, np.zeros((1, 1), dtype="float32"))

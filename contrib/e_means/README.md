@@ -50,6 +50,24 @@ are means of the final pass's own assignments; never-assigned centroids retain
 their current positions. `obj` and the `train` return remain moving-pass
 objectives, rather than scores against the closing means.
 
+Those final-pass assignments can be kept instead of recomputed. With
+`capture_assignments=True`, `train` stores the int64 label of every input row in
+`km.assignments` (input order), and `accumulate` returns them as
+`stats["labels"]` during the final pass of a caller-driven run:
+
+```python
+km = Emeans(d, k, niter=25, capture_assignments=True)
+km.train(x)
+labels = km.assignments  # each closing centroid is the mean of its rows here
+```
+
+No extra pass or search is run. The labels were chosen against centroids that
+were still moving, so `assign(x)` against the closing centroids can differ for a
+large share of rows when there are few passes: more than half of them after a
+single pass with many clusters in our runs, and under 2% from five passes on.
+The captured labels are the ones the closing means were built from; call
+`assign(x)` when you need nearest-centroid labels.
+
 CUDA native Torch accepts FP32, FP16 and BF16. With `quantizer=None`, the
 first batch (including a typed empty batch) fixes the native dtype for the run.
 FP32 initial centroids do not select that dtype. Norms, dot products and FP32
