@@ -49,3 +49,41 @@ rows (a zero donor's subnormal distance can underflow). Final FP32 centroids
 are means of the final pass's own assignments; never-assigned centroids retain
 their current positions. `obj` and the `train` return remain moving-pass
 objectives, rather than scores against the closing means.
+
+GPU callers use `DistributedEmeans(d, k, group=group, transport="auto", ...)`
+with an initialized, caller-owned process group. Group and transport are fixed
+at construction. `begin(global_n, init_centroids)` takes a same-shape tensor on
+each rank's CUDA device and broadcasts its owned FP32 centroid state from group
+rank zero. Root values are authoritative; caller tensors are never modified.
+The remaining `accumulate`/`update`/`end_epoch`/`finalize` lifecycle is shared
+with `Emeans`; distributed `train(x)` is rejected. Centroid state is replicated;
+the caller supplies matching recipes/codecs and disjoint rank-local contributions
+to each prescribed global batch. Every batch, including the final tail, must
+divide evenly by group size; this is checked at `begin` before broadcasting.
+Each update checks that local `stats["n"]` equals its prescribed global size
+divided by group size. Every rank participates in the same updates and epoch
+closes. Local `Emeans.update(stats)` has no group or transport arguments;
+`DistributedEmeans` requires an explicit group, not an implicit world group.
+
+Dense transport all-reduces FP32 statistics. Sparse transport packs occupied
+IDs, all-gathers and merges in group-rank order. It can synchronize during
+packing/size discovery; padded receive storage is approximately
+`ranks * max_local_occupied * (d+1) * 4` bytes plus IDs. Automatic selection
+uses known batch/table/rank sizes, conservatively bounds padding and amortizes
+packing on large payloads; it is not a portable network crossover. Use an
+explicit `"dense"` or `"sparse"` override where appropriate, and ensure the
+state and transport workspace fit. No batch size is silently reduced.
+
+One scalar FP64 epoch collective sums local moving-pass objective contributions.
+Already-global FP64 pass counts and FP32 closing sums are captured once. Equal
+row counts can still have different occupied-centroid counts, which sparse
+transport discovers separately. Divergent collective schedules remain a caller
+error; this API does not recover from them. Revival IDs are
+selected by group rank zero and broadcast; every replica applies the same
+split. CPU communication remains caller-owned: use NumPy/FP32 `Emeans`,
+combine local `sums`, `counts` and objective externally (for example Gloo
+`all_reduce` on contiguous buffers made with `torch.from_numpy`), then call local `update`
+with the combined statistics and prescribed global `n`. All replicas need
+identical initialization, recipe, seed and collective schedules. Do not pass
+a CPU group to local `update`; the distributed subclass requires CUDA state. See
+`../../demos/demo_e_means_distributed.py` for a small `torchrun` example.
