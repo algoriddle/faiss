@@ -236,6 +236,59 @@ class TestTorchEmeans(unittest.TestCase):
                 torch.testing.assert_close(tiled.assign(x)[1], native.assign(x)[1])
                 self.assertEqual(tiled.recipe["assignment_backend"], "triton")
 
+    @unittest.skipUnless(
+        torch.cuda.is_available() and getattr(torch.version, "hip", None) is None
+        and torch.cuda.get_device_capability() >= (8, 0)
+        and importlib.util.find_spec("triton") is not None, "Triton CUDA required"
+    )
+    def test_triton_unaligned_width_matches_unpadded_kernel(self):
+        from faiss.contrib.e_means.e_means_triton import assign_rows
+
+        generator = torch.Generator(device="cuda").manual_seed(5)
+        chunk = 300
+        for d in (5, 25, 100, 200):
+            x = torch.randn(1000, d, generator=generator, device="cuda")
+            # 2,048 centroids reach the split-K kernel for 16-bit rows.
+            for k in (37, 2048):
+                centroids = torch.randn(k, d, generator=generator, device="cuda")
+                for dtype in (torch.float32, torch.float16, torch.bfloat16):
+                    with self.subTest(d=d, k=k, dtype=dtype):
+                        model = Emeans(d, k, assignment_backend="triton",
+                                       assignment_chunk_size=chunk)
+                        model.centroids = centroids
+                        distance, labels = model.assign(x.to(dtype))
+                        represented = centroids.to(dtype)
+                        norm = represented.float().square().sum(dim=1)
+                        expected = [assign_rows(x[s:s + chunk].to(dtype), represented, norm)
+                                    for s in range(0, len(x), chunk)]
+                        # Padding leaves every score, hence every label, unchanged.
+                        torch.testing.assert_close(
+                            labels, torch.cat([e[1] for e in expected]), atol=0, rtol=0)
+                        # Distances add the kernel's row norm, whose sum may be
+                        # ordered differently: bound two summation orders.
+                        x_norm = x.to(dtype).float().square().sum(dim=1)
+                        bound = 2 * d * torch.finfo(torch.float32).eps * x_norm
+                        gap = (distance - torch.cat([e[0] for e in expected])).abs()
+                        self.assertTrue(bool((gap <= bound).all()))
+                        self.assertEqual(model._row_padding[0].shape[1], (d + 15) // 16 * 16)
+
+    def test_default_assignment_chunk_size(self):
+        self.assertEqual(Emeans(128, 4)._get_assignment_chunk_size(True), 8192)
+        self.assertEqual(Emeans(128, 4)._get_assignment_chunk_size(False), 65536)
+        for backend in ("triton", "cute"):
+            def chunk(d, **kwargs):
+                km = Emeans(d, 4, assignment_backend=backend, **kwargs)
+                return km._get_assignment_chunk_size(True)
+            with self.subTest(backend=backend):
+                self.assertEqual(chunk(128), 65536)
+                # Halved for wide rows until a chunk-sized FP32 buffer fits in 256 MiB.
+                self.assertEqual(chunk(1023), 65536)
+                self.assertEqual(chunk(1024), 32768)
+                self.assertEqual(chunk(4095), 16384)
+                self.assertEqual(chunk(4096), 8192)
+                self.assertEqual(chunk(65536), 8192)
+                self.assertEqual(chunk(128, assignment_chunk_size=5), 5)
+
     def test_stateless_cast_and_cpu_scope(self):
         q = CastQuantizer(1, torch.bfloat16)
         q.train()

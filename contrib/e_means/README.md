@@ -78,6 +78,14 @@ autotuning or backend fallback. `centroid_chunk_size` applies only to native
 Torch; Triton chooses its internal tile geometry. Conservative known-size
 parallelism/work-per-partition rules are performance defaults, not hardware
 legality or a portable crossover. Padded physical index/label bounds still apply.
+For FP32/FP16/BF16 rows whose width is not a multiple of 16, Triton assigns
+copies padded with zero columns to the next multiple of 16 (the centroid
+operand once per batch, rows per chunk), so loads stay aligned. Labels are
+unchanged; returned distances can differ in the last bits, because the kernel
+then sums each row norm in a different order. Triton and CuTe never build a
+chunk-by-centroid score matrix, so their default `assignment_chunk_size` is
+65,536 rows, halved for wide vectors until one chunk-sized FP32 statistics
+buffer fits in 256 MiB; native Torch keeps 8,192.
 
 GPU callers use `DistributedEmeans(d, k, group=group, transport="auto", ...)`
 with an initialized, caller-owned process group. Group and transport are fixed
