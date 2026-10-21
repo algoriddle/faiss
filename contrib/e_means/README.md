@@ -16,7 +16,7 @@ The default statistical batch size and EMA step are selected together; set
 `batch_size` and `alpha0` together to override them. NumPy input uses exact
 Faiss L2 assignment. PyTorch input stays on its CPU or CUDA device and does not
 call Faiss; PyTorch is optional. This reference implementation supports dense
-float32 Euclidean clustering and makes no speed claim. See
+floating Euclidean clustering and makes no speed claim. See
 `../../demos/demo_e_means.py` for a DEEP1M example.
 
 For caller-driven batches, supply FP32 initial centroids and the global row
@@ -37,18 +37,37 @@ remainder. The caller owns loading, ordering, transfers and prefetch. Centroids
 and masses remain resident. `accumulate` returns model-owned FP32 sums/counts,
 an FP64 assignment-objective scalar and a host row count; consume or copy these
 before another accumulation. CPU callers can sum all four statistics fields
-with their own communication and call local `update`. CUDA accepts native FP32
-and requires finite caller-validated values; metadata is always checked, with
+with their own communication and call local `update`. CUDA requires finite
+caller-validated values fitting the chosen format; metadata is always checked, with
 no implicit CUDA value scan. NumPy/Torch CPU validation still checks finiteness.
 
 Untouched centroid positions survive mass decay. The obsolete
 `recipe["readout_epsilon"]` floor is removed. Revival keeps ordinary
-multiplicative splits; a collapsed FP32 pair changes one coordinate to an
+multiplicative splits; a collapsed represented pair changes one coordinate to an
 adjacent finite value. Distinct operands do not guarantee both children get
 rows (a zero donor's subnormal distance can underflow). Final FP32 centroids
 are means of the final pass's own assignments; never-assigned centroids retain
 their current positions. `obj` and the `train` return remain moving-pass
 objectives, rather than scores against the closing means.
+
+CUDA native Torch accepts FP32, FP16 and BF16. With `quantizer=None`, the
+first batch (including a typed empty batch) fixes the native dtype for the run.
+FP32 initial centroids do not select that dtype. Norms, dot products and FP32
+statistics use the same represented rows; centroid operands follow that format.
+FP32 centroid state and final means remain unquantized. Distances refer to the
+rounded centroid operands, and native FP32 honors the caller's Torch matmul
+settings. FP16/BF16 assignment requires NVIDIA SM80 or later and Torch
+`addmm` support for FP32 output.
+
+For explicit batchwise conversion, use
+`CastQuantizer(d, torch.float16)` or `CastQuantizer(d, torch.bfloat16)` from
+`faiss.contrib.e_means.e_means_quantizer`, passed as `quantizer=q`. Its `train` is a no-op;
+`compute_codes` returns native typed Torch rows and `decode` widens them to
+FP32. Conversion/decoding check metadata without CUDA value scans. Call
+`q.validate(x)` explicitly to check finite/range hazards; unchecked overflow
+follows Torch cast semantics. The existing internally generated FP16 split
+range guard remains. CPU computes supplied represented floating values in FP32
+and requires `quantizer=None`, even though the cast helper can execute on CPU.
 
 GPU callers use `DistributedEmeans(d, k, group=group, transport="auto", ...)`
 with an initialized, caller-owned process group. Group and transport are fixed
