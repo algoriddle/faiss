@@ -19,6 +19,17 @@ _INIT_USAGE = 2.0**-16
 _SPLIT_EPSILON = 1e-4
 _UNUSED_THRESHOLD = 0.1
 
+# Default rows per assignment chunk. Native Torch materializes a chunk-by-
+# centroid-block score matrix, so its chunk stays small. Triton and CuTe never
+# do: their chunk only sets how much parallel work one launch exposes, and a
+# small chunk leaves the GPU under-occupied. Their chunk is halved for wide rows
+# until one chunk-sized FP32 statistics buffer fits in _TILED_CHUNK_BYTES.
+_NATIVE_CHUNK_ROWS = 8192
+_TILED_CHUNK_ROWS = 65536
+_TILED_CHUNK_BYTES = 2**28
+# Triton vectorizes row loads only when the row width is a multiple of this.
+_TRITON_WIDTH_ALIGNMENT = 16
+
 # The default profile couples fitted batch-size and initial-step laws. The
 # batch laws were fitted on full passes with 100K to 10M training vectors; the
 # step law also includes 100M. That law was fitted with a zero-ending cosine;
@@ -241,6 +252,12 @@ def _separate_splits(donor, child, dtype=None):
         child[:, 0] = np.where(collapsed, neighbor, value)
 
 
+def _padded_width(d):
+    """Round a row width up to Triton's vectorized-load alignment."""
+    alignment = _TRITON_WIDTH_ALIGNMENT
+    return (d + alignment - 1) // alignment * alignment
+
+
 def _synchronize(device):
     if device.type == "cuda":
         import torch
@@ -296,10 +313,12 @@ class Emeans:
         Print one line of statistics after each pass.
     assignment_chunk_size : int, optional
         Maximum rows assigned at once. This does not alter the statistical
-        batch size or the EMA schedule. The default is 65,536 rows for NumPy
-        and 8,192 for PyTorch. With NumPy input, it can change floating-point
-        assignment results if Faiss selects a different exact-search kernel
-        for a different query size.
+        batch size or the EMA schedule. The default is 65,536 rows for NumPy,
+        8,192 for native PyTorch, and for Triton and CuTe 65,536 rows, halved
+        for wide vectors until one chunk-sized FP32 statistics buffer fits in
+        256 MiB (never below 8,192). With NumPy input, it can change
+        floating-point assignment results if Faiss selects a different
+        exact-search kernel for a different query size.
     centroid_chunk_size : int, optional
         Maximum centroids examined at once by the PyTorch assignment path.
 
@@ -463,11 +482,40 @@ class Emeans:
         self._input_dtype = None
         self._fp8_peak = None
         self._cute_assignment_cache = None
+        self._row_padding = None
+        self._centroid_padding = None
 
     def _get_assignment_chunk_size(self, is_torch):
         if self.assignment_chunk_size is not None:
             return self.assignment_chunk_size
-        return 8192 if is_torch else 65536
+        if not is_torch:
+            return 65536
+        if self.assignment_backend == "native":
+            return _NATIVE_CHUNK_ROWS
+        rows = max(1, _TILED_CHUNK_BYTES // (4 * (self.d + 1)))
+        # A power of two divides the recipe's power-of-two batches, so no batch
+        # ends in a small chunk that would leave the GPU under-occupied.
+        rows = 1 << (rows.bit_length() - 1)
+        return max(_NATIVE_CHUNK_ROWS, min(_TILED_CHUNK_ROWS, rows))
+
+    def _padded(self, value, width, name):
+        """Copy ``value`` into the reused zero-filled buffer ``name``.
+
+        Only the first ``value.shape[1]`` columns are ever written, so the
+        columns up to ``width`` stay zero and add nothing to any dot product.
+        The views for the last row count are kept, so a repeated call costs
+        one copy. Calls on one model share the buffers, in stream order.
+        """
+        buffer, rows, padded, columns = getattr(self, name) or (None,) * 4
+        if (buffer is None or len(buffer) < len(value) or buffer.shape[1] != width
+                or buffer.dtype != value.dtype):
+            buffer, rows = value.new_zeros((len(value), width)), None
+        if rows != len(value):
+            padded = buffer[:len(value)]
+            columns = padded[:, :value.shape[1]]
+            setattr(self, name, (buffer, len(value), padded, columns))
+        columns.copy_(value)
+        return padded
 
     def _prepare_input(self, x, allow_empty=False):
         state = self._centroids if self._centroids is not None else self.centroids
@@ -573,6 +621,14 @@ class Emeans:
                 represented = _pad_fp8(represented)
         else:
             represented = centroids.to(dtype)
+            if (self.assignment_backend == "triton"
+                    and self.d % _TRITON_WIDTH_ALIGNMENT):
+                # Zero columns align row loads and add nothing to a dot product.
+                # The norm is taken before padding, because a longer reduction
+                # can round differently; scores and labels are then unchanged.
+                norm = represented.float().square().sum(dim=1)
+                width = _padded_width(self.d)
+                return self._padded(represented, width, "_centroid_padding"), norm
         return represented, represented.float().square().sum(dim=1)
 
     def _revive_unused(self, rng):
@@ -683,6 +739,8 @@ class Emeans:
                     distance, labels = assign(x, centroids, centroid_norm,
                                               representation(self._input_dtype))
                 else:
+                    if centroids.shape[1] != x.shape[1]:
+                        x = self._padded(x, centroids.shape[1], "_row_padding")
                     distance, labels = _get_triton_assign_rows()(x, centroids, centroid_norm)
                 if self._fp8_quantizer or self._int8_quantizer:
                     from .e_means_quantizer import _ldexp
@@ -1082,6 +1140,8 @@ class Emeans:
         self._pending_stats = None
         if self._is_torch:
             self._stats_operand = None
+            self._row_padding = None
+            self._centroid_padding = None
         return self.centroids
 
     def train(self, x, init_centroids=None):
