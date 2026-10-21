@@ -35,6 +35,20 @@ _DIRECT_BLOCK_B = 64
 _DIRECT_BLOCK_K = 256
 _DIRECT_REDUCED_BLOCK_D = 64
 _DIRECT_FP32_BLOCK_D = 32
+# FP32 rows with fp32_dot="tf32x3" run on tensor cores, so they get their own
+# tiles: whole rows up to 64 wide, 32-wide slices beyond, 128 centroids per
+# tile. Fixed values from one H100 screen (Triton 3.4, 3.6 and 3.8); all stay
+# within 128 KiB of shared memory, like the other configurations here.
+_TF32X3_FULL_D_MAX_D = 64
+_TF32X3_BLOCK_D = 32
+_TF32X3_BLOCK_K = 128
+
+
+def _tf32x3_config(b, full_d):
+    """Rows per program shrink with the chunk so that small chunks still fill the GPU."""
+    block_b = 32 if b <= 4096 else 64 if b < 16384 else 128
+    num_warps = 8 if block_b == 128 and not full_d else 4
+    return block_b, _TF32X3_BLOCK_K, num_warps, 3
 _FLOAT8_E4M3FN = getattr(torch, "float8_e4m3fn", None)
 _FULL_D_MAX_D = 128
 _FULL_D_CONFIG = (64, 128, 4, 3)
@@ -131,6 +145,7 @@ def _assign_kernel(
     FP16: tl.constexpr,
     FP8: tl.constexpr,
     WIDE_CENTROID: tl.constexpr,
+    TF32X3: tl.constexpr,
 ):
     row_program = tl.program_id(0).to(tl.int64)
     lane = tl.arange(0, BLOCK_B).to(tl.int64)
@@ -199,10 +214,24 @@ def _assign_kernel(
                     out_dtype=tl.float32,
                     max_num_imprecise_acc=max(32, BLOCK_D),
                 )
+            elif REDUCED:
+                score = tl.dot(
+                    full_x,
+                    tl.trans(c),
+                    out_dtype=tl.float32,
+                )
+            elif TF32X3:
+                score = tl.dot(
+                    full_x,
+                    tl.trans(c),
+                    input_precision="tf32x3",
+                    out_dtype=tl.float32,
+                )
             else:
                 score = tl.dot(
                     full_x,
                     tl.trans(c),
+                    input_precision="ieee",
                     out_dtype=tl.float32,
                 )
         else:
@@ -247,6 +276,14 @@ def _assign_kernel(
                         x,
                         tl.trans(c),
                         acc=score,
+                        out_dtype=tl.float32,
+                    )
+                elif TF32X3:
+                    score = tl.dot(
+                        x,
+                        tl.trans(c),
+                        acc=score,
+                        input_precision="tf32x3",
                         out_dtype=tl.float32,
                     )
                 else:
@@ -663,11 +700,13 @@ def _split_k_partitions(b, k):
 
 
 def _launch_assignment(
-    x, centroids, centroid_norm, distance, labels, wide_centroid
+    x, centroids, centroid_norm, distance, labels, wide_centroid, tf32x3=False
 ):
     b, d = x.shape
     k = centroids.shape[0]
     is_reduced = centroids.dtype != torch.float32
+    if tf32x3 and is_reduced:
+        raise ValueError("tf32x3 applies to FP32 operands only")
     is_fp16 = centroids.dtype == torch.float16
     is_fp8 = centroids.dtype == _FLOAT8_E4M3FN
     direct_block_d = _DIRECT_REDUCED_BLOCK_D if is_reduced else _DIRECT_FP32_BLOCK_D
@@ -681,10 +720,15 @@ def _launch_assignment(
         full_d = (
             is_reduced
             and _DIRECT_REDUCED_BLOCK_D < d <= _FULL_D_MAX_D
-        )
+        ) or (tf32x3 and d <= _TF32X3_FULL_D_MAX_D)
         if full_d:
-            block_b, block_k, num_warps, num_stages = _FULL_D_CONFIG
+            block_b, block_k, num_warps, num_stages = (
+                _tf32x3_config(b, True) if tf32x3 else _FULL_D_CONFIG
+            )
             block_d = max(16, triton.next_power_of_2(d))
+        elif tf32x3:
+            block_b, block_k, num_warps, num_stages = _tf32x3_config(b, False)
+            block_d = _TF32X3_BLOCK_D
         else:
             block_b = _DIRECT_BLOCK_B
             block_k = _DIRECT_BLOCK_K
@@ -712,6 +756,7 @@ def _launch_assignment(
             FP16=is_fp16,
             FP8=is_fp8,
             WIDE_CENTROID=wide_centroid,
+            TF32X3=tf32x3,
             num_warps=num_warps,
             num_stages=num_stages,
         )
@@ -921,8 +966,16 @@ def assign_int8_rows(
     return distance, labels
 
 
-def assign_rows(x, centroids, centroid_norm):
-    """Return nearest-centroid squared distances and indices."""
+def assign_rows(x, centroids, centroid_norm, fp32_dot="ieee"):
+    """Return nearest-centroid squared distances and indices.
+
+    ``fp32_dot`` selects how FP32 operands use the tensor cores: "ieee" (exact
+    FP32 products, no tensor cores) or "tf32x3" (each product split into three
+    TF32 tensor-core products, close to FP32 accuracy). It must stay "ieee" for
+    reduced or quantized operands.
+    """
+    if fp32_dot not in ("ieee", "tf32x3"):
+        raise ValueError("fp32_dot must be 'ieee' or 'tf32x3'")
     if (
         x.device.type != "cuda"
         or centroids.device != x.device
@@ -940,6 +993,8 @@ def assign_rows(x, centroids, centroid_norm):
         raise TypeError(
             "Triton rows must be FP32 or match floating centroid dtype; E4M3 must match"
         )
+    if fp32_dot != "ieee" and centroids.dtype != torch.float32:
+        raise ValueError("fp32_dot='%s' requires FP32 operands" % fp32_dot)
     is_fp8 = centroids.dtype == _FLOAT8_E4M3FN
     if is_fp8:
         from .e_means_fp8 import _check_fp8_support
@@ -978,5 +1033,6 @@ def assign_rows(x, centroids, centroid_norm):
             distance,
             labels,
             wide_centroid,
+            tf32x3=fp32_dot == "tf32x3",
         )
     return distance, labels

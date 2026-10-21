@@ -236,6 +236,46 @@ class TestTorchEmeans(unittest.TestCase):
                 torch.testing.assert_close(tiled.assign(x)[1], native.assign(x)[1])
                 self.assertEqual(tiled.recipe["assignment_backend"], "triton")
 
+    def test_fp32_dot_scope(self):
+        with self.assertRaisesRegex(ValueError, "Triton"):
+            Emeans(4, 3, assignment_backend="cute", fp32_dot="tf32x3")
+        with self.assertRaisesRegex(ValueError, "FP32 rows"):
+            Emeans(4, 3, assignment_backend="triton", fp32_dot="tf32x3",
+                   quantizer=CastQuantizer(4, torch.bfloat16))
+
+    @unittest.skipUnless(
+        torch.cuda.is_available() and getattr(torch.version, "hip", None) is None
+        and torch.cuda.get_device_capability() >= (8, 0)
+        and importlib.util.find_spec("triton") is not None, "Triton CUDA required"
+    )
+    def test_triton_tf32x3_matches_exact_assignment(self):
+        initial = torch.tensor([[0.], [3.]], device="cuda")
+        x = torch.tensor([[0.125], [0.25], [3.125], [3.25], [3.5]], device="cuda")
+        args = dict(niter=2, batch_size=2, alpha0=0.5, seed=7)
+        native = Emeans(1, 2, **args)
+        split = Emeans(1, 2, assignment_backend="triton", fp32_dot="tf32x3", **args)
+        native.train(x, initial)
+        split.train(x, initial)
+        # Few-bit values make every split product exact: training matches FP32.
+        torch.testing.assert_close(split.centroids, native.centroids, atol=0, rtol=0)
+        self.assertEqual(split.recipe["fp32_dot"], "tf32x3")
+        from faiss.contrib.e_means.e_means_triton import assign_rows
+
+        generator = torch.Generator(device="cuda").manual_seed(11)
+        for d, k in ((3, 7), (40, 300), (130, 513)):
+            rows = torch.randn(4096, d, device="cuda", generator=generator)
+            centroids = torch.randn(k, d, device="cuda", generator=generator)
+            norm = centroids.square().sum(1)
+            exact = torch.cdist(rows.double(), centroids.double()).square()
+            best = exact.min(1).values
+            for fp32_dot in ("ieee", "tf32x3"):
+                with self.subTest(d=d, k=k, fp32_dot=fp32_dot):
+                    distance, labels = assign_rows(rows, centroids, norm, fp32_dot=fp32_dot)
+                    chosen = exact.gather(1, labels[:, None]).squeeze(1)
+                    # The float64 nearest centroid, up to FP32 resolution on near-ties.
+                    self.assertTrue(bool((chosen - best <= 1e-5 * (1 + best)).all()))
+                    torch.testing.assert_close(distance.double(), best, rtol=1e-4, atol=1e-5)
+
     def test_stateless_cast_and_cpu_scope(self):
         q = CastQuantizer(1, torch.bfloat16)
         q.train()

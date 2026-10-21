@@ -306,7 +306,8 @@ class Emeans:
     assignment_backend : {"native", "triton", "cute"}, optional
         Native is the default. Triton requires NVIDIA CUDA SM80 or later and
         a compatible Triton installation. It uses bounded tiled/split assignment,
-        FP32 IEEE dot input precision, and no runtime autotuning or backend fallback.
+        FP32 dot input precision selected by ``fp32_dot``, and no runtime
+        autotuning or backend fallback.
         centroid_chunk_size applies only to native Torch assignment.
         CuTe supports native BF16/E4M3/INT8/UINT8 or a matching explicit
         quantizer on exactly SM90,
@@ -330,6 +331,15 @@ class Emeans:
         UINT8 translation is internal. INT8 ranking is exact with d <= 43919,
         qualified NVIDIA SM80/SM90/SM100, and FP32 returned distances.
         CPU computes in FP32 and requires quantizer=None.
+    fp32_dot : {"ieee", "tf32x3"}, optional
+        How Triton assignment multiplies FP32 rows by FP32 centroids. "ieee"
+        (the default) uses exact FP32 products without tensor cores. "tf32x3"
+        splits each operand into a TF32 value and a TF32 remainder and sums
+        three tensor-core products, which is several times faster and close to
+        FP32 accuracy; on data whose coordinates are very large compared with
+        the distances between centroids in two or three dimensions, "ieee"
+        stays more accurate. Requires ``assignment_backend="triton"`` and FP32
+        rows (no quantizer).
 
     Attributes
     ----------
@@ -381,6 +391,7 @@ class Emeans:
         centroid_chunk_size=4096,
         quantizer=None,
         assignment_backend="native",
+        fp32_dot="ieee",
     ):
         self.d = int(d)
         self.k = int(k)
@@ -399,6 +410,11 @@ class Emeans:
         self.assignment_backend = assignment_backend
         if assignment_backend not in ("native", "triton", "cute"):
             raise ValueError("assignment_backend must be native, triton or cute")
+        self.fp32_dot = fp32_dot
+        if fp32_dot not in ("ieee", "tf32x3"):
+            raise ValueError("fp32_dot must be 'ieee' or 'tf32x3'")
+        if fp32_dot != "ieee" and (assignment_backend != "triton" or quantizer is not None):
+            raise ValueError("fp32_dot='tf32x3' requires Triton assignment of FP32 rows")
         if assignment_backend == "triton" and self.k > 2**31 - 256:
             raise ValueError("Triton assignment requires k <= 2**31 - 256")
         if assignment_backend == "cute" and self.k > 2**31 - 192:
@@ -677,13 +693,17 @@ class Emeans:
                 import torch
 
                 if self._input_dtype in (torch.int8, torch.uint8):
+                    if self.fp32_dot != "ieee":
+                        raise ValueError("fp32_dot='%s' requires FP32 rows" % self.fp32_dot)
                     from .e_means_int8 import representation
 
                     assign, _ = _get_triton_int8_functions()
                     distance, labels = assign(x, centroids, centroid_norm,
                                               representation(self._input_dtype))
                 else:
-                    distance, labels = _get_triton_assign_rows()(x, centroids, centroid_norm)
+                    distance, labels = _get_triton_assign_rows()(
+                        x, centroids, centroid_norm, fp32_dot=self.fp32_dot
+                    )
                 if self._fp8_quantizer or self._int8_quantizer:
                     from .e_means_quantizer import _ldexp
 
@@ -785,6 +805,7 @@ class Emeans:
             "seed": self.seed,
             "backend": "torch" if is_torch else "faiss",
             "assignment_backend": self.assignment_backend,
+            "fp32_dot": self.fp32_dot,
             "assignment_chunk_size": self._get_assignment_chunk_size(is_torch),
         }
         if is_torch:
