@@ -159,6 +159,28 @@ class TestEmeans(unittest.TestCase):
         self.assertIsNone(caller.assignments)
         np.testing.assert_array_equal(labels, matrix.assignments)
 
+    def test_capture_memory_is_one_int64_per_row(self):
+        # Even when one batch holds every row, capture adds one int64 per row:
+        # train() writes the final pass's labels straight to their rows. And an
+        # epoch boundary holds one permutation, not two.
+        import tracemalloc
+
+        def peak(**args):
+            tracemalloc.start()
+            base = tracemalloc.get_traced_memory()[0]
+            Emeans(d, k, alpha0=0.5, seed=3, **args).train(x)
+            used = tracemalloc.get_traced_memory()[1] - base
+            tracemalloc.stop()
+            return used
+
+        n, d, k = 400_000, 2, 16
+        x = np.random.RandomState(0).randn(n, d).astype("float32")
+        Emeans(d, k, niter=1, batch_size=1000, alpha0=0.5).train(x[:1000])  # warm caches
+        off = peak(niter=1, batch_size=n)
+        on = peak(niter=1, batch_size=n, capture_assignments=True)
+        self.assertTrue(6.0 < (on - off) / n < 10.0, (on - off) / n)
+        self.assertLess((peak(niter=2, batch_size=n) - off) / n, 4.0)
+
     def test_lifecycle_rejects_incomplete_batches(self):
         km = Emeans(1, 1, niter=1, batch_size=3, alpha0=0.5)
         km.begin(5, np.zeros((1, 1), dtype="float32"))

@@ -62,8 +62,11 @@ labels = km.assignments  # each closing centroid is the mean of its rows here
 ```
 
 No extra pass or search is run. The labels were chosen against centroids that
-were still moving, so `assign(x)` against the closing centroids can differ for
-some rows; the captured labels are the ones the closing means were built from.
+were still moving, so `assign(x)` against the closing centroids can differ for a
+large share of rows when there are few passes: more than half of them after a
+single pass with many clusters in our runs, and under 2% from five passes on.
+The captured labels are the ones the closing means were built from; call
+`assign(x)` when you need nearest-centroid labels.
 
 CUDA native Torch accepts FP32, FP16 and BF16. With `quantizer=None`, the
 first batch (including a typed empty batch) fixes the native dtype for the run.

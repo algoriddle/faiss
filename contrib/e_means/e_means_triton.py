@@ -839,8 +839,12 @@ def assign_int8_rows(
     centroids,
     centroid_norm,
     representation,
+    labels=None,
 ):
-    """Return exact-ranking INT8 distances and centroid indices."""
+    """Return exact-ranking INT8 distances and centroid indices.
+
+    ``labels``, if given, is a contiguous int64 (b,) CUDA tensor written in place.
+    """
     if (
         x.device.type != "cuda"
         or centroids.device != x.device
@@ -893,7 +897,7 @@ def assign_int8_rows(
             x = staged
             unsigned = False
         distance = torch.empty(b, dtype=torch.float32, device=x.device)
-        labels = torch.empty(b, dtype=torch.int64, device=x.device)
+        labels = _labels_out(labels, b, x.device)
         wide_centroid = _centroid_offset_is_wide(
             centroids.shape, centroids.stride()
         )
@@ -921,8 +925,20 @@ def assign_int8_rows(
     return distance, labels
 
 
-def assign_rows(x, centroids, centroid_norm):
-    """Return nearest-centroid squared distances and indices."""
+def _labels_out(labels, b, device):
+    if labels is None:
+        return torch.empty(b, dtype=torch.int64, device=device)
+    if (labels.dtype != torch.int64 or labels.shape != (b,)
+            or labels.device != device or not labels.is_contiguous()):
+        raise ValueError("labels must be a contiguous int64 (b,) tensor on x's device")
+    return labels
+
+
+def assign_rows(x, centroids, centroid_norm, labels=None):
+    """Return nearest-centroid squared distances and indices.
+
+    ``labels``, if given, is a contiguous int64 (b,) CUDA tensor written in place.
+    """
     if (
         x.device.type != "cuda"
         or centroids.device != x.device
@@ -967,7 +983,7 @@ def assign_rows(x, centroids, centroid_norm):
             if centroids.stride(1) != 1 or centroids.stride(0) % 64:
                 centroids = _pad_fp8(centroids)
         distance = torch.empty(b, dtype=torch.float32, device=x.device)
-        labels = torch.empty(b, dtype=torch.int64, device=x.device)
+        labels = _labels_out(labels, b, x.device)
         wide_centroid = _centroid_offset_is_wide(
             centroids.shape, centroids.stride()
         )
