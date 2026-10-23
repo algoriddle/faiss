@@ -244,6 +244,14 @@ def _synchronize(device):
         torch.cuda.synchronize(device)
 
 
+def _get_triton_assign_rows():
+    try:
+        from .e_means_triton import assign_rows
+    except ImportError as error:
+        raise ImportError("Triton assignment requires the triton package") from error
+    return assign_rows
+
+
 class Emeans:
     """Cluster vectors with mini-batch exponential moving averages.
 
@@ -278,6 +286,11 @@ class Emeans:
     centroid_chunk_size : int, optional
         Maximum centroids examined at once by the PyTorch assignment path.
 
+    assignment_backend : {"native", "triton"}, optional
+        Native is the default. Triton requires NVIDIA CUDA SM80 or later and
+        a compatible Triton installation. It uses bounded tiled/split assignment,
+        FP32 IEEE dot input precision, and no runtime autotuning or backend fallback.
+        centroid_chunk_size applies only to native Torch assignment.
     quantizer : CastQuantizer, optional
         Explicit stateless FP16/BF16 conversion for CUDA batches. None uses
         native FP32/FP16/BF16 input, fixed by the first batch including an empty
@@ -333,6 +346,7 @@ class Emeans:
         assignment_chunk_size=None,
         centroid_chunk_size=4096,
         quantizer=None,
+        assignment_backend="native",
     ):
         self.d = int(d)
         self.k = int(k)
@@ -348,6 +362,11 @@ class Emeans:
             else int(assignment_chunk_size)
         )
         self.centroid_chunk_size = int(centroid_chunk_size)
+        self.assignment_backend = assignment_backend
+        if assignment_backend not in ("native", "triton"):
+            raise ValueError("assignment_backend must be native or triton")
+        if assignment_backend == "triton" and self.k > 2**31 - 256:
+            raise ValueError("Triton assignment requires k <= 2**31 - 256")
         self.quantizer = quantizer
         if quantizer is not None:
             from .e_means_quantizer import CastQuantizer
@@ -396,7 +415,9 @@ class Emeans:
             # Fewer, larger chunks amortize per-chunk host work and fill the
             # device. Target roughly 256 MiB per FP32 statistics matrix or
             # native Torch score tile.
-            width = max(self.d, min(self.k, self.centroid_chunk_size))
+            width = self.d
+            if self.assignment_backend == "native":
+                width = max(width, min(self.k, self.centroid_chunk_size))
             return min(2**20, max(8192, 2**26 // width))
         return 8192 if is_torch else 65536
 
@@ -407,6 +428,10 @@ class Emeans:
             raise TypeError("x and centroids must use the same array type")
         if self.quantizer is not None and (not is_torch or state.device.type != "cuda"):
             raise ValueError("CPU E-means requires quantizer=None")
+        if self.assignment_backend == "triton":
+            if not is_torch or state.device.type != "cuda":
+                raise ValueError("Triton assignment requires CUDA tensors")
+            _get_triton_assign_rows()
         x = _as_input_matrix(x, "x", is_torch, allow_empty)
         if x.shape[1] != self.d:
             raise ValueError("x must have dimension d")
@@ -417,10 +442,10 @@ class Emeans:
         import torch
 
         dtype = self.quantizer.dtype if self.quantizer is not None else x.dtype
-        if x.device.type == "cuda" and dtype != torch.float32:
+        if x.device.type == "cuda" and (dtype != torch.float32 or self.assignment_backend == "triton"):
             if (getattr(torch.version, "hip", None) is not None
                     or torch.cuda.get_device_capability(x.device) < (8, 0)):
-                raise RuntimeError("FP16/BF16 assignment requires NVIDIA SM80 or later")
+                raise RuntimeError("selected assignment requires NVIDIA SM80 or later")
         if self._input_dtype is not None and dtype != self._input_dtype:
             raise ValueError("native input dtype must be consistent across the run")
         self._input_dtype = dtype
@@ -436,7 +461,15 @@ class Emeans:
 
         dtype = self._input_dtype or torch.float32
         represented = centroids.to(dtype)
-        return represented, represented.float().square().sum(dim=1)
+        norm = represented[:, :self.d].float().square().sum(dim=1)
+        if self.assignment_backend == "triton" and dtype is torch.float32:
+            represented = represented.t().contiguous().t()
+        if (self.assignment_backend == "triton"
+                and dtype in (torch.bfloat16, torch.float16) and self.d % 16):
+            from .e_means_triton import _pad_columns
+
+            represented = _pad_columns(represented, 16)
+        return represented, norm
 
     def _revive_unused(self, rng):
         source, target = self._choose_splits(rng)
@@ -498,6 +531,18 @@ class Emeans:
         return source, target
 
     def _apply_splits(self, source, target):
+        if (type(self) is Emeans and getattr(self, "_is_torch", False) and self._centroids.is_cuda
+                and self.assignment_backend in ("triton",)
+                and self.quantizer is None and self.d <= 1024):
+            import torch
+
+            if self._input_dtype in (None, torch.float32, torch.bfloat16):
+                from .e_means_triton import _write_float_splits
+
+                if _write_float_splits(self._centroids, self._usage, source, target,
+                                       self._input_dtype, _SPLIT_EPSILON):
+                    self.n_splits += len(source)
+                    return len(source)
         centroids = self._centroids[source]
         if _is_torch_tensor(centroids):
             import torch
@@ -529,6 +574,12 @@ class Emeans:
 
     def _assign_rows(self, x, centroids, centroid_norm=None):
         if _is_torch_tensor(x):
+            if self.assignment_backend == "triton":
+                if x.shape[1] != centroids.shape[1]:
+                    from .e_means_triton import _pad_columns
+
+                    x = _pad_columns(x, 16)
+                return _get_triton_assign_rows()(x, centroids, centroid_norm)
             import torch
 
             x_norm = x.float().square().sum(dim=1)
@@ -579,6 +630,8 @@ class Emeans:
         centroids = _as_float32_matrix(init_centroids, "init_centroids", is_torch)
         if centroids.shape != (self.k, self.d):
             raise ValueError("init_centroids must have shape (k, d)")
+        if self.assignment_backend == "triton" and (not is_torch or centroids.device.type != "cuda"):
+            raise ValueError("Triton assignment requires CUDA tensors")
         if self.quantizer is not None and (not is_torch or centroids.device.type != "cuda"):
             raise ValueError("CPU E-means requires quantizer=None")
         self.reset()
@@ -618,6 +671,7 @@ class Emeans:
             "init_usage": _INIT_USAGE,
             "seed": self.seed,
             "backend": "torch" if is_torch else "faiss",
+            "assignment_backend": self.assignment_backend,
             "assignment_chunk_size": self._get_assignment_chunk_size(
                 is_torch, is_torch and centroids.is_cuda),
         }
@@ -715,6 +769,13 @@ class Emeans:
                 self._batch_stats.shape, dtype=torch.float64)
                 if n > 2**24 else self._batch_stats)
             operand = None
+            native_stats = (type(self) is Emeans and self.quantizer is None
+                            and self._centroids.is_cuda
+                            and self.assignment_backend == "triton"
+                            and 0 < n <= 2**24 and x.dtype == torch.float16
+                            and not torch.are_deterministic_algorithms_enabled())
+            if native_stats:
+                from .e_means_triton import accumulate_bytes
         else:
             self._batch_stats.fill(0)
             objective = np.float64(0)
@@ -730,6 +791,9 @@ class Emeans:
             distance, labels = self._assign_rows(rows, centroids, centroid_norm)
             if self._is_torch:
                 objective += distance.sum(dtype=torch.float64)
+                if (native_stats and rows.dtype == x.dtype
+                        and accumulate_bytes(rows, labels, accumulation)):
+                    continue
                 if operand is None:
                     if self._stats_operand is None:
                         with torch.inference_mode(self._batch_stats.is_inference()):
@@ -822,28 +886,36 @@ class Emeans:
         if self._is_torch:
             import torch
 
-            touched = counts > 0
-            # Fixed-shape masks avoid dynamic row selection/host reads. Inactive
-            # lanes divide zero by one; only touched lanes divide by statistics.
-            safe_counts = torch.where(touched, counts, 1)
-            mean = sums.clone()
-            mean.masked_fill_(~touched[:, None], 0)
-            mean /= safe_counts[:, None]
-            if not replace_usage:
-                self._usage *= decay
-            usage = self._usage if ids is None else self._usage[ids]
-            centroids = self._centroids if ids is None else self._centroids[ids]
-            retained = usage if not replace_usage else torch.zeros_like(usage)
-            mass = retained + alpha * counts
-            weight = alpha * counts / torch.where(touched, mass, 1)
-            position = mean - centroids
-            position.mul_(weight[:, None]).add_(centroids)
-            torch.where((weight == 1)[:, None], mean, position, out=position)
-            torch.where(touched[:, None], position, centroids, out=centroids)
-            torch.where(touched, mass, usage, out=usage)
-            if ids is not None:
-                self._centroids.index_copy_(0, ids, centroids)
-                self._usage.index_copy_(0, ids, usage)
+            fused = False
+            if (ids is None and self._centroids.is_cuda
+                    and self.assignment_backend in ("triton",)):
+                from .e_means_triton import ema_update
+
+                fused = ema_update(sums, counts, self._centroids, self._usage,
+                                   alpha, decay, replace_usage)
+            if not fused:
+                touched = counts > 0
+                # Fixed-shape masks avoid dynamic row selection/host reads. Inactive
+                # lanes divide zero by one; only touched lanes divide by statistics.
+                safe_counts = torch.where(touched, counts, 1)
+                mean = sums.clone()
+                mean.masked_fill_(~touched[:, None], 0)
+                mean /= safe_counts[:, None]
+                if not replace_usage:
+                    self._usage *= decay
+                usage = self._usage if ids is None else self._usage[ids]
+                centroids = self._centroids if ids is None else self._centroids[ids]
+                retained = usage if not replace_usage else torch.zeros_like(usage)
+                mass = retained + alpha * counts
+                weight = alpha * counts / torch.where(touched, mass, 1)
+                position = mean - centroids
+                position.mul_(weight[:, None]).add_(centroids)
+                torch.where((weight == 1)[:, None], mean, position, out=position)
+                torch.where(touched[:, None], position, centroids, out=centroids)
+                torch.where(touched, mass, usage, out=usage)
+                if ids is not None:
+                    self._centroids.index_copy_(0, ids, centroids)
+                    self._usage.index_copy_(0, ids, usage)
         else:
             touched = counts > 0
             if not replace_usage:
@@ -975,7 +1047,8 @@ class Emeans:
         try:
             stream.wait_stream(current)
             with torch.cuda.stream(stream):
-                torch.cuda.current_blas_handle()
+                if self.assignment_backend == "native":
+                    torch.cuda.current_blas_handle()
                 # The context manager empties process caches; use primitives.
                 graph.capture_begin(pool=pool.id, capture_error_mode="thread_local")
                 try:
