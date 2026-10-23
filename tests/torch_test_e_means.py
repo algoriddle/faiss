@@ -11,6 +11,7 @@ import torch
 
 from faiss.contrib.e_means import Emeans, DistributedEmeans
 from faiss.contrib.e_means.e_means import _epoch_seed
+from faiss.contrib.e_means.e_means_quantizer import CastQuantizer
 
 
 def _cpu_gloo_replica(rank, rendezvous):
@@ -65,6 +66,50 @@ class TestTorchEmeans(unittest.TestCase):
                 _cpu_gloo_replica, args=("file://" + directory + "/group",),
                 nprocs=2, join=True, start_method="fork"
             )
+
+    def test_stateless_cast_and_cpu_scope(self):
+        q = CastQuantizer(1, torch.bfloat16)
+        q.train()
+        self.assertTrue(q.is_trained)
+        self.assertEqual(q.code_size, 2)
+        self.assertIs(q.to("cpu"), q)
+        x = torch.tensor([[1.001], [3.001]])
+        codes = q.compute_codes(x)
+        torch.testing.assert_close(q.decode(codes), x.bfloat16().float())
+        q.validate(x)
+        with self.assertRaises(ValueError):
+            q.validate(torch.tensor([[float("inf")]]))
+        with self.assertRaises(ValueError):
+            Emeans(1, 1, quantizer=q).train(x)
+        model = Emeans(1, 1, niter=1, batch_size=2, alpha0=0.5)
+        model.train(codes)
+        torch.testing.assert_close(model.centroids, codes.float().mean(0, keepdim=True))
+
+    @unittest.skipUnless(
+        torch.cuda.is_available() and getattr(torch.version, "hip", None) is None
+        and torch.cuda.get_device_capability() >= (8, 0), "NVIDIA SM80 required"
+    )
+    def test_native_and_cast_represented_means(self):
+        x = torch.tensor([[1.001], [1.002], [3.001], [3.002]], device="cuda")
+        initial = torch.tensor([[1.0], [3.0]], device="cuda")
+        for dtype in (torch.float16, torch.bfloat16):
+            with self.subTest(dtype=dtype):
+                q = CastQuantizer(1, dtype)
+                codes = q.compute_codes(x)
+                native = Emeans(1, 2, niter=1, batch_size=4, alpha0=0.5)
+                cast = Emeans(1, 2, niter=1, batch_size=4, alpha0=0.5, quantizer=q)
+                native.train(codes, initial)
+                cast.train(x, initial)
+                expected = codes.float().reshape(2, 2, 1).mean(dim=1)
+                torch.testing.assert_close(native.centroids, expected, atol=0, rtol=0)
+                torch.testing.assert_close(cast.centroids, expected, atol=0, rtol=0)
+                torch.testing.assert_close(native.obj, cast.obj, atol=0, rtol=0)
+                dn, ln = native.assign(codes)
+                dc, lc = cast.assign(x)
+                torch.testing.assert_close(dn, dc, atol=0, rtol=0)
+                torch.testing.assert_close(ln, lc)
+                self.assertEqual((native.centroids.dtype, dn.dtype),
+                                 (torch.float32, torch.float32))
 
     def test_local_update_has_no_group_argument(self):
         model = Emeans(1, 1, niter=1, batch_size=2, alpha0=0.5)
