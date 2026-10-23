@@ -4,27 +4,81 @@
 # LICENSE file in the root directory of this source tree.
 
 import unittest
+import tempfile
 
+import numpy as np
 import torch
 
-from faiss.contrib.e_means import Emeans
+from faiss.contrib.e_means import Emeans, DistributedEmeans
 from faiss.contrib.e_means.e_means import _epoch_seed
 
 
+def _cpu_gloo_replica(rank, rendezvous):
+    import torch.distributed as dist
+
+    dist.init_process_group("gloo", init_method=rendezvous, rank=rank, world_size=2)
+    try:
+        distributed = DistributedEmeans(1, 2, group=dist.group.WORLD)
+        with unittest.TestCase().assertRaises(ValueError):
+            distributed.begin(10, torch.zeros((2, 1)))
+        with unittest.TestCase().assertRaises(RuntimeError):
+            distributed.accumulate(torch.zeros((1, 1)))
+        with unittest.TestCase().assertRaises(NotImplementedError):
+            distributed.train(torch.zeros((10, 1)))
+        initial = np.array([[0.], [100.]], dtype="float32")
+        if rank:
+            initial.fill(0)
+        dist.broadcast(torch.from_numpy(initial), src=0)
+        rows = (np.arange(10) % 3).astype("float32")[:, None]
+        args = dict(niter=2, batch_size=4, alpha0=0.5, seed=7)
+        model, reference = Emeans(1, 2, **args), Emeans(1, 2, **args)
+        model.begin(len(rows), initial)
+        reference.begin(len(rows), initial)
+        for _ in range(2):
+            for begin in range(0, len(rows), 4):
+                n = min(4, len(rows) - begin)
+                local_begin = begin + rank * (n // 2)
+                stats = model.accumulate(rows[local_begin:local_begin + n // 2])
+                # Communication is caller-owned; local update consumes the
+                # combined global statistics and global prescribed row count.
+                combined = {name: np.array(stats[name], copy=True, order="C")
+                            for name in ("sums", "counts", "objective")}
+                for value in combined.values():
+                    dist.all_reduce(torch.from_numpy(value))
+                model.update(dict(combined, n=n))
+                reference.update(reference.accumulate(rows[begin:begin + n]))
+            model.end_epoch()
+            reference.end_epoch()
+        np.testing.assert_allclose(model.finalize(), reference.finalize(), rtol=1e-6, atol=1e-6)
+        np.testing.assert_allclose(model.obj, reference.obj, rtol=1e-6, atol=1e-6)
+        assert model.n_splits == reference.n_splits and model.n_splits > 0
+    finally:
+        dist.destroy_process_group()
+
+
 class TestTorchEmeans(unittest.TestCase):
-    def test_large_cpu_batch_preserves_sum_and_count(self):
-        n = 2**24 + 2
-        x = torch.full((n, 1), 0.25)
-        km = Emeans(1, 1, niter=1, batch_size=n, alpha0=1.0)
-        km.begin(n, torch.zeros((1, 1)))
-        stats = km.accumulate(x)
-        self.assertEqual(stats["sums"].dtype, torch.float32)
-        self.assertEqual(stats["counts"].dtype, torch.float32)
-        self.assertEqual(stats["sums"][0, 0].item(), n * 0.25)
-        self.assertEqual(stats["counts"][0].item(), n)
-        km.update(stats)
-        km.end_epoch()
-        self.assertEqual(km.finalize()[0, 0].item(), 0.25)
+    @unittest.skipUnless(torch.distributed.is_available() and
+                         torch.distributed.is_gloo_available(), "Gloo unavailable")
+    def test_cpu_gloo_caller_owned_statistics(self):
+        with tempfile.TemporaryDirectory() as directory:
+            torch.multiprocessing.start_processes(
+                _cpu_gloo_replica, args=("file://" + directory + "/group",),
+                nprocs=2, join=True, start_method="fork"
+            )
+
+    def test_local_update_has_no_group_argument(self):
+        model = Emeans(1, 1, niter=1, batch_size=2, alpha0=0.5)
+        model.begin(4, torch.zeros((1, 1)))
+        stats = model.accumulate(torch.zeros((2, 1)))
+        with self.assertRaises(TypeError):
+            model.update(stats, group=object())
+        model.update(stats)
+        stats = model.accumulate(torch.ones((2, 1)))
+        with self.assertRaises(TypeError):
+            model.update(stats, group=object())
+        model.update(stats)
+        model.end_epoch()
+        torch.testing.assert_close(model.finalize(), torch.tensor([[0.5]]))
 
     def test_caller_batches_match_matrix_training(self):
         for device in ("cpu", "cuda") if torch.cuda.is_available() else ("cpu",):
@@ -209,6 +263,21 @@ class TestTorchEmeans(unittest.TestCase):
         self.assertTrue(torch.isfinite(distance).all())
         self.assertTrue(((labels >= 0) & (labels < km.k)).all())
         self.assertTrue(torch.equal(rng_state, torch.cuda.get_rng_state()))
+
+
+    def test_large_cpu_batch_preserves_sum_and_count(self):
+        n = 2**24 + 2
+        x = torch.full((n, 1), 0.25)
+        km = Emeans(1, 1, niter=1, batch_size=n, alpha0=1.0)
+        km.begin(n, torch.zeros((1, 1)))
+        stats = km.accumulate(x)
+        self.assertEqual(stats["sums"].dtype, torch.float32)
+        self.assertEqual(stats["counts"].dtype, torch.float32)
+        self.assertEqual(stats["sums"][0, 0].item(), n * 0.25)
+        self.assertEqual(stats["counts"][0].item(), n)
+        km.update(stats)
+        km.end_epoch()
+        self.assertEqual(km.finalize()[0, 0].item(), 0.25)
 
 
 if __name__ == "__main__":
