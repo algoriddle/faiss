@@ -182,7 +182,8 @@ values have no meaningful encoding result. Use `q.validate(x)` when needed.
 CuTe BF16/E4M3 assignment is an explicit optional backend on exactly NVIDIA SM90,
 requiring `quack-kernels==0.6.5`, `nvidia-cutlass-dsl==4.7.1` and
 `cuda-python>=13,<14`, plus Triton for dense CUDA EMA updates.
-Native Torch/CPU/NumPy updates do not require Triton. Supply native BF16 rows with `quantizer=None`, or use
+Native Torch/CPU/NumPy updates do not require Triton. Supply native BF16 rows with
+`quantizer=None`, or use
 `CastQuantizer(d, torch.bfloat16)` for per-chunk floating conversion; select
 `assignment_backend="cute"`. It uses resource-constrained tiled/row-owned
 assignment, native FP32 score ranking and no runtime autotuning or fallback.
@@ -195,6 +196,12 @@ represented operands. Unchecked invalid
 JIT inputs have no meaningful result and need not match Torch cast overflow.
 Calls on one model share mutable workspace; the caller must order stream switching.
 
+CuTe also accepts native INT8/UINT8 on SM90, with the same 43,919 dimension
+bound and caller-owned `Int8Quantizer` workflow above. Select
+`assignment_backend="cute"` when training native codes; floating-to-INT8 JIT
+is unsupported. Integer scores and lower-ID ties are exact; wide final distances
+are reconstructed through INT64 before returning FP32 values.
+
 ## Numerical limits
 
 Low precision can round distinct rows or centroid operands to the same values.
@@ -206,7 +213,7 @@ paths still use expanded L2 ranking (`centroid_norm - 2*dot`), so a large common
 offset can cancel small distance differences. Native FP32 follows the caller's
 Torch matmul settings; this fallback is not a direct-distance accuracy guarantee.
 
-Pass native INT8/UINT8 tensors with `quantizer=None` on supported Triton
+Pass native INT8/UINT8 tensors with `quantizer=None` on supported Triton/CuTe
 CUDA backends to retain integer statistics within the documented bounds.
 Converting byte data to floating point uses FP32 statistics and loses that
 exact-total contract. Floating and calibrated inputs retain FP32 statistics,
