@@ -179,13 +179,23 @@ Without a quantizer, native signed/unsigned bytes retain their numeric units.
 Calibration, device placement and validation are explicit; unchecked nonfinite
 values have no meaningful encoding result. Use `q.validate(x)` when needed.
 
+CuTe BF16 assignment is an explicit optional backend on exactly NVIDIA SM90,
+requiring `quack-kernels==0.6.5`, `nvidia-cutlass-dsl==4.7.1` and
+`cuda-python>=13,<14`, plus Triton for dense CUDA EMA updates.
+Native Torch/CPU/NumPy updates do not require Triton. Supply native BF16 rows with `quantizer=None`, or use
+`CastQuantizer(d, torch.bfloat16)` for per-chunk floating conversion; select
+`assignment_backend="cute"`. It uses resource-constrained tiled/row-owned
+assignment, native FP32 score ranking and no runtime autotuning or fallback.
+Bit-equal scores select the lower centroid ID; FP64-only ties can differ.
+Calls on one model share mutable workspace; the caller must order stream switching.
+
 ## Numerical limits
 
 Low precision can round distinct rows or centroid operands to the same values.
 Calibration can reduce this loss on some data, but it cannot guarantee distinct
 assignments or recover information already lost in the supplied representation.
 Use native FP32 input with `quantizer=None` and native Torch or Triton assignment
-when representation loss is unacceptable. These CUDA
+when representation loss is unacceptable; CuTe FP32 is unsupported. These CUDA
 paths still use expanded L2 ranking (`centroid_norm - 2*dot`), so a large common
 offset can cancel small distance differences. Native FP32 follows the caller's
 Torch matmul settings; this fallback is not a direct-distance accuracy guarantee.
