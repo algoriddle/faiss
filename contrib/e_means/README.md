@@ -34,14 +34,27 @@ centroids = km.finalize()
 
 Each epoch has `ceil(global_n / batch_size)` updates, including its final
 remainder. The caller owns loading, ordering, transfers and prefetch. Centroids
-and masses remain resident. `accumulate` returns model-owned FP32 sums/counts,
+and masses remain resident. `accumulate` returns model-owned sums/counts,
 an FP64 assignment-objective scalar and a host row count; consume or copy these
 before another accumulation. CPU callers can sum all four statistics fields
 with their own communication and call local `update`. CUDA requires finite
 caller-validated values fitting the chosen format; metadata is always checked, with
 no implicit CUDA value scan. NumPy/Torch CPU validation still checks finiteness.
-Local batches above 2²⁴ rows use temporary FP64 sums/counts accumulation before
-returning FP32 statistics, requiring additional memory and computation.
+Floating or explicitly quantized inputs retain FP32 statistics. Raw CUDA
+INT8/UINT8 with `quantizer=None` instead returns matching INT64 sums/counts,
+including small, empty and tail batches. Native input metadata or the first
+external matching pair fixes the run's schema. Later incompatible statistics
+raise "statistics dtype must match the run's fixed statistics schema"; input
+metadata must also match the selected schema and native format. Previous FP32
+contributions are not silently widened into an integer run.
+Raw integer runs require declared global `255*global_n <= 2**53`. Batches up to
+2²⁴ rows use bounded INT32 scratch, reconstructing UINT8 totals in INT64.
+Larger batches reuse exact FP64 integer scatter under that bound, then convert
+directly to INT64; floating large batches retain FP32 returned statistics.
+Integer final-pass totals are divided in FP64 before returning FP32 centroids.
+EMA still rounds batch sums/counts once to FP32 at its existing update boundary.
+Callers combining statistics remain responsible for valid totals within the bound;
+final floating division/output rounding is not an exact rational or code contract.
 
 Default resident CUDA `train` may replay full batches through an epoch-local
 CUDA graph. Capture and instantiation are part of each training call; its private
@@ -103,17 +116,20 @@ divided by group size. Every rank participates in the same updates and epoch
 closes. Local `Emeans.update(stats)` has no group or transport arguments;
 `DistributedEmeans` requires an explicit group, not an implicit world group.
 
-Dense transport all-reduces FP32 statistics. Sparse transport packs occupied
+Dense transport all-reduces the matching FP32 or INT64 statistics. All ranks
+must use the same fixed schema. Sparse transport packs occupied
 IDs, all-gathers and merges in group-rank order. It can synchronize during
 packing/size discovery; padded receive storage is approximately
-`ranks * max_local_occupied * (d+1) * 4` bytes plus IDs. Automatic selection
-uses known batch/table/rank sizes, conservatively bounds padding and amortizes
+`ranks * max_local_occupied * (d+1) * element_size` bytes plus IDs, with
+element_size4 for FP32 or8 for INT64. Automatic selection
+uses actual element size and known batch/table/rank sizes, bounds padding and amortizes
 packing on large payloads; it is not a portable network crossover. Use an
 explicit `"dense"` or `"sparse"` override where appropriate, and ensure the
 state and transport workspace fit. No batch size is silently reduced.
 
 One scalar FP64 epoch collective sums local moving-pass objective contributions.
-Already-global FP64 pass counts and FP32 closing sums are captured once. Equal
+Already-global matching integer totals, or FP64 counts/FP32 floating closing sums,
+are captured once before EMA conversion. Equal
 row counts can still have different occupied-centroid counts, which sparse
 transport discovers separately. Divergent collective schedules remain a caller
 error; this API does not recover from them. Revival IDs are
@@ -145,6 +161,24 @@ NVIDIA SM90, SM100 or SM103. Conversion does not clip or scan values: unchecked
 out-of-range/nonfinite values can produce NaN codes and invalid results. The
 existing internal-centroid range check runs at epoch close and during assign.
 
+Native INT8/UINT8 assignment uses exact INT32 ranking (dimension at most
+43,919), with FP32 returned distances, on qualified NVIDIA SM80/SM90/SM100.
+An explicit INT8 quantizer returns decoded centroids and distances:
+
+```python
+from faiss.contrib.e_means.e_means_int8 import Int8Quantizer
+
+q = Int8Quantizer(d)
+q.train(representative_sample)
+codes = q.compute_codes(x)  # rounds and clips finite outliers, in bounded chunks
+km = Emeans(d, k, quantizer=q, assignment_backend="triton")
+km.train(codes)  # matching native codes only; no floating-to-INT8 JIT
+```
+
+Without a quantizer, native signed/unsigned bytes retain their numeric units.
+Calibration, device placement and validation are explicit; unchecked nonfinite
+values have no meaningful encoding result. Use `q.validate(x)` when needed.
+
 ## Numerical limits
 
 Low precision can round distinct rows or centroid operands to the same values.
@@ -155,6 +189,15 @@ when representation loss is unacceptable. These CUDA
 paths still use expanded L2 ranking (`centroid_norm - 2*dot`), so a large common
 offset can cancel small distance differences. Native FP32 follows the caller's
 Torch matmul settings; this fallback is not a direct-distance accuracy guarantee.
+
+Pass native INT8/UINT8 tensors with `quantizer=None` on supported Triton
+CUDA backends to retain integer statistics within the documented bounds.
+Converting byte data to floating point uses FP32 statistics and loses that
+exact-total contract. Floating and calibrated inputs retain FP32 statistics,
+whose accumulation can depend on order. With `Int8Quantizer`, distances and
+centroids are decoded FP32 values. Comparing decoded FP32 distances can make
+exact integer-code ties appear slightly unequal; this does not imply an error
+in integer-code ranking.
 
 The training objective follows the moving-pass assignments, not the returned
 closing centroids. When precision matters, also assess the final centroids on

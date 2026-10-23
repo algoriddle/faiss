@@ -14,6 +14,7 @@ from faiss.contrib.e_means import Emeans, DistributedEmeans
 from faiss.contrib.e_means.e_means import _epoch_seed
 from faiss.contrib.e_means.e_means_quantizer import CastQuantizer
 from faiss.contrib.e_means.e_means_fp8 import Fp8Quantizer
+from faiss.contrib.e_means.e_means_int8 import Int8Quantizer
 
 
 def _cpu_gloo_replica(rank, rendezvous):
@@ -68,6 +69,196 @@ class TestTorchEmeans(unittest.TestCase):
                 _cpu_gloo_replica, args=("file://" + directory + "/group",),
                 nprocs=2, join=True, start_method="fork"
             )
+
+    def test_explicit_int8_quantizer_and_scope(self):
+        x = torch.tensor([[10., 100.], [12., 104.], [14., 108.], [16., 112.]])
+        q = Int8Quantizer(2)
+        with self.assertRaises(RuntimeError):
+            q.compute_codes(x)
+        q.train(x)
+        self.assertEqual((q.code_size, q.scale), (2, 16.))
+        self.assertIs(q.to("cpu"), q)
+        expected = torch.tensor([[-48, -96], [-16, -32], [16, 32], [48, 96]], dtype=torch.int8)
+        torch.testing.assert_close(q.compute_codes(x), expected)
+        torch.testing.assert_close(q.decode(expected), x)
+        torch.testing.assert_close(q.compute_codes(torch.tensor([[1e6, -1e6]])),
+                                   torch.tensor([[127, -128]], dtype=torch.int8))
+        q.validate(x)
+        with self.assertRaises(ValueError):
+            q.validate(torch.full((1, 2), float("nan")))
+        self.assertEqual(q.compute_codes(x[:0]).shape, (0, 2))
+        with self.assertRaisesRegex(ValueError, "requires Triton"):
+            Emeans(2, 2, quantizer=q)
+        with self.assertRaisesRegex(TypeError, "no JIT INT8"):
+            Emeans(2, 2, quantizer=q, assignment_backend="triton").train(x)
+        with self.assertRaisesRegex(ValueError, "d <= 43919"):
+            Emeans(43920, 2, quantizer=Int8Quantizer(43920), assignment_backend="triton")
+
+    @unittest.skipUnless(
+        torch.cuda.is_available() and getattr(torch.version, "hip", None) is None
+        and torch.cuda.get_device_capability() in ((8, 0), (9, 0), (10, 0))
+        and importlib.util.find_spec("triton") is not None, "qualified INT8 CUDA required"
+    )
+    def test_native_int8_uint8_and_decoded_training(self):
+        base = torch.tensor([[-4.], [-2.], [4.], [6.]], device="cuda")
+        q = Int8Quantizer(1)
+        q.train(base)
+        for dtype, offset, quantizer in ((torch.int8, 0, None),
+                                         (torch.uint8, 128, None), (torch.int8, 0, q)):
+            with self.subTest(dtype=dtype, calibrated=quantizer is not None):
+                codes = (base + offset).to(dtype) if quantizer is None else q.compute_codes(base)
+                initial = base[[0, 2]] + offset
+                km = Emeans(1, 2, niter=1, batch_size=4, alpha0=.5, quantizer=quantizer,
+                            assignment_backend="triton", assignment_chunk_size=1)
+                objective = km.train(codes, initial)
+                self.assertEqual(objective, 8.)
+                torch.testing.assert_close(km.centroids,
+                    torch.tensor([[-3. + offset], [5. + offset]], device="cuda"))
+                distance, labels = km.assign(codes)
+                torch.testing.assert_close(distance, torch.ones(4, device="cuda"))
+                torch.testing.assert_close(labels, torch.tensor([0, 0, 1, 1], device="cuda"))
+                self.assertEqual((km.centroids.dtype, distance.dtype, labels.dtype),
+                                 (torch.float32, torch.float32, torch.int64))
+                self.assertEqual(km.recipe["representation"], str(dtype).removeprefix("torch."))
+        with self.assertRaisesRegex(TypeError, "no JIT INT8"):
+            Emeans(1, 2, quantizer=q, assignment_backend="triton").train(base)
+
+    @unittest.skipUnless(
+        torch.cuda.is_available() and getattr(torch.version, "hip", None) is None
+        and torch.cuda.get_device_capability() in ((8, 0), (9, 0), (10, 0))
+        and importlib.util.find_spec("triton") is not None, "qualified INT8 CUDA required"
+    )
+    def test_raw_integer_statistics_dtype_and_totals(self):
+        for dtype, value, cap in ((torch.int8, 127, 131072), (torch.uint8, 255, 65793)):
+            for n in (0, 7, cap, cap + 1, 262145):
+                with self.subTest(dtype=dtype, n=n):
+                    model = Emeans(1, 1, niter=1, batch_size=max(n, 1), alpha0=.5,
+                                   assignment_backend='triton', assignment_chunk_size=70001)
+                    model.begin(max(n, 1), torch.tensor([[float(value)]], device='cuda'))
+                    rows = torch.full((n, 1), value, dtype=dtype, device='cuda')
+                    stats = model.accumulate(rows)
+                    self.assertEqual((stats['sums'].dtype, stats['counts'].dtype),
+                                     (torch.int64, torch.int64))
+                    self.assertEqual(stats['objective'].dtype, torch.float64)
+                    self.assertEqual((stats['sums'].item(), stats['counts'].item(), stats['n']),
+                                     (value * n, n, n))
+                    model.reset()
+            # Same run: full batch followed by one-row kept tail stays INT64.
+            model = Emeans(1, 1, niter=1, batch_size=cap + 1, alpha0=.5,
+                           assignment_backend='triton', assignment_chunk_size=70001)
+            model.begin(cap + 2, torch.tensor([[float(value)]], device='cuda'))
+            for n in (cap + 1, 1):
+                stats = model.accumulate(torch.full((n, 1), value, dtype=dtype, device='cuda'))
+                self.assertEqual((stats['sums'].dtype, stats['counts'].dtype), (torch.int64, torch.int64))
+                self.assertEqual((stats['sums'].item(), stats['counts'].item()), (value * n, n))
+                model.update(stats)
+            model.end_epoch()
+            self.assertEqual(model.finalize().item(), float(value))
+
+    @unittest.skipUnless(
+        torch.cuda.is_available() and getattr(torch.version, "hip", None) is None
+        and torch.cuda.get_device_capability() in ((8, 0), (9, 0), (10, 0))
+        and importlib.util.find_spec("triton") is not None, "qualified INT8 CUDA required"
+    )
+    def test_raw_integer_closing_partition_and_assign(self):
+        for dtype, value in ((torch.int8, 127), (torch.uint8, 255)):
+            for batch in (65795, 131073):
+                with self.subTest(dtype=dtype, batch=batch):
+                    rows = torch.full((131603, 1), value, dtype=dtype, device='cuda')
+                    model = Emeans(1, 1, niter=2, batch_size=batch, alpha0=.5,
+                                   assignment_backend='triton', assignment_chunk_size=70001)
+                    model.train(rows, torch.tensor([[float(value)]], device='cuda'))
+                    self.assertEqual(model.centroids.dtype, torch.float32)
+                    self.assertEqual(model.centroids.item(), float(value))
+                    self.assertIs(model.finalize(), model.centroids)
+        # An even-population balanced mean must be254.5 despite odd partitions.
+        rows = torch.full((300002, 1), 255, dtype=torch.uint8, device='cuda')
+        rows[::2] = 254
+        model = Emeans(1, 1, niter=1, batch_size=131073, alpha0=.5,
+                       assignment_backend='triton', assignment_chunk_size=70001)
+        model.train(rows, torch.tensor([[255.]], device='cuda'))
+        self.assertEqual(model.centroids.item(), 254.5)
+        query = torch.tensor([[255]], dtype=torch.uint8, device='cuda')
+        # After finalize, raw assignment must neither need running epoch fields
+        # nor change finalization.254.5 rounds RN-even to represented254.
+        distance, labels = model.assign(query)
+        self.assertEqual((distance.item(), labels.item()), (1., 0))
+        self.assertIs(model.finalize(), model.centroids)
+        # Untrained assignment remains unsupported; do not override centroids.
+        pair = Emeans(1, 2, niter=1, batch_size=4, alpha0=.5, assignment_backend='triton')
+        with self.assertRaises(RuntimeError):
+            pair.assign(query)
+        pair.begin(4, torch.cat((model.centroids, torch.tensor([[255.]], device='cuda'))))
+        # Caller-supplied integer totals produce the intended closing table.
+        pair.update(dict(sums=torch.tensor([[int(2 * model.centroids.item())], [510]],
+                                           dtype=torch.int64, device='cuda'),
+                         counts=torch.tensor([2, 2], dtype=torch.int64, device='cuda'),
+                         objective=torch.zeros((), dtype=torch.float64, device='cuda'), n=4))
+        pair.end_epoch()
+        torch.testing.assert_close(pair.finalize(), torch.tensor([[254.5], [255.]], device='cuda'),
+                                   rtol=0, atol=0)
+        distance, labels = pair.assign(query)
+        self.assertEqual((distance.item(), labels.item()), (0., 1))
+
+    @unittest.skipUnless(
+        torch.cuda.is_available() and getattr(torch.version, "hip", None) is None
+        and torch.cuda.get_device_capability() in ((8, 0), (9, 0), (10, 0))
+        and importlib.util.find_spec("triton") is not None, "qualified INT8 CUDA required"
+    )
+    def test_raw_integer_external_schema_empty_and_reset(self):
+        def supplied(dtype, n=2):
+            return dict(sums=torch.tensor([[255 * n]], dtype=dtype, device='cuda'),
+                        counts=torch.tensor([n], dtype=dtype, device='cuda'),
+                        objective=torch.zeros((), dtype=torch.float64, device='cuda'), n=n)
+        args = dict(niter=1, batch_size=2, alpha0=.5, assignment_backend='triton')
+        model = Emeans(1, 1, **args)
+        initial = torch.tensor([[255.]], device='cuda')
+        model.begin(4, initial)
+        # External-first selects integer schema. Ordinary copies remain valid.
+        copied = {k: v.clone() if isinstance(v, torch.Tensor) else v
+                  for k, v in supplied(torch.int64).items()}
+        model.update(copied)
+        for mixed in (supplied(torch.float32), dict(supplied(torch.int64),
+                       counts=torch.tensor([2.], device='cuda'))):
+            with self.assertRaises((TypeError, ValueError)):
+                model.update(mixed)
+        stats = model.accumulate(torch.full((2, 1), 255, dtype=torch.uint8, device='cuda'))
+        self.assertEqual((stats['sums'].dtype, stats['counts'].dtype), (torch.int64, torch.int64))
+        model.update(stats)
+        model.end_epoch()
+        self.assertEqual(model.finalize().item(), 255.)
+        self.assertEqual(copied['sums'].item(), 510)
+        model.reset()
+
+        model.begin(2, initial)
+        empty = model.accumulate(torch.empty((0, 1), dtype=torch.uint8, device='cuda'))
+        self.assertEqual((empty['sums'].dtype, empty['counts'].dtype), (torch.int64, torch.int64))
+        self.assertEqual((empty['sums'].item(), empty['counts'].item(), empty['n']), (0, 0, 0))
+        with self.assertRaises(ValueError):
+            model.update(empty)
+        # Empty selection consumed no prescribed rows; a full external update fits.
+        model.update(supplied(torch.int64))
+        model.end_epoch()
+        self.assertEqual(model.finalize().item(), 255.)
+        model.reset()
+
+        model.begin(4, initial)
+        model.update(supplied(torch.float32))
+        with self.assertRaises((TypeError, ValueError)):
+            stats = model.accumulate(torch.full((2, 1), 255, dtype=torch.uint8, device='cuda'))
+            model.update(stats)  # Either production or consumption may reject.
+        model.reset()  # No new rollback guarantee; subsequent run must be valid.
+        model.begin(2, initial)
+        model.update(supplied(torch.float32))
+        model.end_epoch()
+        self.assertEqual(model.finalize().item(), 255.)
+
+        # Declared-N check only: never allocate the giant population or permutation.
+        model.reset()
+        model.begin(2**53 // 255 + 1, initial)
+        with self.assertRaises((TypeError, ValueError)):
+            model.accumulate(torch.empty((0, 1), dtype=torch.uint8, device='cuda'))
+        model.reset()
 
     def test_explicit_fp8_calibration_and_scope(self):
         q = Fp8Quantizer(1)
