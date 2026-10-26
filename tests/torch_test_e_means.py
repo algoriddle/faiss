@@ -22,7 +22,7 @@ from faiss.contrib.e_means.e_means_quantizer import CastQuantizer
 from faiss.contrib.e_means.e_means_fp8 import Fp8Quantizer
 from faiss.contrib.e_means.e_means_int8 import Int8Quantizer
 from faiss.contrib.e_means import e_means
-from e_means_test_utils import EmeansReferenceContracts, highest_fp32
+from e_means_test_utils import EmeansReferenceContracts, highest_fp32, known_torch_centroids
 
 TRITON_CUDA = (torch.cuda.is_available() and not torch.version.hip
                and torch.cuda.get_device_capability() >= (8, 0)
@@ -1784,17 +1784,7 @@ if cuda_supported:
                                    torch.tensor([[65520.]]).half(), rtol=0, atol=0)
 
     def _known_centroids(self, centroids, **kwargs):
-        """Install fixed means through the documented external-statistics API."""
-        k, d = centroids.shape
-        model = Emeans(d, k, niter=1, batch_size=k, alpha0=1, **kwargs)
-        model.begin(k, centroids)
-        model.update(dict(sums=centroids.clone(),
-                          counts=torch.ones(k, device=centroids.device),
-                          objective=torch.zeros((), dtype=torch.float64, device=centroids.device),
-                          n=k))
-        model.end_epoch()
-        torch.testing.assert_close(model.finalize(), centroids, rtol=0, atol=0)
-        return model
+        return known_torch_centroids(centroids, **kwargs)
 
     @unittest.skipUnless(torch.cuda.is_available() and getattr(torch.version, "hip", None) is None
                          and torch.cuda.get_device_capability() >= (8, 0), "NVIDIA SM80 required")
@@ -2322,6 +2312,10 @@ if cuda_supported:
         if INT8_CUDA:
             self._check_cuda_replay_failure(torch.uint8, None, "triton")
             self._check_cuda_replay_failure(torch.float32, Int8Quantizer(3), "triton")
+        from torch_test_e_means_cute import _ready
+        if _ready():
+            self._check_cuda_replay_failure(torch.bfloat16, None, "cute")
+            self._check_cuda_replay_failure(torch.float32, CastQuantizer(3, torch.bfloat16), "cute")
 
     def _check_cuda_replay_failure(self, dtype, quantizer, backend="native"):
         x = (torch.arange(93, device="cuda", dtype=torch.float32) / 8).reshape(31, 3)
