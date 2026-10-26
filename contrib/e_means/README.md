@@ -23,15 +23,15 @@ With `spherical=True`, explicitly normalize input rows before conversion or
 prequantization for `train`, `accumulate`, `assign` and any frozen closing scan;
 keep zero rows zero. Inputs are not normalized internally. `assign` returns
 represented inner-product similarity (higher is better), approximating cosine
-after operand rounding; accuracy follows
-the backend's floating-point accumulation. `obj`, `iteration_stats`
+after operand rounding; FP16/BF16 norms are not repaired, and accuracy follows
+the selected backend's floating-point accumulation. `obj`, `iteration_stats`
 and `train` report the moving-pass sum of `2 - 2 * similarity` (lower is better),
 without clamping rounding error. EMA updates retain raw FP32 coordinates;
 assignment, readout and closing output use projected directions, with zero
 directions staying zero. `current_centroids()` borrows one reusable effective
 FP32 direction cache under the existing read-window and stream contract. The
-cache requires `4 * k * d` additional bytes. This prefix supports native FP32
-NumPy and Torch input, including the existing eligible resident CUDA replay.
+cache requires `4 * k * d` additional bytes. This mode supports native floating
+input and cast quantizers, including existing eligible resident CUDA replay.
 
 For caller-driven batches, supply FP32 initial centroids and the global row
 count. `train` uses the same numerical operations with seeded initialization
@@ -104,8 +104,8 @@ Before positive input they return zeros and allow a complete external update.
 execution failure invalidates the run until reset/new begin, without rollback,
 automatic retry or a successful-call synchronization.
 CPU callers can sum all four statistics fields
-with their own communication and call local `update`. CUDA accepts native FP32
-and requires finite caller-validated values; metadata is always checked, with
+with their own communication and call local `update`. CUDA requires finite
+caller-validated values fitting the chosen format; metadata is always checked, with
 no implicit CUDA value scan. NumPy/Torch CPU validation still checks finiteness.
 Whole statistical batches above 2²⁴ rows use temporary FP64 sums/counts
 accumulation across supplied chunks, with one FP32 conversion at completion.
@@ -140,7 +140,7 @@ Capture and instantiation are part of each training call. The graph and private
 pool are retained across epoch reports, then retired
 at training-call teardown. Exceptional teardown drains pending work before
 graph reset and owner release. Explicit
-overrides, custom models, tails and very wide accumulation stay eager.
+overrides, custom models/codecs, tails and very wide accumulation stay eager.
 Caller-driven loops remain eager. Capture/execution errors propagate, without retry.
 CUDA replay was validated with Torch 2.14; support on older versions is unestablished.
 ROCm/HIP graph replay is also unqualified. An explicit
@@ -148,18 +148,37 @@ ROCm/HIP graph replay is also unqualified. An explicit
 this is not a claim of general older-Torch or ROCm compatibility.
 
 Untouched centroid positions survive mass decay. Revival keeps ordinary
-multiplicative splits; a collapsed FP32 pair changes one coordinate to an
+multiplicative splits; a collapsed represented pair changes one coordinate to an
 adjacent finite value. Distinct operands do not guarantee both children get
 rows (a zero donor's subnormal distance can underflow). Final FP32 centroids
 are means of the final pass's own assignments in ordinary mode; never-assigned
 centroids retain their current positions. `obj` and the `train` return remain
 moving-pass objectives, rather than scores against the closing means.
 
+CUDA native Torch accepts FP32, FP16 and BF16. With `quantizer=None`, the
+first batch (including a typed empty batch) fixes the native dtype for the run.
+FP32 initial centroids do not select that dtype. Norms, dot products and FP32
+statistics use the same represented rows; centroid operands follow that format.
+FP32 centroid state and final means remain unquantized. Distances refer to the
+rounded centroid operands, and native FP32 honors the caller's Torch matmul
+settings. FP16/BF16 assignment requires NVIDIA SM80 or later and Torch
+`addmm` support for FP32 output.
+
+For explicit batchwise conversion, use
+`CastQuantizer(d, torch.float16)` or `CastQuantizer(d, torch.bfloat16)` from
+`faiss.contrib.e_means.e_means_quantizer`, passed as `quantizer=q`. Its `train` is a no-op;
+`compute_codes` returns native typed Torch rows and `decode` widens them to
+FP32. Conversion/decoding check metadata without CUDA value scans. Call
+`q.validate(x)` explicitly to check finite/range hazards; unchecked overflow
+follows Torch cast semantics. The existing internally generated FP16 split
+range guard remains. CPU computes supplied represented floating values in FP32
+and requires `quantizer=None`, even though the cast helper can execute on CPU.
+
 CPU or GPU callers use `DistributedEmeans(d, k, group=group, transport="auto", ...)`
 with an initialized, caller-owned process group. Group and transport are fixed
 at construction. `begin(global_n, init_centroids)` takes matching NumPy FP32
 arrays or Torch tensors on each rank and broadcasts its owned FP32 centroid
-state from group rank zero. CPU state requires Gloo; CUDA
+state from group rank zero. CPU state requires Gloo and quantizer=None; CUDA
 retains the supported backend/representation combinations. Root values are
 authoritative; caller arrays are never modified.
 The remaining `accumulate`/`update`/`end_epoch`/`finalize` lifecycle is shared
@@ -198,6 +217,8 @@ unsupported. See
 `torchrun` example.
 
 ## Numerical limits
+
+Low precision can round distinct rows or centroid operands to the same values.
 
 The training objective follows the moving-pass assignments, not the returned
 closing centroids. When precision matters, also assess the final centroids on
