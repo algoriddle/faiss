@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-"""Host adapter for E-means BF16/E4M3 CuTe assignment on SM90.
+"""Host adapter for E-means BF16/E4M3/native-byte CuTe assignment on SM90.
 
 Optional CuTe dependencies are resolved only after an explicit ``cute``
 backend request. Assignment selects between the tiled kernel and a resource-legal
@@ -173,6 +173,7 @@ class _PreparedCentroids:
     norms: object
     padded_norms: object
     peak: object = None
+    representation: object = None
     bindings: OrderedDict = field(default_factory=OrderedDict)
     transform_bias: object = None
     spherical: bool = False
@@ -225,7 +226,19 @@ def _transform_token(transform):
 def _refresh_prepared(cached, centroids, source_version, transform, peak_out):
     import torch
 
-    if cached.centroids.dtype is torch.bfloat16:
+    if cached.centroids.dtype is torch.int8:
+        from .e_means_cute_argmin import stage_int8_rows
+        from .e_means_int8 import _ENCODE_CHUNK_ELEMENTS
+        from .e_means_quantizer import _transform
+
+        chunk = (len(centroids) if transform is None
+                 else max(1, _ENCODE_CHUNK_ELEMENTS // centroids.shape[1]))
+        for begin in range(0, len(centroids), chunk):
+            end = min(begin + chunk, len(centroids))
+            stage_int8_rows(_transform(centroids[begin:end].detach(), transform),
+                            cached.centroids[begin:end], cached.norms[begin:end],
+                            cached.representation)
+    elif cached.centroids.dtype is torch.bfloat16:
         from .e_means_cute_argmin import affine_cast
 
         wide = None if cached.spherical else torch.empty_like(centroids)
@@ -281,8 +294,14 @@ def _prepare_centroids(centroids, cached=None, transform=None, peak_out=None, dt
     dtype = torch.bfloat16 if dtype is None else dtype
     if spherical and (dtype is not torch.bfloat16 or transform is not None):
         raise ValueError("spherical CuTe requires unencoded BF16 operands")
-    if dtype not in (torch.bfloat16, torch.float8_e4m3fn):
-        raise ValueError("CuTe operands must be BF16 or E4M3")
+    representation = ("int8" if dtype is torch.int8 else
+                      "uint8" if dtype is torch.uint8 else None)
+    if dtype not in (torch.bfloat16, torch.float8_e4m3fn, torch.int8, torch.uint8):
+        raise ValueError("CuTe operands must be BF16, E4M3 or native bytes")
+    if representation is not None:
+        if centroids.shape[1] > 43919:
+            raise ValueError("INT8 assignment requires d <= 43919")
+        dtype = torch.int8
     k, dim = centroids.shape
     _check_extent("K", k)
     _check_extent("d", dim)
@@ -300,6 +319,7 @@ def _prepare_centroids(centroids, cached=None, transform=None, peak_out=None, dt
         and cached.transform_bias is (None if transform is None else transform._bias)
         and cached.transform_token == transform_token
         and cached.centroids.dtype is dtype
+        and cached.representation == representation
         and cached.spherical == spherical
     ):
         if dtype is torch.float8_e4m3fn:
@@ -314,14 +334,17 @@ def _prepare_centroids(centroids, cached=None, transform=None, peak_out=None, dt
 
     with torch.cuda.device(centroids.device):
         if _can_refresh(cached, centroids) and cached.centroids.dtype is dtype:
+            cached.representation = representation
             cached.spherical = spherical
             return _refresh_prepared(cached, centroids, source_version, transform, peak_out)
         mirror = _aligned_operand(k, dim, centroids.device, dtype)
         storage = torch.empty(
-            padded_k, dtype=torch.float32, device=centroids.device
+            padded_k, dtype=torch.int32 if representation is not None else torch.float32,
+            device=centroids.device
         )
         if padded_k != k:
-            storage[k:].fill_(float("inf"))
+            storage[k:].fill_(torch.iinfo(torch.int32).max
+                              if representation is not None else float("inf"))
         prepared = _PreparedCentroids(
             None,
             None,
@@ -330,12 +353,13 @@ def _prepare_centroids(centroids, cached=None, transform=None, peak_out=None, dt
             mirror,
             storage[:k],
             storage.view(1, padded_k),
+            representation=representation,
             spherical=spherical,
         )
         return _refresh_prepared(prepared, centroids, source_version, transform, peak_out)
 
 
-def _new_binding(batch, prepared):
+def _new_binding(batch, prepared, distance_dtype):
     import torch
 
     from .e_means_cute_kernel import (
@@ -355,8 +379,11 @@ def _new_binding(batch, prepared):
             batch, prepared.dim, prepared.centroids.device, prepared.centroids.dtype
         )
         scores = torch.empty(
-            batch, dtype=torch.float32, device=workspace.device
+            batch, dtype=distance_dtype, device=workspace.device
         )
+        row_norms = (torch.empty(batch, dtype=torch.int32 if workspace.dtype is torch.int8
+                                else torch.float32, device=workspace.device)
+                     if workspace.dtype in (torch.int8, torch.float8_e4m3fn) else None)
         plan = row_owned_plan(
             batch,
             prepared.num_centroids,
@@ -375,6 +402,7 @@ def _new_binding(batch, prepared):
                 scores,
                 labels,
                 plan,
+                row_norms=row_norms if workspace.dtype is torch.int8 else None,
             )
             launcher = launch_row_owned
         else:
@@ -382,25 +410,33 @@ def _new_binding(batch, prepared):
             codes = torch.empty(
                 batch, dtype=torch.int64, device=workspace.device
             )
-            kernel = prepare_tiled_gemm(workspace, prepared, codes, scores)
+            kernel = prepare_tiled_gemm(workspace, prepared, codes, scores,
+                                        row_norms if workspace.dtype is torch.int8 else None)
             launcher = launch_tiled_gemm
-    row_norms = (torch.empty(batch, dtype=torch.float32, device=workspace.device)
-                 if workspace.dtype is torch.float8_e4m3fn else None)
     return _Binding(workspace, codes, scores, labels, launcher, kernel, row_norms)
 
 
-def _binding_for(batch, prepared):
-    binding = prepared.bindings.pop(batch, None)
+def _binding_for(batch, prepared, distance_dtype=None):
+    import torch
+
+    distance_dtype = torch.float32 if distance_dtype is None else distance_dtype
+    key = batch if distance_dtype is torch.float32 else (batch, distance_dtype)
+    binding = prepared.bindings.pop(key, None)
     if binding is None:
-        binding = _new_binding(batch, prepared)
-    prepared.bindings[batch] = binding
+        binding = _new_binding(batch, prepared, distance_dtype)
+    prepared.bindings[key] = binding
     while len(prepared.bindings) > _MAX_BINDINGS:
         prepared.bindings.popitem(last=False)
     return binding
 
 
 def _assign_rows(rows, prepared, distance_out=None, labels_out=None):
-    """Assign represented rows into owned or caller FP32/int64 outputs."""
+    """Assign rows into FP32 distances and INT64 labels; raw distances may be INT64.
+
+    Calibrated FP8 retains this call's encoded rows in
+    prepared.bindings[len(rows)].workspace. Statistics consume that workspace
+    on the caller-ordered stream before a later assignment can overwrite it.
+    """
     import torch
 
     _require_stack()
@@ -410,11 +446,13 @@ def _assign_rows(rows, prepared, distance_out=None, labels_out=None):
         raise ValueError("rows must be a rank-two tensor")
     if (
         not rows.is_cuda
-        or (rows.dtype is not prepared.centroids.dtype
-            and not (prepared.transform is not None and rows.dtype is torch.float32))
+        or (rows.dtype is not (torch.uint8 if prepared.representation == "uint8"
+                               else prepared.centroids.dtype)
+            and not (prepared.centroids.dtype is torch.float8_e4m3fn
+                     and prepared.transform is not None and rows.dtype is torch.float32))
         or not rows.is_contiguous()
     ):
-        raise ValueError("rows must be contiguous CUDA BF16/E4M3 operands or FP32 quantizer input")
+        raise ValueError("rows must be contiguous CUDA BF16/E4M3/native-byte operands or FP32 FP8 input")
     if rows.device != prepared.centroids.device:
         raise ValueError("rows and centroids must be on the same device")
     if rows.shape[1] != prepared.dim:
@@ -428,11 +466,23 @@ def _assign_rows(rows, prepared, distance_out=None, labels_out=None):
         distance_out = torch.empty(len(rows), dtype=torch.float32, device=rows.device)
     if labels_out is None:
         labels_out = torch.empty(len(rows), dtype=torch.int64, device=rows.device)
-    require_tensor(distance_out, "distances", dtype=torch.float32, shape=(len(rows),), device=rows.device)
+    distance_dtype = distance_out.dtype
+    if distance_dtype is not torch.float32 and not (
+        distance_dtype is torch.int64 and prepared.centroids.dtype is torch.int8
+        and prepared.transform is None
+    ):
+        raise ValueError("INT64 distances require native-byte input and quantizer=None")
+    require_tensor(distance_out, "distances", dtype=distance_dtype, shape=(len(rows),), device=rows.device)
     require_tensor(labels_out, "labels", dtype=torch.int64, shape=(len(rows),), device=rows.device)
     with torch.cuda.device(rows.device):
-        binding = _binding_for(rows.shape[0], prepared)
-        if prepared.centroids.dtype is torch.bfloat16:
+        binding = _binding_for(rows.shape[0], prepared, distance_dtype)
+        if prepared.centroids.dtype is torch.int8:
+            from .e_means_cute_argmin import stage_int8_rows
+
+            stage_int8_rows(rows, binding.workspace, binding.row_norms,
+                            prepared.representation)
+            binding.launcher(binding.kernel, labels_out, distance_out)
+        elif prepared.centroids.dtype is torch.bfloat16:
             binding.workspace.copy_(rows)
             if not prepared.spherical:
                 torch.linalg.vector_norm(binding.workspace, dim=1, dtype=torch.float32,
@@ -450,7 +500,8 @@ def _assign_rows(rows, prepared, distance_out=None, labels_out=None):
             else:
                 binding.workspace.copy_(rows)
 
-        binding.launcher(binding.kernel, labels_out)
+        if prepared.centroids.dtype is not torch.int8:
+            binding.launcher(binding.kernel, labels_out)
         if prepared.centroids.dtype is torch.float8_e4m3fn:
             if binding.prepared_row_norms is None:
                 binding.prepared_row_norms = prepare_row_norms(
@@ -462,7 +513,7 @@ def _assign_rows(rows, prepared, distance_out=None, labels_out=None):
             else:
                 distance_out.add_(binding.scores).clamp_min_(0)
         if prepared.transform is not None:
-            # Operand-device scope retains stock ldexp, including subnormals/zero.
+            # Operand-device scope retains stock ldexp for subnormal distances and zero.
             torch.ldexp(distance_out, prepared.transform._distance_exponent,
                         out=distance_out)
     return distance_out, labels_out
