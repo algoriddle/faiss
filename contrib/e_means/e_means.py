@@ -147,10 +147,45 @@ def _prepare_float32_matrix(x, is_torch):
     if is_torch:
         import torch
 
-        x = x.detach().contiguous()
+        x = x.detach()
+        if x.device.type == "cpu":
+            x = x.float()
+        x = x.contiguous()
         return x, x.device.type == "cuda" or bool(torch.isfinite(x).all())
     x = np.ascontiguousarray(x, dtype="float32")
     return x, bool(np.isfinite(x).all())
+
+
+def _as_input_matrix(x, name, is_torch, allow_empty=False, prepare=True):
+    if not is_torch:
+        return _as_float32_matrix(x, name, False, allow_empty, prepare)
+    import torch
+
+    if not isinstance(x, torch.Tensor):
+        raise TypeError("%s must be a torch.Tensor" % name)
+    if x.dtype not in (torch.float32, torch.float16, torch.bfloat16):
+        raise ValueError("%s must be FP32, FP16 or BF16" % name)
+    # Metadata checks do not allocate or widen a resident population.
+    if x.layout != torch.strided or x.ndim != 2:
+        raise ValueError("%s must be a dense 2-D tensor" % name)
+    if (not len(x) and not allow_empty) or not x.shape[1]:
+        raise ValueError("%s must not be empty" % name)
+    if x.device.type not in ("cpu", "cuda"):
+        raise ValueError("%s must be on CPU or CUDA" % name)
+    if not prepare:
+        return x
+    x, finite = _prepare_float32_matrix(x, True)
+    if not finite:
+        raise ValueError("%s contains NaN or infinity" % name)
+    return x
+
+
+def _check_torch_abs_bound(name, bound, *tensors):
+    import torch
+
+    extrema = torch.stack([value for x in tensors for value in torch.aminmax(x)])
+    if not bool((extrema.abs() <= bound).all()):
+        raise ValueError("%s must be finite with abs(value) <= %g" % (name, bound))
 
 
 def _numpy_unused_threshold(usage, k):
@@ -186,8 +221,8 @@ def _clone(x):
     return x.clone() if _is_torch_tensor(x) else x.copy()
 
 
-def _separate_splits(donor, child):
-    """Move one coordinate only when the FP32 split operands coincide.
+def _separate_splits(donor, child, dtype=None):
+    """Move one coordinate only when represented split operands coincide.
 
     Zero donors become distinct subnormal operands; their squared distances
     can still tie. No value scan or dynamic collapsed-row list is needed.
@@ -195,12 +230,14 @@ def _separate_splits(donor, child):
     if _is_torch_tensor(child):
         import torch
 
-        collapsed = (donor == child).all(dim=1)
-        value = child[:, 0]
+        donor_q = donor if dtype is None else donor.to(dtype)
+        child_q = child if dtype is None else child.to(dtype)
+        collapsed = (donor_q == child_q).all(dim=1)
+        value = child_q[:, 0]
         neighbor = torch.nextafter(value, torch.full_like(value, float("inf")))
         inward = torch.nextafter(value, torch.full_like(value, float("-inf")))
         neighbor = torch.where((neighbor.abs() < float("inf")), neighbor, inward)
-        child[:, 0] = torch.where(collapsed, neighbor, value)
+        child[:, 0] = torch.where(collapsed, neighbor.float(), child[:, 0])
     else:
         collapsed = (donor == child).all(axis=1)
         value = child[:, 0]
@@ -258,6 +295,13 @@ class Emeans:
         retain last-pass labels in original input order after resident train.
         Defaults to False; it does not disable CUDA graph replay.
 
+    quantizer : CastQuantizer, optional
+        Explicit represented-value conversion for CUDA batches. CastQuantizer
+        provides stateless FP16/BF16 conversion. None uses
+        native FP32/FP16/BF16 input, fixed by the first batch including an empty
+        one. Centroid operands and FP32 statistics use those same represented
+        values. CPU computes in FP32 and requires quantizer=None.
+
     Attributes
     ----------
     centroids : ndarray or Tensor
@@ -286,8 +330,9 @@ class Emeans:
     PyTorch.
 
     Every epoch includes its ragged final batch. CPU input conversion and
-    finite-value validation scan the input. CUDA accepts native FP32 and requires
-    caller-validated finite values; metadata checks do not scan CUDA values.
+    finite-value validation scan the input. CUDA accepts native FP32/FP16/BF16
+    and requires caller-validated finite values fitting the represented format;
+    metadata checks do not scan CUDA values.
     Random permutations and
     cluster splitting use local seeded generators. Results need not agree
     across NumPy, Torch CPU, and Torch CUDA. Each epoch allocates an int64
@@ -309,6 +354,7 @@ class Emeans:
         verbose=False,
         assignment_chunk_size=None,
         centroid_chunk_size=4096,
+        quantizer=None,
         capture_assignments=False,
     ):
         self.d = int(d)
@@ -326,6 +372,12 @@ class Emeans:
         )
         self.centroid_chunk_size = int(centroid_chunk_size)
         self.capture_assignments = bool(capture_assignments)
+        self.quantizer = quantizer
+        if quantizer is not None:
+            from .e_means_quantizer import CastQuantizer
+
+            if not isinstance(quantizer, CastQuantizer) or quantizer.d != self.d:
+                raise ValueError("quantizer must be a matching CastQuantizer")
 
         _validate_params(
             self.d,
@@ -360,9 +412,11 @@ class Emeans:
         self._failed = False
         self._batch_accumulation = self._batch_objective = None
         self._batch_norm = self._batch_operand = None
+        self._batch_centroids = None
         self._batch_stats = self._stats_operand = None
         self._pass_counts = self._pass_sums = self._objective = None
         self._split_rng = None
+        self._input_dtype = None
 
     def current_centroids(self):
         """Borrow the active FP32 model coordinates without copying data.
@@ -396,6 +450,45 @@ class Emeans:
             width = max(self.d, min(self.k, self.centroid_chunk_size))
             return min(2**20, max(8192, 2**26 // width))
         return 8192 if is_torch else 65536
+
+    def _prepare_input(self, x, allow_empty=False, prepare=True):
+        state = self._centroids if self._centroids is not None else self.centroids
+        is_torch = _is_torch_tensor(state)
+        if _is_torch_tensor(x) != is_torch:
+            raise TypeError("x and centroids must use the same array type")
+        if self.quantizer is not None and (not is_torch or state.device.type != "cuda"):
+            raise ValueError("CPU E-means requires quantizer=None")
+        x = _as_input_matrix(x, "x", is_torch, allow_empty, prepare)
+        if x.shape[1] != self.d:
+            raise ValueError("x must have dimension d")
+        if not is_torch:
+            return x
+        if x.device != state.device:
+            raise ValueError("x and centroids must be on the same device")
+        import torch
+
+        dtype = (self.quantizer.dtype if self.quantizer is not None
+                 else torch.float32 if x.device.type == "cpu" else x.dtype)
+        if x.device.type == "cuda" and dtype != torch.float32:
+            if (getattr(torch.version, "hip", None) is not None
+                    or torch.cuda.get_device_capability(x.device) < (8, 0)):
+                raise RuntimeError("FP16/BF16 assignment requires NVIDIA SM80 or later")
+        if self._input_dtype is not None and dtype != self._input_dtype:
+            raise ValueError("native input dtype must be consistent across the run")
+        self._input_dtype = dtype
+        if self.recipe is not None:
+            self.recipe["representation"] = str(dtype).removeprefix("torch.")
+        return x
+
+    def _prepare_rows(self, rows):
+        return self.quantizer.compute_codes(rows) if self.quantizer is not None else rows
+
+    def _prepare_torch_assignment(self, centroids):
+        import torch
+
+        dtype = self._input_dtype or torch.float32
+        represented = centroids.to(dtype)
+        return represented, represented.float().square().sum(dim=1)
 
     def _revive_unused(self, rng):
         source, target = self._choose_splits(rng)
@@ -468,7 +561,15 @@ class Emeans:
         offset = _SPLIT_EPSILON * sign
         donor_centroids = centroids * (1.0 - offset)
         child_centroids = centroids * (1.0 + offset)
-        _separate_splits(donor_centroids, child_centroids)
+        if self._input_dtype is not None:
+            import torch
+
+            if self._input_dtype == torch.float16:
+                # Preserve the existing guard on internally generated splits.
+                _check_torch_abs_bound(
+                    "revived centroids", 65504.0, donor_centroids, child_centroids
+                )
+        _separate_splits(donor_centroids, child_centroids, self._input_dtype)
         half_usage = self._usage[source] / 2.0
 
         self._usage[source] = half_usage
@@ -482,9 +583,9 @@ class Emeans:
         if _is_torch_tensor(x):
             import torch
 
-            x_norm = (x * x).sum(dim=1)
+            x_norm = x.float().square().sum(dim=1)
             best_score = torch.full(
-                (len(x),), float("inf"), dtype=x.dtype, device=x.device
+                (len(x),), float("inf"), dtype=torch.float32, device=x.device
             )
             labels = torch.zeros(
                 len(x), dtype=torch.int64, device=x.device
@@ -503,6 +604,7 @@ class Emeans:
                     x,
                     block.t(),
                     alpha=-2.0,
+                    **({"out_dtype": torch.float32} if x.dtype != torch.float32 else {}),
                 )
                 block_score, block_label = score.min(dim=1)
                 better = block_score < best_score
@@ -529,8 +631,11 @@ class Emeans:
         centroids = _as_float32_matrix(init_centroids, "init_centroids", is_torch)
         if centroids.shape != (self.k, self.d):
             raise ValueError("init_centroids must have shape (k, d)")
+        if self.quantizer is not None and (not is_torch or centroids.device.type != "cuda"):
+            raise ValueError("CPU E-means requires quantizer=None")
         self.reset()
         self._failed = True
+        self._input_dtype = self.quantizer.dtype if self.quantizer is not None else None
         self._centroids = _clone(centroids)
         self._is_torch = is_torch
         if is_torch:
@@ -639,18 +744,12 @@ class Emeans:
         With no positive input they return zeros and permit external update.
         With capture enabled, the final epoch also returns caller-owned INT64
         ``labels`` for only this supplied chunk (empty for an empty call).
-        CUDA FP32 values must be finite;
-        value validation is the caller's responsibility and does not run here.
+        Empty input also selects native dtype metadata. CUDA values must be
+        finite and fit the selected representation; no CUDA value scan runs here.
         """
         self._require_running()
         self._check_accumulate(len(x))
-        if _is_torch_tensor(x) != self._is_torch:
-            raise TypeError("x and init_centroids must use the same array type")
-        x = _as_float32_matrix(x, "x", self._is_torch, allow_empty=True, prepare=False)
-        if x.shape[1] != self.d:
-            raise ValueError("x must have dimension d")
-        if self._is_torch and x.device != self._centroids.device:
-            raise ValueError("x and centroids must be on the same device")
+        x = self._prepare_input(x, allow_empty=True, prepare=False)
         try:
             x, finite = _prepare_float32_matrix(x, self._is_torch)
         except BaseException:
@@ -697,16 +796,21 @@ class Emeans:
                     self._batch_stats.shape, dtype=torch.float64)
                     if wide else self._batch_stats.zero_())
                 self._batch_objective = self._objective.new_zeros(())
-                self._batch_norm = (self._centroids * self._centroids).sum(dim=1)
+                # Retain represented operands through the whole contribution.
+                self._batch_centroids, self._batch_norm = (
+                    self._prepare_torch_assignment(self._centroids) if n else (None, None)
+                )
             else:
                 self._batch_stats.fill(0)
                 accumulation = (np.zeros(self._batch_stats.shape, dtype="float64")
                                 if wide else self._batch_stats)
                 self._batch_objective = np.float64(0)
+                self._batch_centroids = self._centroids
             self._batch_accumulation = accumulation
             self._batch_operand = None
         accumulation = self._batch_accumulation
         objective, centroid_norm = self._batch_objective, self._batch_norm
+        centroids = self._batch_centroids
         operand = self._batch_operand
         sums, counts = accumulation[:, :-1], accumulation[:, -1]
         captured_labels = None if labels_out is None else labels_out[:n]
@@ -719,7 +823,8 @@ class Emeans:
         for begin in range(0, n, chunk_size):
             end = min(begin + chunk_size, n)
             rows = x[begin:end] if index is None else x[index[begin:end]]
-            distance, labels = self._assign_rows(rows, self._centroids, centroid_norm)
+            rows = self._prepare_rows(rows)
+            distance, labels = self._assign_rows(rows, centroids, centroid_norm)
             if captured_labels is not None:
                 captured_labels[begin:end] = labels
             if self._is_torch:
@@ -732,7 +837,12 @@ class Emeans:
                     operand = (self._stats_operand if accumulation is self._batch_stats
                                else self._stats_operand.double())
                 values = operand[:len(rows)]
-                values[:, :-1].copy_(rows)
+                direct_bf16 = (self.quantizer is None and index is not None and type(self) is Emeans
+                               and type(x) is torch.Tensor and type(values) is torch.Tensor
+                               and rows.dtype is torch.bfloat16 and values.dtype is torch.float32)
+                represented = (self.quantizer.decode(rows) if self.quantizer is not None
+                               else rows if direct_bf16 else rows.float())
+                values[:, :-1].copy_(represented if direct_bf16 else represented.float())
                 accumulation.index_add_(0, labels, values)
             else:
                 objective += distance.sum(dtype="float64")
@@ -881,6 +991,7 @@ class Emeans:
         self._pending_stats = None
         self._batch_accumulation = self._batch_objective = None
         self._batch_norm = self._batch_operand = None
+        self._batch_centroids = None
 
     def _epoch_objective(self):
         return self._objective
@@ -959,6 +1070,7 @@ class Emeans:
         self._pending_stats = None
         self._batch_accumulation = self._batch_objective = None
         self._batch_norm = self._batch_operand = None
+        self._batch_centroids = None
         if self._is_torch:
             self._stats_operand = None
         self._failed = False
@@ -973,6 +1085,13 @@ class Emeans:
                 or self.recipe["batch_size"] > 2**24
                 or self.recipe["steps_per_pass"] < 3):
             return False
+        if self.quantizer is not None:
+            from .e_means_quantizer import CastQuantizer
+
+            if type(self.quantizer) not in (CastQuantizer,):
+                return False
+            if any(name in vars(self.quantizer) for name in ("decode", "compute_codes")):
+                return False
         return x.is_contiguous()
 
     def _capture_step(self, x, index, rate, batches, epoch_rates, position, labels_out=None):
@@ -1011,7 +1130,7 @@ class Emeans:
         return graph, pool
 
     def train(self, x, init_centroids=None):
-        """Train a dense FP32 matrix using the same caller-driven numerical loop.
+        """Train a dense floating matrix through the same caller-driven loop.
 
         Return the final moving-pass objective. Initialization and epoch shuffles
         use the existing local seeded policy. No whole logical batch is gathered.
@@ -1023,7 +1142,7 @@ class Emeans:
         if is_torch:
             import torch
 
-        x = _as_float32_matrix(x, "x", is_torch)
+        x = _as_input_matrix(x, "x", is_torch)
         n, d = x.shape
         if d != self.d or n < self.k:
             raise ValueError("x must have dimension d and at least k rows")
@@ -1033,11 +1152,14 @@ class Emeans:
                 x if n == self.k
                 else x[_randperm(n, self.seed, is_torch, device)[:self.k]]
             )
+            if is_torch:
+                init_centroids = self._prepare_rows(init_centroids).float()
         elif _is_torch_tensor(init_centroids) != is_torch:
             raise TypeError("x and init_centroids must use the same array type")
         if is_torch and init_centroids.device != device:
             raise ValueError("x and init_centroids must be on the same device")
         self.begin(n, init_centroids)
+        x = self._prepare_input(x)
         rates = None
         order = index = rate = epoch_rates = position = batches = None
         graph_has_sums = False
@@ -1127,7 +1249,10 @@ class Emeans:
         return self.iteration_stats[-1]["obj"]
 
     def assign(self, x):
-        """Return squared L2 distances and centroid indices."""
+        """Return squared L2 distances and centroid indices.
+
+        Distances use rounded centroid operands in native units.
+        """
         if self.centroids is None or self._failed:
             raise RuntimeError("train must be called before assign")
         is_torch = _is_torch_tensor(self.centroids)
@@ -1136,16 +1261,10 @@ class Emeans:
         if is_torch:
             import torch
 
-        x = _as_float32_matrix(x, "x", is_torch)
+        x = self._prepare_input(x)
         centroids = self.centroids.detach() if is_torch else self.centroids
         assignment_chunk_size = self._get_assignment_chunk_size(
             is_torch, is_torch and self.centroids.is_cuda)
-        if x.shape[1] != self.d:
-            raise ValueError(
-                "x has dimension %d, expected %d" % (x.shape[1], self.d)
-            )
-        if is_torch and x.device != centroids.device:
-            raise ValueError("x and centroids must be on the same device")
 
         if is_torch:
             distance = torch.empty(
@@ -1154,7 +1273,7 @@ class Emeans:
             labels = torch.empty(
                 len(x), dtype=torch.int64, device=x.device
             )
-            centroid_norm = (centroids * centroids).sum(dim=1)
+            centroids, centroid_norm = self._prepare_torch_assignment(centroids)
         else:
             distance = np.empty(len(x), dtype="float32")
             labels = np.empty(len(x), dtype="int64")
@@ -1163,6 +1282,6 @@ class Emeans:
         for begin in range(0, len(x), assignment_chunk_size):
             end = min(begin + assignment_chunk_size, len(x))
             distance[begin:end], labels[begin:end] = self._assign_rows(
-                x[begin:end], centroids, centroid_norm
+                self._prepare_rows(x[begin:end]), centroids, centroid_norm
             )
         return distance, labels
