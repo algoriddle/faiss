@@ -339,3 +339,33 @@ Both filename patterns are needed: default discovery omits the Torch files.
 Torch is required for the second command. GPU/backend and two-/three-GPU
 cases report explicit skips when their dependencies or devices are unavailable;
 those skips do not establish qualification of the unavailable scopes.
+
+### CUDA centroid ownership
+
+`from faiss.contrib.e_means.sharded_centroids import EmeansShardedCentroids`
+uses an explicit caller-owned group. Unlike `DistributedEmeans`, each rank
+owns only a contiguous centroid shard: constructor `k` is global, instance
+`k` and returned centroids are local; `global_k` and `centroid_begin` locate
+that shard. `begin` takes only the local FP32 initial centroids. All ranks
+must use identical parameters and the same lifecycle/collective order, with
+equal contributions and global rows, batches and centroids divisible by the
+group size. Supported CUDA input/backend combinations require `quantizer=None`.
+Rows are broadcast in bounded chunks; statistics and EMA remain with owners.
+Owner compaction and revival reads can synchronize with the host; broadcasts
+and reductions are serialized.
+Raw INT8/UINT8 winners compare exact integer distances, then break ties by
+lowest global centroid ID. Caller labels, when enabled, describe only that
+caller's last-training-pass rows in original supplied order.
+Floating winners compare exported FP32 distances, so near-tie labels can differ
+from an unsharded run.
+
+`finalize()` uses final-training-pass statistics. Optional
+`final_closing_mean(batches)` instead scans fresh rows against a frozen completed
+training snapshot before finalization; every row must appear exactly once.
+Empty centroids retain their current positions. Above global N=2**24,
+floating scan sums use FP64 (8 rather than 4 bytes/entry), with FP64 division
+before FP32 output. Raw sums stay INT64; smaller floating scans stay FP32.
+Budget for coexistence with training tables, per-chunk conversions, counts,
+divisor and final mean/output temporaries. This does not guarantee stable
+common-offset assignment or arbitrary-size reductions. See the small
+`demos/demo_e_means_sharded.py` resident/generated-chunk example.
