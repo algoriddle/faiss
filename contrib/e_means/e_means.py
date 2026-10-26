@@ -345,8 +345,11 @@ class Emeans:
         a compatible Triton installation. It uses bounded tiled/split assignment,
         IEEE dot input precision for FP32 inputs, and no runtime autotuning or backend fallback.
         centroid_chunk_size applies only to native Torch assignment.
-        CuTe supports native BF16 or explicit BF16 CastQuantizer on exactly SM90,
+        CuTe supports native BF16/E4M3 or their explicit quantizer on exactly SM90,
         with quack-kernels==0.6.5, nvidia-cutlass-dsl==4.7.1 and cuda-python>=13,<14.
+        E4M3 uses tensor-core partial accumulation with FP32 promotion every
+        128 contraction coordinates. Ranking is approximate; distances are
+        recomputed from the selected represented operands.
         It ranks native FP32 scores, choosing lower IDs for bit-equal scores;
         a float64-only tie need not select the lowest ID. No fallback.
         Calls using one model share mutable CuTe workspace and require caller ordering.
@@ -356,9 +359,9 @@ class Emeans:
         native FP32/FP16/BF16 input, fixed by the first batch including an empty
         one. Centroid operands and FP32 statistics use those same represented
         values. Fp8Quantizer requires explicit calibration/device placement and
-        Triton: floating batches encode per chunk; matching native E4M3 codes
+        Triton or CuTe: floating batches encode per chunk; matching native E4M3 codes
         bypass encoding. Statistics, centroids and distances use decoded units.
-        None with native E4M3 uses raw code values, also requiring Triton.
+        None with native E4M3 uses raw code values, also requiring Triton or CuTe.
         Int8Quantizer accepts matching native INT8 codes only, requires Triton,
         and returns decoded units. Raw INT8/UINT8 with None retain numeric units;
         sums/counts are INT64 within global 255*n <= 2**53, with FP32 EMA and
@@ -395,8 +398,8 @@ class Emeans:
 
     Every epoch includes its ragged final batch. CPU input conversion and
     finite-value validation scan the input. CUDA accepts native FP32/FP16/BF16
-    and, with Triton, E4M3/INT8/UINT8. CUDA requires caller-validated
-    finite values fitting the represented format;
+    and E4M3 with Triton or CuTe; INT8/UINT8 require Triton.
+    CUDA requires caller-validated finite values fitting the represented format;
     metadata checks do not scan CUDA values.
     Random permutations and
     cluster splitting use local seeded generators. Results need not agree
@@ -471,14 +474,14 @@ class Emeans:
                     raise ValueError("INT8 requires Triton assignment")
                 if self.d > 43919:
                     raise ValueError("INT8 assignment requires d <= 43919")
-            if self._fp8_quantizer and assignment_backend != "triton":
-                raise ValueError("FP8 requires Triton assignment")
+            if self._fp8_quantizer and assignment_backend not in ("triton", "cute"):
+                raise ValueError("FP8 requires Triton or CuTe assignment")
 
         if assignment_backend == "cute" and quantizer is not None:
             import torch
 
-            if quantizer.dtype != torch.bfloat16:
-                raise ValueError("CuTe assignment requires BF16")
+            if quantizer.dtype not in (torch.bfloat16, torch.float8_e4m3fn):
+                raise ValueError("CuTe assignment requires BF16 or E4M3")
 
         _validate_params(
             self.d,
@@ -616,8 +619,8 @@ class Emeans:
                 (getattr(torch, "float8_e4m3fn", None), getattr(torch, "float8_e5m2", None))):
             raise ValueError("spherical assignment requires unencoded floating operands")
         if self.assignment_backend == "cute":
-            if dtype != torch.bfloat16:
-                raise ValueError("CuTe assignment requires native BF16 or BF16 CastQuantizer")
+            if dtype not in (torch.bfloat16, torch.float8_e4m3fn):
+                raise ValueError("CuTe assignment requires native BF16/E4M3 or a matching quantizer")
             _, _, check = _get_cute_functions()
             check(x.device)
         if dtype in (torch.int8, torch.uint8):
@@ -633,8 +636,8 @@ class Emeans:
         elif dtype == getattr(torch, "float8_e4m3fn", None):
             from .e_means_fp8 import _check_fp8_support
 
-            if self.assignment_backend != "triton":
-                raise ValueError("FP8 requires Triton assignment")
+            if self.assignment_backend not in ("triton", "cute"):
+                raise ValueError("FP8 requires Triton or CuTe assignment")
             _check_fp8_support(x.device)
         elif x.dtype in (getattr(torch, "float8_e4m3fn", None), torch.int8, torch.uint8):
             raise ValueError("native codes must match the quantizer dtype")
@@ -665,6 +668,9 @@ class Emeans:
         self._check_fp8_input_dtype(rows)
         if self._int8_quantizer and rows.dtype != self.quantizer.dtype:
             raise TypeError("INT8 training requires matching native codes; no JIT INT8")
+        if (self.assignment_backend == "cute" and self._fp8_quantizer
+                and rows.dtype != self.quantizer.dtype):
+            return rows.float()
         if self.quantizer is None or rows.dtype == self.quantizer.dtype:
             return rows
         return self.quantizer.compute_codes(rows)
@@ -676,7 +682,13 @@ class Emeans:
             centroids = self._readout()
         if self.assignment_backend == "cute":
             _, prepare, _ = _get_cute_functions()
-            self._cute_assignment_cache = prepare(centroids, self._cute_assignment_cache, spherical=self.spherical)
+            dtype = self._input_dtype or torch.bfloat16
+            if dtype is torch.float8_e4m3fn and self._fp8_peak is None:
+                self._fp8_peak = centroids.new_zeros(())
+            self._cute_assignment_cache = prepare(
+                centroids, self._cute_assignment_cache,
+                transform=self.quantizer if self._fp8_quantizer else None,
+                peak_out=self._fp8_peak, dtype=dtype, spherical=self.spherical)
             return self._cute_assignment_cache, None
         dtype = self._input_dtype or torch.float32
         if dtype in (torch.int8, torch.uint8):
@@ -1213,7 +1225,10 @@ class Emeans:
                 if (native_stats and rows.dtype == x.dtype
                         and accumulate_bytes(rows, labels, accumulation, shift=shift)):
                     continue
-                codes = rows
+                # CuTe FP8 assignment retains these encoded rows for statistics;
+                # consume them on the ordered stream before another assignment.
+                codes = (centroids.bindings[len(rows)].workspace
+                         if self.assignment_backend == "cute" and self._fp8_quantizer else rows)
                 if (fp8_stats and accumulate_bytes(
                         codes, labels, accumulation, fp8_code_units=True)):
                     continue
@@ -1642,6 +1657,10 @@ class Emeans:
             )
             if is_torch:
                 rows = self._prepare_rows(init_centroids)
+                # Fused CuTe JIT defers chunk encoding; seed positions still need codes.
+                if (self.assignment_backend == "cute" and self._fp8_quantizer
+                        and rows.dtype != self.quantizer.dtype):
+                    rows = self.quantizer.compute_codes(rows)
                 init_centroids = (self.quantizer.decode(rows)
                                   if self.quantizer is not None else rows.float())
         elif _is_torch_tensor(init_centroids) != is_torch:
