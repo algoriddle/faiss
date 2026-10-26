@@ -32,8 +32,9 @@ without clamping rounding error. EMA updates retain raw FP32 coordinates;
 assignment, readout and closing output use projected directions, with zero
 directions staying zero. `current_centroids()` borrows one reusable effective
 FP32 direction cache under the existing read-window and stream contract. The
-cache requires `4 * k * d` additional bytes. This mode supports native floating
-input and cast quantizers, including existing eligible resident CUDA replay.
+cache requires `4 * k_local * d` additional bytes; replicated models store the
+full table on each rank. This mode supports the existing floating backends and
+cast quantizers; encoded FP8/byte formats and IVF+spherical are unsupported.
 
 For caller-driven batches, supply FP32 initial centroids and the global row
 count. `train` uses the same numerical operations with seeded initialization
@@ -74,7 +75,7 @@ each prefix from that epoch's seeded permutation; caller-driven training
 supplies the prescribed counts. Assignment, EMA and revival continue during
 closing. Finalize uses collected means with no new scan. Unvisited resident
 captured IDs are `-1` when closing is short. Every rounded epoch count must
-divide by the group size when a derived model uses equal contributions.
+divide by the group size; sharder's extra frozen scan still covers `N`.
 The caller owns loading, ordering, transfers and prefetch. Supplied
 input chunks can be smaller than one statistical batch:
 
@@ -367,3 +368,33 @@ Both filename patterns are needed: default discovery omits the Torch files.
 Torch is required for the second command. GPU/backend and two-/three-GPU
 cases report explicit skips when their dependencies or devices are unavailable;
 those skips do not establish qualification of the unavailable scopes.
+
+### CUDA centroid ownership
+
+`from faiss.contrib.e_means.sharded_centroids import EmeansShardedCentroids`
+uses an explicit caller-owned group. Unlike `DistributedEmeans`, each rank
+owns only a contiguous centroid shard: constructor `k` is global, instance
+`k` and returned centroids are local; `global_k` and `centroid_begin` locate
+that shard. `begin` takes only the local FP32 initial centroids. All ranks
+must use identical parameters and the same lifecycle/collective order, with
+equal contributions and global rows, batches and centroids divisible by the
+group size. Supported CUDA input/backend combinations require `quantizer=None`.
+Rows are broadcast in bounded chunks; statistics and EMA remain with owners.
+Owner compaction and revival reads can synchronize with the host; broadcasts
+and reductions are serialized.
+Raw INT8/UINT8 winners compare exact integer distances, then break ties by
+lowest global centroid ID. Caller labels, when enabled, describe only that
+caller's last-training-pass rows in original supplied order.
+Floating winners compare exported FP32 distances, so near-tie labels can differ
+from an unsharded run.
+
+`finalize()` uses final-training-pass statistics. Optional
+`final_closing_mean(batches)` instead scans fresh rows against a frozen completed
+training snapshot before finalization; every row must appear exactly once.
+Empty centroids retain their current positions. Above global N=2**24,
+floating scan sums use FP64 (8 rather than 4 bytes/entry), with FP64 division
+before FP32 output. Raw sums stay INT64; smaller floating scans stay FP32.
+Budget for coexistence with training tables, per-chunk conversions, counts,
+divisor and final mean/output temporaries. This does not guarantee stable
+common-offset assignment or arbitrary-size reductions. See the small
+`demos/demo_e_means_sharded.py` resident/generated-chunk example.

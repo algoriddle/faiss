@@ -199,6 +199,64 @@ def _cpu_gloo_replica(rank, rendezvous):
 
 
 class TestTorchEmeans(EmeansReferenceContracts, unittest.TestCase):
+    def test_sharder_legacy_hooks_training_and_frozen_closing(self):
+        import torch.distributed as dist
+        from faiss.contrib.e_means.sharded_centroids import EmeansShardedCentroids
+
+        class LegacySharder(EmeansShardedCentroids):
+            # CPU seam test: bypass only the production CUDA begin guard.
+            def begin(self, n, centroids):
+                Emeans.begin(self, n, centroids)
+
+            def _winning_labels(self, rows, prepared):
+                calls.append("winner")
+                return super()._winning_labels(rows, prepared)
+
+            def _add_owned(self, rows, winner, sums, counts, objective):
+                calls.append("owned")
+                return super()._add_owned(rows, winner, sums, counts, objective)
+
+        self.assertFalse(dist.is_initialized())
+        with tempfile.TemporaryDirectory() as directory:
+            dist.init_process_group("gloo", init_method="file://" + directory + "/group",
+                                    rank=0, world_size=1)
+            try:
+                for frozen in (False, True):
+                    with self.subTest(frozen=frozen), highest_fp32("cpu"):
+                        calls = []
+                        rows = torch.tensor([[0.], [2.], [10.], [12.]])
+                        initial = torch.tensor([[0.], [10.]])
+                        args = dict(niter=1, batch_size=2, alpha0=.5,
+                                    assignment_chunk_size=1, capture_assignments=True)
+                        model = LegacySharder(1, 2, group=dist.group.WORLD, **args)
+                        reference = Emeans(1, 2, **args)
+                        model.begin(4, initial); reference.begin(4, initial)
+                        for batch in rows.split(2):
+                            expected = reference.accumulate(batch)
+                            actual = expected if frozen else model.accumulate(batch)
+                            if not frozen:
+                                for key in ("sums", "counts", "objective", "labels"):
+                                    torch.testing.assert_close(actual[key], expected[key], rtol=0, atol=0)
+                            model.update(actual); reference.update(expected)
+                        model.end_epoch(); reference.end_epoch()
+                        if frozen:
+                            distance = (rows[:, None, :] - model._centroids[None, :, :]).square().sum(2)
+                            labels = distance.argmin(1)
+                            sums = torch.zeros_like(initial).index_add_(0, labels, rows)
+                            counts = torch.bincount(labels, minlength=2)
+                            expected = sums / counts[:, None]
+                            actual = model.final_closing_mean(rows.split(2))
+                            self.assertEqual(model.closing_stats["assignment_mse"],
+                                             float(distance.min(1).values.double().mean()))
+                        else:
+                            actual, expected = model.finalize(), reference.finalize()
+                            torch.testing.assert_close(model.obj, reference.obj, rtol=0, atol=0)
+                        torch.testing.assert_close(actual, expected, rtol=0, atol=0)
+                        self.assertEqual(calls.count("winner"), 4)
+                        self.assertEqual(calls.count("owned"), 4)
+            finally:
+                dist.destroy_process_group()
+
     def test_exact_distance_rejects_floating_and_calibrated_inputs(self):
         output = torch.full((1,), -123, dtype=torch.int64)
         for quantizer, dtype in ((None, torch.float32), (Int8Quantizer(2), torch.int8)):
