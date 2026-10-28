@@ -3,8 +3,10 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 #
-# Adapted from PR #280 cute_kmeans/cute/row_owned.py at
-# e8e288285e885064b477a882e237fcc47da8a9b2.
+# Adapted from Meta-internal code (online_k-means repository, pull request
+# #280, cute_kmeans/cute/row_owned.py at commit
+# e8e288285e885064b477a882e237fcc47da8a9b2), not a Faiss pull request; it is
+# covered by the Meta copyright above.
 
 """Low-dimension SM90 floating and integer row-owned assignment kernel.
 

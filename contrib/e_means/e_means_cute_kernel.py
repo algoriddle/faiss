@@ -4,9 +4,13 @@
 # LICENSE file in the root directory of this source tree.
 #
 # NativeRowVecLoad below is adapted from QuACK 0.6.5 RowVecLoad.begin_loop.
-# Copyright (c) 2025-2026, Han Guo, Tri Dao. Licensed under Apache-2.0.
+# Copyright (c) 2025-2026, Han Guo, Tri Dao. Licensed under Apache-2.0;
+# the full license text is in THIRD_PARTY_NOTICES (section 3).
 # Meta modified it to preserve int32 metadata and removed unrelated modes.
-# Native INT8 packed reduction adapts PR #280 at e8e288285e885064b477a882e237fcc47da8a9b2.
+# Native INT8 packed reduction adapts Meta-internal code (online_k-means
+# repository, pull request #280, commit
+# e8e288285e885064b477a882e237fcc47da8a9b2), not a Faiss pull request; it is
+# covered by the Meta copyright above.
 
 """One fixed SM90 floating/native-INT8 GEMM-plus-argmin assignment kernel.
 
