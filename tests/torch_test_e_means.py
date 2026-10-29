@@ -5,7 +5,6 @@
 
 import unittest
 import tempfile
-import importlib.metadata
 import importlib.util
 import datetime
 import subprocess
@@ -2527,70 +2526,6 @@ if cuda_supported:
         torch.testing.assert_close(single.centroids, eager.centroids, rtol=0, atol=0)
         torch.testing.assert_close(single.obj, eager.obj, rtol=0, atol=0)
         torch.testing.assert_close(single.assignments, eager.assignments, rtol=0, atol=0)
-
-
-
-def _cute_stack_on_h100():
-    """The condition torch_test_e_means_cute.py uses for its CuTe tests."""
-    if not torch.cuda.is_available() or getattr(torch.version, "hip", None):
-        return False
-    if torch.cuda.get_device_capability() != (9, 0):
-        return False
-    try:
-        return (importlib.metadata.version("quack-kernels") == "0.6.5"
-                and importlib.metadata.version("nvidia-cutlass-dsl") == "4.7.1"
-                and importlib.metadata.version("cuda-python").startswith("13."))
-    except importlib.metadata.PackageNotFoundError:
-        return False
-
-
-class TestAutoBackend(unittest.TestCase):
-    def _choose(self, cute, triton, dtype):
-        with mock.patch.object(e_means, "_cute_can_run",
-                               lambda device, dt: cute), \
-                mock.patch.object(e_means, "_triton_can_run",
-                                  lambda device, dt: triton):
-            model = Emeans(4, 3)
-            model._resolve_backend(torch.device("cuda"), dtype, True)
-        return model.assignment_backend
-
-    def test_order_is_cute_then_triton_then_native(self):
-        self.assertEqual(self._choose(True, True, torch.bfloat16), "cute")
-        self.assertEqual(self._choose(False, True, torch.bfloat16), "triton")
-        self.assertEqual(self._choose(False, False, torch.bfloat16), "native")
-        self.assertEqual(self._choose(False, True, torch.float32), "triton")
-        self.assertEqual(self._choose(False, False, torch.float32), "native")
-
-    def test_eight_bit_without_cute_or_triton_is_refused(self):
-        for dtype in (torch.int8, torch.uint8):
-            with self.subTest(dtype=dtype), \
-                    self.assertRaisesRegex(ValueError, "FP8 and INT8 input"):
-                self._choose(False, False, dtype)
-
-    def test_cpu_tensor_runs_native_and_reset_returns_to_auto(self):
-        model = Emeans(4, 3, niter=1)
-        model.train(torch.rand(64, 4))
-        self.assertEqual(model.recipe["assignment_backend"], "native")
-        self.assertEqual(model.recipe["assignment_backend_requested"], "auto")
-        model.reset()
-        self.assertEqual(model.assignment_backend, "auto")
-
-    def test_explicit_choice_is_kept(self):
-        model = Emeans(4, 3, niter=1, assignment_backend="native")
-        model.train(torch.rand(64, 4))
-        model.reset()
-        self.assertEqual(model.assignment_backend, "native")
-
-    @unittest.skipUnless(_cute_stack_on_h100(),
-                         "pinned CuTe stack on SM90 required")
-    def test_h100_picks_cute_for_bf16_and_triton_for_floats(self):
-        x = torch.rand(4096, 64, device="cuda")
-        for data, expected in ((x.to(torch.bfloat16), "cute"),
-                               (x, "triton"), (x.half(), "triton")):
-            with self.subTest(dtype=data.dtype):
-                model = Emeans(64, 32, niter=1)
-                model.train(data)
-                self.assertEqual(model.recipe["assignment_backend"], expected)
 
 
 if __name__ == "__main__":

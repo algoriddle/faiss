@@ -400,10 +400,12 @@ class Emeans:
         "auto", the default, picks the fastest kernels that can run the input:
         CuTe where it can (native BF16/E4M3/INT8/UINT8 or a matching quantizer,
         on exactly SM90 with its pinned packages), else Triton (NVIDIA SM80 or
-        later), else native. It decides when a run starts, or at the run's
-        first batch when only that batch fixes the input format, and records
-        the choice in ``recipe["assignment_backend"]``. An explicit choice
-        never falls back: it raises when it cannot run.
+        later), else native. The choice is made before any row is assigned:
+        in ``begin`` when the device or a quantizer fixes the input format,
+        otherwise when the first batch arrives, before that batch is
+        processed. It holds for the whole run, is recorded in
+        ``recipe["assignment_backend"]`` and is made again by the next run.
+        An explicit choice never falls back: it raises when it cannot run.
         Triton requires NVIDIA CUDA SM80 or later and
         a compatible Triton installation. It uses bounded tiled/split assignment,
         IEEE dot input precision for FP32 inputs, and no runtime autotuning or backend fallback.
@@ -667,6 +669,8 @@ class Emeans:
         choices never get here.
         """
         cuda = device is not None and device.type == "cuda"
+        # CuTe and Triton keep centroid ids in int32 after padding k to their
+        # tiles, hence the same k limits as their explicit checks above.
         if not cuda:
             choice = "native"
         elif self.k <= 2**31 - 192 and _cute_can_run(device, dtype):
