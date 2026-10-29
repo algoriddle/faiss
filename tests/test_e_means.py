@@ -58,7 +58,7 @@ class TestEmeansRecipe(unittest.TestCase):
 
     def test_invalid_overrides(self):
         with self.assertRaises(ValueError):
-            Emeans(4, 3, batch_size=16)
+            Emeans(4, 3, batch_size=16, batch_law="quality")
         with self.assertRaises(ValueError):
             Emeans(4, 3, alpha0=0.2)
         with self.assertRaises(ValueError):
@@ -154,7 +154,7 @@ assert 'torch' not in sys.modules
         np.testing.assert_array_equal(km.centroids, [[1.0], [11.0]])
         self.assertEqual(objective, 8.0)
         self.assertEqual(km.recipe["name"], "manual")
-        self.assertIsNone(km.recipe["operating_point"])
+        self.assertIsNone(km.recipe["batch_law"])
         distance, labels = km.assign(x)
         np.testing.assert_array_equal(labels, [0, 0, 1, 1])
         np.testing.assert_array_equal(distance, [1.0, 1.0, 1.0, 1.0])

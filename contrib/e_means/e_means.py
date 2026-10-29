@@ -31,7 +31,7 @@ _BATCH_LAWS = {
 _ALPHA_LAW = (0.8244, -0.4617, 0.9003, -0.4498, -0.1057)
 
 
-def _validate_params(d, k, niter, operating_point, batch_size, alpha0, seed):
+def _validate_params(d, k, niter, batch_law, batch_size, alpha0, seed):
     """Validate constructor arguments."""
     if d < 1:
         raise ValueError("d must be positive")
@@ -39,15 +39,18 @@ def _validate_params(d, k, niter, operating_point, batch_size, alpha0, seed):
         raise ValueError("k must be positive")
     if not math.isfinite(niter) or niter <= 0:
         raise ValueError("niter must be finite and positive")
-    if operating_point not in _BATCH_LAWS:
-        raise ValueError("operating_point must be 'throughput' or 'quality'")
-    if (batch_size is None) != (alpha0 is None):
-        raise ValueError("batch_size and alpha0 must be set together")
-    if batch_size is not None:
-        if int(batch_size) < 1:
-            raise ValueError("batch_size must be positive")
-        if not 0.0 < float(alpha0) <= 1.0:
-            raise ValueError("alpha0 must be in (0, 1]")
+    if batch_law not in _BATCH_LAWS:
+        raise ValueError("batch_law must be 'throughput' or 'quality'")
+    if alpha0 is not None and batch_size is None:
+        raise ValueError("alpha0 requires batch_size: set both, set batch_size "
+                         "alone, or set neither")
+    if batch_size is not None and batch_law != "throughput":
+        raise ValueError("batch_law applies only when the batch law chooses "
+                         "the batch size: drop batch_law or batch_size")
+    if batch_size is not None and int(batch_size) < 1:
+        raise ValueError("batch_size must be positive")
+    if alpha0 is not None and not 0.0 < float(alpha0) <= 1.0:
+        raise ValueError("alpha0 must be in (0, 1]")
     if seed < 0 or seed >= 2**32:
         raise ValueError("seed must be in [0, 2**32)")
 
@@ -61,33 +64,40 @@ def _round_power_of_two(value):
     return low if value / low < high / value else high
 
 
-def _resolve_recipe(n, k, niter, operating_point, batch_size, alpha0):
-    """Return the coupled statistical batch size and initial EMA step."""
+def _step_law(n, k, niter, batch_size):
+    """Initial EMA step coupled to a batch size by the fitted step law."""
+    coefficient, k_exp, batch_exp, n_exp, iter_exp = _ALPHA_LAW
+    alpha0 = (
+        coefficient
+        * k**k_exp
+        * batch_size**batch_exp
+        * n**n_exp
+        * niter**iter_exp
+    )
+    return min(max(alpha0, 1e-4), 1.0)
+
+
+def _resolve_recipe(n, k, niter, batch_law, batch_size, alpha0):
+    """Return the statistical batch size and initial EMA step.
+
+    The batch comes from ``batch_law`` unless ``batch_size`` is given. The
+    step comes from the step law at that batch unless ``alpha0`` is given too.
+    """
     if batch_size is None:
-        coefficient, k_exp, n_exp, iter_exp = _BATCH_LAWS[operating_point]
+        coefficient, k_exp, n_exp, iter_exp = _BATCH_LAWS[batch_law]
         raw_batch = coefficient * k**k_exp * n**n_exp * niter**iter_exp
         batch_size = _round_power_of_two(raw_batch)
         # These intentionally differ: they reproduce the two fitted recipes.
-        if operating_point == "throughput":
+        if batch_law == "throughput":
             batch_size = min(batch_size, _round_power_of_two(n / 2))
         else:
             batch_size = min(batch_size, n // 2)
         batch_size = max(1, min(batch_size, n))
-
-        coefficient, k_exp, batch_exp, n_exp, iter_exp = _ALPHA_LAW
-        alpha0 = (
-            coefficient
-            * k**k_exp
-            * batch_size**batch_exp
-            * n**n_exp
-            * niter**iter_exp
-        )
-        alpha0 = min(max(alpha0, 1e-4), 1.0)
     else:
         batch_size = min(int(batch_size), n)
-        alpha0 = float(alpha0)
-
-    return batch_size, alpha0
+    if alpha0 is None:
+        alpha0 = _step_law(n, k, niter, batch_size)
+    return batch_size, float(alpha0)
 
 
 def _epoch_rows(n, niter):
@@ -300,6 +310,47 @@ def _get_cute_functions():
     return cute._assign_rows, cute._prepare_centroids, cute._check_device
 
 
+def _cute_can_run(device, dtype):
+    """True when the CuTe kernels can run this input format on this device."""
+    import torch
+
+    if dtype not in (torch.bfloat16, getattr(torch, "float8_e4m3fn", None),
+                     torch.int8, torch.uint8):
+        return False
+    try:
+        _, _, check = _get_cute_functions()
+        check(device)
+        if dtype in (torch.int8, torch.uint8):
+            from .e_means_int8 import _check_int8_support
+
+            _check_int8_support(device)
+    except (ImportError, RuntimeError, ValueError):
+        return False
+    return True
+
+
+def _triton_can_run(device, dtype):
+    """True when the Triton kernels can run this input format here."""
+    import torch
+
+    if (getattr(torch.version, "hip", None) is not None
+            or torch.cuda.get_device_capability(device) < (8, 0)):
+        return False
+    try:
+        _get_triton_assign_rows()
+        if dtype in (torch.int8, torch.uint8):
+            from .e_means_int8 import _check_int8_support
+
+            _check_int8_support(device)
+        elif dtype == getattr(torch, "float8_e4m3fn", None):
+            from .e_means_fp8 import _check_fp8_support
+
+            _check_fp8_support(device)
+    except (ImportError, RuntimeError, ValueError):
+        return False
+    return True
+
+
 class Emeans:
     """Cluster vectors with mini-batch exponential moving averages.
 
@@ -313,13 +364,18 @@ class Emeans:
         Training passes. A fractional prefix precedes the full moving closing
         pass; below one pass, closing covers only that rounded prefix. Each
         prefix uses its own seeded permutation. See recipe["epoch_rows"].
-    batch_size, alpha0 : optional
-        Coupled statistical batch size and initial EMA step. If omitted, both
-        are selected by the fitted recipe.
-    operating_point : {"throughput", "quality"}, optional
-        Recipe used when ``batch_size`` and ``alpha0`` are omitted.
-        ``throughput`` takes the largest fitted batch within the recipe's
-        tolerance; ``quality`` takes the smaller one.
+    batch_size : int, optional
+        Statistical batch size. If omitted, the batch law named by
+        ``batch_law`` chooses it.
+    alpha0 : float, optional
+        Initial EMA step, in (0, 1]. If omitted, the fitted step law computes
+        it from the batch size, so it adapts to a ``batch_size`` given alone.
+        Setting ``alpha0`` requires setting ``batch_size``.
+    batch_law : {"throughput", "quality"}, optional
+        Batch law used when ``batch_size`` is omitted. ``throughput`` takes
+        the largest fitted batch within the recipe's tolerance; ``quality``
+        takes one about 8 times smaller. Leave it at ``throughput`` when
+        ``batch_size`` is given.
     seed : int, optional
         Seed for initialization, batch permutations, and cluster splitting.
     verbose : bool, optional
@@ -340,8 +396,17 @@ class Emeans:
         retain last-pass labels in original input order after resident train.
         Defaults to False; it does not disable CUDA graph replay.
 
-    assignment_backend : {"native", "triton", "cute"}, optional
-        Native is the default. Triton requires NVIDIA CUDA SM80 or later and
+    assignment_backend : {"auto", "native", "triton", "cute"}, optional
+        "auto", the default, picks the fastest kernels that can run the input:
+        CuTe where it can (native BF16/E4M3/INT8/UINT8 or a matching quantizer,
+        on exactly SM90 with its pinned packages), else Triton (NVIDIA SM80 or
+        later), else native. The choice is made before any row is assigned:
+        in ``begin`` when the device or a quantizer fixes the input format,
+        otherwise when the first batch arrives, before that batch is
+        processed. It holds for the whole run, is recorded in
+        ``recipe["assignment_backend"]`` and is made again by the next run.
+        An explicit choice never falls back: it raises when it cannot run.
+        Triton requires NVIDIA CUDA SM80 or later and
         a compatible Triton installation. It uses bounded tiled/split assignment,
         IEEE dot input precision for FP32 inputs, and no runtime autotuning or backend fallback.
         centroid_chunk_size applies only to native Torch assignment.
@@ -424,13 +489,13 @@ class Emeans:
         niter=25,
         batch_size=None,
         alpha0=None,
-        operating_point="throughput",
+        batch_law="throughput",
         seed=1234,
         verbose=False,
         assignment_chunk_size=None,
         centroid_chunk_size=4096,
         quantizer=None,
-        assignment_backend="native",
+        assignment_backend="auto",
         capture_assignments=False,
         spherical=False,
     ):
@@ -440,7 +505,7 @@ class Emeans:
         self.niter = int(niter) if niter.is_integer() else niter
         self.batch_size = batch_size
         self.alpha0 = alpha0
-        self.operating_point = operating_point
+        self.batch_law = batch_law
         self.seed = int(seed)
         self.verbose = bool(verbose)
         self.assignment_chunk_size = (
@@ -452,8 +517,10 @@ class Emeans:
         self.capture_assignments = bool(capture_assignments)
         self.spherical = bool(spherical)
         self.assignment_backend = assignment_backend
-        if assignment_backend not in ("native", "triton", "cute"):
-            raise ValueError("assignment_backend must be native, triton or cute")
+        self._backend_request = assignment_backend
+        if assignment_backend not in ("auto", "native", "triton", "cute"):
+            raise ValueError(
+                "assignment_backend must be auto, native, triton or cute")
         if assignment_backend == "triton" and self.k > 2**31 - 256:
             raise ValueError("Triton assignment requires k <= 2**31 - 256")
         if assignment_backend == "cute" and self.k > 2**31 - 192:
@@ -472,11 +539,12 @@ class Emeans:
             if self.spherical and (self._fp8_quantizer or self._int8_quantizer):
                 raise ValueError("spherical assignment requires floating operands, not encoded formats")
             if self._int8_quantizer:
-                if assignment_backend not in ("triton", "cute"):
+                if assignment_backend not in ("auto", "triton", "cute"):
                     raise ValueError("INT8 requires Triton or CuTe assignment")
                 if self.d > 43919:
                     raise ValueError("INT8 assignment requires d <= 43919")
-            if self._fp8_quantizer and assignment_backend not in ("triton", "cute"):
+            if (self._fp8_quantizer
+                    and assignment_backend not in ("auto", "triton", "cute")):
                 raise ValueError("FP8 requires Triton or CuTe assignment")
 
         if assignment_backend == "cute" and quantizer is not None:
@@ -489,7 +557,7 @@ class Emeans:
             self.d,
             self.k,
             self.niter,
-            self.operating_point,
+            self.batch_law,
             self.batch_size,
             self.alpha0,
             self.seed,
@@ -511,6 +579,8 @@ class Emeans:
         self.obj = None
         self.iteration_stats = None
         self.recipe = None
+        if self._backend_request == "auto":
+            self.assignment_backend = "auto"
         self.n_splits = 0
         self._usage = None
         self._centroids = None
@@ -592,6 +662,40 @@ class Emeans:
             return min(2**20, max(8192, 2**26 // width))
         return 8192 if is_torch else 65536
 
+    def _resolve_backend(self, device, dtype, is_torch):
+        """Settle assignment_backend="auto" for this run.
+
+        CuTe where it can run this input, else Triton, else native. Explicit
+        choices never get here.
+        """
+        cuda = device is not None and device.type == "cuda"
+        # CuTe and Triton keep centroid ids in int32 after padding k to their
+        # tiles, hence the same k limits as their explicit checks above.
+        if not cuda:
+            choice = "native"
+        elif self.k <= 2**31 - 192 and _cute_can_run(device, dtype):
+            choice = "cute"
+        elif self.k <= 2**31 - 256 and _triton_can_run(device, dtype):
+            choice = "triton"
+        else:
+            choice = "native"
+        if choice == "native" and cuda:
+            import torch
+
+            eight_bit = (getattr(torch, "float8_e4m3fn", None), torch.int8,
+                         torch.uint8)
+            if dtype in eight_bit:
+                raise ValueError(
+                    "FP8 and INT8 input need the CuTe or Triton kernels, "
+                    "and neither can run on this device")
+        self.assignment_backend = choice
+        if self.recipe is not None:
+            self.recipe["assignment_backend"] = choice
+            chunk = self._get_assignment_chunk_size(is_torch, cuda)
+            self.recipe["assignment_chunk_size"] = chunk
+        if self.verbose:
+            print("assignment_backend auto: using %s" % choice)
+
     def _prepare_input(self, x, allow_empty=False, prepare=True):
         state = self._centroids if self._centroids is not None else self.centroids
         is_torch = _is_torch_tensor(state)
@@ -609,6 +713,8 @@ class Emeans:
         if x.shape[1] != self.d:
             raise ValueError("x must have dimension d")
         if not is_torch:
+            if self.assignment_backend == "auto":
+                self._resolve_backend(None, None, False)
             return x
         if x.device != state.device:
             raise ValueError("x and centroids must be on the same device")
@@ -617,6 +723,8 @@ class Emeans:
         self._check_fp8_input_dtype(x)
         dtype = (self.quantizer.dtype if self.quantizer is not None
                  else torch.float32 if x.device.type == "cpu" else x.dtype)
+        if self.assignment_backend == "auto":
+            self._resolve_backend(x.device, dtype, True)
         if self.spherical and (not x.is_floating_point() or dtype in
                 (getattr(torch, "float8_e4m3fn", None), getattr(torch, "float8_e5m2", None))):
             raise ValueError("spherical assignment requires unencoded floating operands")
@@ -948,6 +1056,12 @@ class Emeans:
         self._input_dtype = self.quantizer.dtype if self.quantizer is not None else None
         self._centroids = _clone(centroids)
         self._is_torch = is_torch
+        if self.assignment_backend == "auto":
+            if not is_torch or centroids.device.type != "cuda":
+                self._resolve_backend(None, None, is_torch)
+            elif self.quantizer is not None:
+                self._resolve_backend(centroids.device, self.quantizer.dtype,
+                                      True)
         if self.spherical:
             from .e_means_spherical import normalize_into
 
@@ -961,19 +1075,23 @@ class Emeans:
             self._batch_stats = np.empty((self.k, self.d + 1), dtype="float32")
             self._split_rng = np.random.RandomState(self.seed)
         batch_size, alpha0 = _resolve_recipe(
-            n, self.k, self.niter, self.operating_point,
+            n, self.k, self.niter, self.batch_law,
             self.batch_size, self.alpha0,
         )
         steps_per_pass = (n + batch_size - 1) // batch_size
         epoch_rows = _epoch_rows(n, self.niter)
         epoch_steps = [(rows + batch_size - 1) // batch_size for rows in epoch_rows]
-        manual = self.batch_size is not None
+        batch_given = self.batch_size is not None
+        alpha_given = self.alpha0 is not None
         self.recipe = {
-            "name": "manual" if manual else "canonical_v1",
-            "operating_point": None if manual else self.operating_point,
+            "name": (("manual" if alpha_given else "manual_batch")
+                     if batch_given else "canonical_v1"),
+            "batch_law": None if batch_given else self.batch_law,
             "batch_size": batch_size,
-            "batch_size_requested": int(self.batch_size) if manual else None,
+            "batch_size_requested": (int(self.batch_size) if batch_given
+                                     else None),
             "alpha0": alpha0,
+            "alpha0_source": "given" if alpha_given else "step_law",
             "niter": self.niter,
             "steps_per_pass": steps_per_pass,
             "total_steps": sum(epoch_steps),
@@ -988,6 +1106,7 @@ class Emeans:
             "seed": self.seed,
             "backend": "torch" if is_torch else "faiss",
             "assignment_backend": self.assignment_backend,
+            "assignment_backend_requested": self._backend_request,
             "assignment_chunk_size": self._get_assignment_chunk_size(
                 is_torch, is_torch and centroids.is_cuda),
         }
@@ -1024,7 +1143,7 @@ class Emeans:
             raise ValueError("statistics dtype must match the run's fixed statistics schema")
         if (dtype != torch.int64 or self.quantizer is not None or self.spherical
                 or not self._centroids.is_cuda
-                or self.assignment_backend not in ("triton", "cute")):
+                or self.assignment_backend not in ("auto", "triton", "cute")):
             raise ValueError("integer statistics require raw CUDA byte assignment")
         if 255 * self._n > 2**53:
             raise ValueError("integer statistics require global 255*n <= 2**53")

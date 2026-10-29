@@ -196,7 +196,8 @@ range guard remains. CPU computes supplied represented floating values in FP32
 and requires `quantizer=None`, even though the cast helper can execute on CPU.
 
 `assignment_backend="triton"` explicitly selects optional Triton CUDA assignment
-instead of the default native Torch implementation. It requires NVIDIA SM80 or
+instead of the native Torch implementation (the default, "auto", picks CuTe,
+then Triton, then native, by what can run). It requires NVIDIA SM80 or
 later, supports the same FP32/FP16/BF16 represented inputs and cast quantizer,
 and retains the shared lifecycle/statistics. FP32 dots request IEEE precision.
 It uses bounded centroid tiles and split-K partial results without runtime

@@ -327,7 +327,7 @@ class TestTorchEmeans(EmeansReferenceContracts, unittest.TestCase):
             q.validate(torch.full((1, 2), float("nan")))
         self.assertEqual(q.compute_codes(x[:0]).shape, (0, 2))
         with self.assertRaisesRegex(ValueError, "requires Triton"):
-            Emeans(2, 2, quantizer=q)
+            Emeans(2, 2, quantizer=q, assignment_backend="native")
         with self.assertRaisesRegex(TypeError, "no JIT INT8"):
             Emeans(2, 2, quantizer=q, assignment_backend="triton").train(x)
         with self.assertRaisesRegex(ValueError, "d <= 43919"):
@@ -936,7 +936,7 @@ class TestTorchEmeans(EmeansReferenceContracts, unittest.TestCase):
         with self.assertRaises(ValueError):
             q.validate(torch.tensor([[float("nan")]]))
         with self.assertRaisesRegex(ValueError, "FP8 requires Triton"):
-            Emeans(1, 2, quantizer=q)
+            Emeans(1, 2, quantizer=q, assignment_backend="native")
         with self.assertRaises(ValueError):
             Emeans(1, 2, quantizer=q, assignment_backend="triton").train(sample)
 
@@ -1521,7 +1521,7 @@ class TestTorchEmeans(EmeansReferenceContracts, unittest.TestCase):
 
 
     def test_backend_selection_and_cpu_rejection(self):
-        self.assertEqual(Emeans(1, 1).assignment_backend, "native")
+        self.assertEqual(Emeans(1, 1).assignment_backend, "auto")
         with self.assertRaises(ValueError):
             Emeans(1, 1, assignment_backend="unknown")
         with self.assertRaisesRegex(ValueError, "Triton assignment"):
