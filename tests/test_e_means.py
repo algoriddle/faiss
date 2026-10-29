@@ -16,6 +16,7 @@ from faiss.contrib.e_means.e_means import (
     _epoch_seed,
     _resolve_recipe,
     _scheduled_alpha,
+    _step_law,
 )
 from e_means_test_utils import EmeansReferenceContracts
 
@@ -48,19 +49,23 @@ class TestEmeansRecipe(unittest.TestCase):
             ),
         ]
         for case in cases:
-            n, k, niter, operating_point, expected_batch, expected_alpha = case
-            with self.subTest(n=n, k=k, operating_point=operating_point):
+            n, k, niter, batch_law, expected_batch, expected_alpha = case
+            with self.subTest(n=n, k=k, batch_law=batch_law):
                 batch, alpha = _resolve_recipe(
-                    n, k, niter, operating_point, None, None
+                    n, k, niter, batch_law, None, None
                 )
                 self.assertEqual(batch, expected_batch)
                 self.assertAlmostEqual(alpha, expected_alpha)
 
     def test_invalid_overrides(self):
-        with self.assertRaises(ValueError):
-            Emeans(4, 3, batch_size=16)
-        with self.assertRaises(ValueError):
+        with self.assertRaisesRegex(ValueError, "alpha0 requires batch_size"):
             Emeans(4, 3, alpha0=0.2)
+        with self.assertRaisesRegex(ValueError, "batch_law applies only"):
+            Emeans(4, 3, batch_size=16, batch_law="quality")
+        with self.assertRaisesRegex(ValueError, "batch_law must be"):
+            Emeans(4, 3, batch_law="fast")
+        with self.assertRaises(ValueError):
+            Emeans(4, 3, batch_size=0)
         with self.assertRaises(ValueError):
             Emeans(4, 3, batch_size=0, alpha0=0.2)
         with self.assertRaises(ValueError):
@@ -69,6 +74,52 @@ class TestEmeansRecipe(unittest.TestCase):
             for value in (0, -1):
                 with self.subTest(parameter=name, value=value), self.assertRaises(ValueError):
                     Emeans(4, 3, **{name: value})
+
+    def test_batch_size_alone_takes_the_step_law(self):
+        n, k, niter = 1_000_000, 16_384, 5
+        batch, alpha = _resolve_recipe(n, k, niter, "throughput", 8192, None)
+        self.assertEqual(batch, 8192)
+        self.assertEqual(alpha, _step_law(n, k, niter, 8192))
+        _, larger = _resolve_recipe(n, k, niter, "throughput", 65536, None)
+        self.assertGreater(larger, alpha)
+        law_batch, law_alpha = _resolve_recipe(n, k, niter, "throughput",
+                                               None, None)
+        self.assertEqual(law_alpha, _step_law(n, k, niter, law_batch))
+
+    def test_batch_size_and_alpha0_are_used_as_given(self):
+        self.assertEqual(
+            _resolve_recipe(1_000_000, 16_384, 5, "throughput", 8192, 0.3),
+            (8192, 0.3))
+
+    def test_recipe_records_where_the_step_came_from(self):
+        x = np.arange(124, dtype="float32").reshape(31, 4)
+        km = Emeans(4, 3, niter=2, batch_size=8)
+        km.train(x)
+        self.assertEqual(km.recipe["name"], "manual_batch")
+        self.assertIsNone(km.recipe["batch_law"])
+        self.assertEqual(km.recipe["batch_size"], 8)
+        self.assertEqual(km.recipe["alpha0_source"], "step_law")
+        self.assertEqual(km.recipe["alpha0"], _step_law(31, 3, 2, 8))
+        km = Emeans(4, 3, niter=2, batch_size=8, alpha0=0.25)
+        km.train(x)
+        self.assertEqual(km.recipe["name"], "manual")
+        self.assertEqual(km.recipe["alpha0_source"], "given")
+        self.assertEqual(km.recipe["alpha0"], 0.25)
+        km = Emeans(4, 3, niter=2)
+        km.train(x)
+        self.assertEqual(km.recipe["batch_law"], "throughput")
+        self.assertEqual(km.recipe["alpha0_source"], "step_law")
+
+    def test_auto_backend_on_numpy_is_native(self):
+        x = np.arange(124, dtype="float32").reshape(31, 4)
+        km = Emeans(4, 3, niter=2)
+        self.assertEqual(km.assignment_backend, "auto")
+        km.train(x)
+        self.assertEqual(km.assignment_backend, "native")
+        self.assertEqual(km.recipe["assignment_backend"], "native")
+        self.assertEqual(km.recipe["assignment_backend_requested"], "auto")
+        with self.assertRaisesRegex(ValueError, "auto, native, triton or cute"):
+            Emeans(4, 3, assignment_backend="fast")
 
     def test_derived_recipe_metadata(self):
         x = np.arange(124, dtype="float32").reshape(31, 4)
@@ -154,7 +205,7 @@ assert 'torch' not in sys.modules
         np.testing.assert_array_equal(km.centroids, [[1.0], [11.0]])
         self.assertEqual(objective, 8.0)
         self.assertEqual(km.recipe["name"], "manual")
-        self.assertIsNone(km.recipe["operating_point"])
+        self.assertIsNone(km.recipe["batch_law"])
         distance, labels = km.assign(x)
         np.testing.assert_array_equal(labels, [0, 0, 1, 1])
         np.testing.assert_array_equal(distance, [1.0, 1.0, 1.0, 1.0])
